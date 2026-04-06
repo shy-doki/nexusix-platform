@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/nexusix-audit/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-billing/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-boot/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-dynamic/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-iam/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-notify/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-org/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-system/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/nexusix-tenant/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+  </component>
+</project>
