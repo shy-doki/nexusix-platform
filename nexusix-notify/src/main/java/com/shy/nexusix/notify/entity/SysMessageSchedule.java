@@ -67,7 +67,7 @@ public class SysMessageSchedule implements Serializable {
     @TableField(value = "execute_time")
     private LocalDateTime executeTime;
 
-    @Schema(description = "重复规则 (JSONB，如{"type":"daily","interval":1})", example = "{\"type\": \"daily\", \"interval\": 1}")
+    @Schema(description = "重复规则 (JSONB)", example = "{\"type\": \"daily\", \"interval\": 1}")
     @TableField(value = "repeat_rule")
     private String repeatRule;
 
