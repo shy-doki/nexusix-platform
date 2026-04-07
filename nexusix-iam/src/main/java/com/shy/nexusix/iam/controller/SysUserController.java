@@ -1,0 +1,20 @@
+package com.shy.nexusix.iam.controller;
+
+
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * <p>
+ * 用户基础表 - 存储全局用户信息 (不区分租户) 前端控制器
+ * </p>
+ *
+ * @author shy
+ * @since 2026-04-07
+ */
+@RestController
+@RequestMapping("/sys-user")
+public class SysUserController {
+
+}
