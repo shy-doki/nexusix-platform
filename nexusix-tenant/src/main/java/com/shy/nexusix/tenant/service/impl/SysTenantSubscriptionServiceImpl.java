@@ -1,7 +1,7 @@
 package com.shy.nexusix.tenant.service.impl;
 
 import com.shy.nexusix.tenant.entity.SysTenantSubscription;
-import com.shy.nexusix.tenant.xml.SysTenantSubscriptionMapper;
+import com.shy.nexusix.tenant.mapper.SysTenantSubscriptionMapper;
 import com.shy.nexusix.tenant.service.ISysTenantSubscriptionService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;

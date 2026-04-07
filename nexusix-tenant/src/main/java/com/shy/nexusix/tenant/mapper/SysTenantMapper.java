@@ -1,4 +1,4 @@
-package com.shy.nexusix.tenant.xml;
+package com.shy.nexusix.tenant.mapper;
 
 import com.shy.nexusix.tenant.entity.SysTenant;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
