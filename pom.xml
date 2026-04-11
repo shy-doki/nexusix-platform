@@ -2,8 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!-- Maven 模型版本，固定为 4.0.0 -->
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- 父工程：继承 Spring Boot 官方父 pom，统一管理 Spring Boot 版本、插件、依赖 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -11,12 +13,15 @@
         <relativePath/>
     </parent>
 
+    <!-- 当前项目坐标 -->
     <groupId>com.shy.nexusix</groupId>
     <artifactId>nexusix-platform</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <!-- 打包方式：pom 表示这是一个【父工程/聚合工程】，不生成 jar/war，只做依赖管理 -->
     <packaging>pom</packaging>
 
+    <!-- 子模块列表 -->
     <modules>
         <module>nexusix-common</module>
         <module>nexusix-core</module>
@@ -31,38 +36,55 @@
         <module>nexusix-system</module>
     </modules>
 
+    <!-- 全局属性配置 统一管理版本号、编码、编译参数，方便后续修改维护 -->
     <properties>
+        <!-- JDK 版本 -->
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <!-- 项目文件编码，统一 UTF-8 避免乱码 -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- 框架 & 工具版本统一声明 -->
         <spring-boot.version>3.3.4</spring-boot.version>
         <spring-ai.version>1.0.0-M5</spring-ai.version>
         <mysql.version>9.1.0</mysql.version>
+        <postgressql.version>42.7.4</postgressql.version>
         <mybatis.version>3.5.12</mybatis.version>
         <lombok.version>1.18.36</lombok.version>
         <mapstruct.version>1.5.2.Final</mapstruct.version>
         <saToken.version>1.39.0</saToken.version>
         <commonsPool.version>2.12.0</commonsPool.version>
         <redis.version>3.4.0</redis.version>
-        <jackson.version>2.17.2</jackson.version>
+        <fastjson2.version>2.0.54</fastjson2.version>
         <knife4j.version>4.5.0</knife4j.version>
     </properties>
 
+    <!-- 依赖管理：仅声明依赖版本，不实际引入，子模块可直接使用无需写版本 -->
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Boot Web 核心依赖，用于开发 Web 接口 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
                 <version>${spring-boot.version}</version>
+                <!-- 排除默认的 Jackson -->
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-json</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
+            <!-- Spring Boot 基础核心依赖，所有 Spring Boot 项目必备 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>
 
+            <!-- Spring Boot 测试依赖，用于单元测试 & 集成测试 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-test</artifactId>
@@ -70,17 +92,20 @@
                 <scope>test</scope>
             </dependency>
 
+            <!-- Spring Boot 参数校验依赖，用于接口入参合法性校验 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-validation</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>
 
+            <!-- Spring AI alibaba -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
             </dependency>
 
+            <!-- Spring AI BOM 统一管理alibaba AI 相关依赖版本 -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-bom</artifactId>
@@ -89,20 +114,21 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- MyBatis-Plus Spring Boot 3 整合依赖，简化数据库操作 -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
                 <version>${mybatis.version}</version>
             </dependency>
 
-            <!--  分页插件  -->
+            <!-- MyBatis-Plus 分页插件依赖，实现物理分页 -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-jsqlparser</artifactId>
                 <version>${mybatis.version}</version>
             </dependency>
 
-            <!--  mysql驱动  -->
+            <!-- MySQL 官方驱动，运行时依赖，连接 MySQL 数据库 -->
             <dependency>
                 <groupId>com.mysql</groupId>
                 <artifactId>mysql-connector-j</artifactId>
@@ -110,14 +136,22 @@
                 <scope>runtime</scope>
             </dependency>
 
-            <!-- MapStruct -->
+            <!-- PostgreSQL 数据库驱动，适配 PostgreSQL 17.x -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgressql.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- MapStruct：实体类映射工具，用于 DTO/DO/VO 转换 -->
             <dependency>
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
                 <version>${mapstruct.version}</version>
             </dependency>
 
-            <!-- 用于编译时生成映射代码 -->
+            <!-- MapStruct 编译时注解处理器，生成映射实现类 -->
             <dependency>
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct-processor</artifactId>
@@ -125,55 +159,88 @@
                 <scope>provided</scope>
             </dependency>
 
+            <!-- 使用 Fastjson2 替代 Jackson 进行 JSON 处理 (Spring 6 适配) -->
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
+                <groupId>com.alibaba.fastjson2</groupId>
+                <artifactId>fastjson2</artifactId>
+                <version>${fastjson2.version}</version>
             </dependency>
 
-            <!-- Sa-Token 权限认证，在线文档：https://sa-token.cc -->
+            <!-- Fastjson2 适配 SpringBoot3 依赖 -->
+            <dependency>
+                <groupId>com.alibaba.fastjson2</groupId>
+                <artifactId>fastjson2-extension-spring6</artifactId>
+                <version>${fastjson2.version}</version>
+            </dependency>
+
+            <!-- Sa-Token 权限认证框架 Spring Boot 3 整合，处理登录、权限、会话，在线文档：https://sa-token.cc -->
             <dependency>
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-spring-boot3-starter</artifactId>
                 <version>${saToken.version}</version>
             </dependency>
 
-            <!-- Sa-Token 整合 jwt -->
+            <!-- Sa-Token 整合 JWT，实现 Token 无状态认证 -->
             <dependency>
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-jwt</artifactId>
                 <version>${saToken.version}</version>
             </dependency>
 
-            <!-- Sa-Token 整合 Redis （使用 jdk 默认序列化方式） -->
+            <!-- Sa-Token 整合 Redis，实现分布式会话存储 -->
             <dependency>
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-redis</artifactId>
                 <version>${saToken.version}</version>
             </dependency>
 
-            <!-- 提供Redis连接池 -->
+            <!-- Apache 通用连接池，为 Redis 提供连接池支持 -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-pool2</artifactId>
                 <version>${commonsPool.version}</version>
             </dependency>
 
-            <!-- Spring Boot Redis 依赖 -->
+            <!-- Spring Boot Redis 客户端，操作 Redis 缓存 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-data-redis</artifactId>
                 <version>${redis.version}</version>
             </dependency>
 
+            <!-- Knife4j OpenAPI3 接口文档，Spring Boot 3 适配版 -->
             <dependency>
                 <groupId>com.github.xiaoymin</groupId>
                 <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
                 <version>${knife4j.version}</version>
+                <!-- 彻底排除 Jackson -->
+<!--                <exclusions>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--                        <artifactId>jackson-annotations</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--                        <artifactId>jackson-databind</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--                        <artifactId>jackson-core</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>com.fasterxml.jackson.dataformat</groupId>-->
+<!--                        <artifactId>jackson-dataformat-yaml</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>com.fasterxml.jackson.datatype</groupId>-->
+<!--                        <artifactId>jackson-datatype-jsr310</artifactId>-->
+<!--                    </exclusion>-->
+<!--                </exclusions>-->
             </dependency>
         </dependencies>
     </dependencyManagement>
 
+    <!-- 全局依赖：父工程引入，所有子模块自动继承 -->
     <dependencies>
         <!-- lombok -->
         <dependency>
@@ -184,29 +251,38 @@
         </dependency>
     </dependencies>
 
+    <!-- 构建配置：Maven 编译、打包等插件配置 -->
     <build>
         <plugins>
 <!--            <plugin>-->
 <!--                <groupId>org.springframework.boot</groupId>-->
 <!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
 <!--            </plugin>-->
+
+            <!-- Maven 编译插件：指定 JDK 版本 + 注解处理器配置 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <!-- 编译源码 JDK 版本 -->
                     <source>17</source>
+                    <!-- 编译目标 JDK 版本 -->
                     <target>17</target>
+                    <!-- 注解处理器：处理 Lombok、MapStruct 注解 -->
                     <annotationProcessorPaths>
+                        <!-- Lombok 注解处理器 -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
                         </path>
+                        <!-- MapStruct 注解处理器 -->
                         <path>
                             <groupId>org.mapstruct</groupId>
                             <artifactId>mapstruct-processor</artifactId>
                             <version>${mapstruct.version}</version>
                         </path>
+                        <!-- Lombok + MapStruct 兼容绑定器，解决冲突 -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok-mapstruct-binding</artifactId>
