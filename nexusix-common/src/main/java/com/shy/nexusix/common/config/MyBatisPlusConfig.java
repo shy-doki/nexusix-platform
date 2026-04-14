@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * <p>
- * MyBatisPlus配置类
+ * MyBatisPlus配置类 核心、全局配置见application.yml
  * </p>
  *
  * @author shy
