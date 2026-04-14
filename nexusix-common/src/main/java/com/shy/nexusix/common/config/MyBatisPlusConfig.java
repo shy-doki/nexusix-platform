@@ -8,13 +8,10 @@ import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInt
 import com.baomidou.mybatisplus.extension.plugins.inner.BlockAttackInnerInterceptor;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.Expression;
-import org.mybatis.spring.annotation.MapperScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
 
 import java.util.Arrays;
 import java.util.List;
@@ -78,7 +75,7 @@ public class MyBatisPlusConfig {
             @Override
             public Expression getTenantId() {
                 // TODO 暂时返回默认租户ID 1 后续结合Sa-Token实现获取租户ID
-                Long tenantId = 1L;
+                long tenantId = 1L;
                 logger.debug("当前租户ID: {}", tenantId);
                 // 将租户ID包装为JSqlParser的LongValue表达式对象并返回
                 return new LongValue(tenantId);
