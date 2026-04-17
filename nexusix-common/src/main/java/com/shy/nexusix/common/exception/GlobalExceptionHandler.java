@@ -98,7 +98,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     public ApiResponse handleNotLoginException(NotLoginException ex) {
         log.error("未登录异常: {}", ex.getMessage(), ex);
-        return ApiResponse.error(401, ex.getMessage());
+        return ApiResponse.error(11012, ex.getMessage());
     }
 
     /**
@@ -110,7 +110,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotPermissionException.class)
     public ApiResponse handleNotPermissionException(NotPermissionException ex) {
         log.error("缺少权限异常: {}", ex.getMessage(), ex);
-        return ApiResponse.error(403, "缺少权限：" + ex.getPermission());
+        return ApiResponse.error(11051, "缺少权限：" + ex.getPermission());
     }
 
     /**
@@ -122,7 +122,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotRoleException.class)
     public ApiResponse handleNotRoleException(NotRoleException ex) {
         log.error("缺少角色异常: {}", ex.getMessage(), ex);
-        return ApiResponse.error(403, "缺少角色：" + ex.getRole());
+        return ApiResponse.error(11041, "缺少角色：" + ex.getRole());
     }
 
     /**
@@ -134,7 +134,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotSafeException.class)
     public ApiResponse handleNotSafeException(NotSafeException ex) {
         log.error("二级认证校验失败异常: {}", ex.getMessage(), ex);
-        return ApiResponse.error(403, "二级认证校验失败：" + ex.getService());
+        return ApiResponse.error(11071, "二级认证校验失败：" + ex.getService());
     }
 
     /**
@@ -146,7 +146,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DisableServiceException.class)
     public ApiResponse handleDisableServiceException(DisableServiceException ex) {
         log.error("服务封禁异常: {}", ex.getMessage(), ex);
-        return ApiResponse.error(403, "当前账号 " + ex.getService() + " 服务已被封禁 (level=" + ex.getLevel() + ")：" + ex.getDisableTime() + "秒后解封");
+        return ApiResponse.error(11061, "当前账号 " + ex.getService() + " 服务已被封禁 (level=" + ex.getLevel() + ")：" + ex.getDisableTime() + "秒后解封");
     }
 
     /**
