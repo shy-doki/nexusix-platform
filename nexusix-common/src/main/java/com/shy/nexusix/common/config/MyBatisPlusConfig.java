@@ -54,6 +54,7 @@ public class MyBatisPlusConfig {
             public boolean ignoreTable(String tableName) {
                 // 定义需要忽略租户过滤的表名列表，这些表通常是系统级别的公共表
                 List<String> ignoreTables = Arrays.asList(
+                        "sys_tenant",
                         "prod_package",
                         "prod_package_quota",
                         "sys_user",
