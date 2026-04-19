@@ -193,6 +193,70 @@ public final class GlobalEnum {
         }
 
         /**
+         * 根据描述获取枚举
+         */
+        public static TenantStatus getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (TenantStatus e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         */
+        public static TenantStatus getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 TenantStatus 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 0 → NORMAL, FROZEN</li>
+         *   <li>字符串数字: "1", "0" → NORMAL, FROZEN</li>
+         *   <li>中文描述: "正常", "冻结" → NORMAL, FROZEN</li>
+         *   <li>枚举名称: "NORMAL", "FROZEN" → 对应枚举</li>
+         *   <li>枚举对象: TenantStatus.NORMAL → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static TenantStatus parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof TenantStatus) {
+                return (TenantStatus) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            TenantStatus byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
+        }
+
+        /**
          * 判断编码是否有效
          *
          * @param code 枚举编码
