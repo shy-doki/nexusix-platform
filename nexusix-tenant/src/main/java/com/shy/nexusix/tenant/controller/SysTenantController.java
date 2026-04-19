@@ -4,6 +4,7 @@ package com.shy.nexusix.tenant.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.common.rto.PageCommonRTO;
+import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
 import com.shy.nexusix.tenant.rto.SysTenantQueryRTO;
 import com.shy.nexusix.tenant.service.ISysTenantService;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
@@ -153,5 +154,11 @@ public class SysTenantController {
      * @author shy
      * @since 2026-04-19
      */
+    @PostMapping("/add")
+    @Operation(summary = "新增租户", description = "新增租户信息")
+    public ApiResponse addTenant(@RequestBody SysTenantAddRTO addParam) {
+        Long tenantId = iSysTenantService.addTenant(addParam);
+        return ApiResponse.success(tenantId);
+    }
 
 }
