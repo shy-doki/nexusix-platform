@@ -47,7 +47,11 @@ public class SysTenant implements Serializable {
     @TableField(value = "parent_id")
     private Long parentId;
 
-    @Schema(description = "祖级列表 (物化路径，如 0,100,200)", example = "0,100,200")
+    @Schema(description = "父租户名称(新增、更新、删除操作需要同步该字段)", example = "阿里云")
+    @TableField(value = "parent_name")
+    private String parentName;
+
+    @Schema(description = "祖级列表 (物化路径，如 0/100/200)", example = "0/100/200")
     @TableField(value = "ancestors")
     private String ancestors;
 
@@ -72,6 +76,10 @@ public class SysTenant implements Serializable {
     @TableField(value = "package_id")
     private Long packageId;
 
+    @Schema(description = "当前主套餐名称(新增、更新、删除操作需要同步该字段)", example = "标准版")
+    @TableField(value = "package_name")
+    private String packageName;
+
     @Schema(description = "扩展属性 (JSONB，存储行业特定配置)", example = "{\"industry\": \"tech\", \"quota\": 100}")
     @TableField(value = "ext_attributes")
     private String extAttributes;
@@ -80,9 +88,17 @@ public class SysTenant implements Serializable {
     @TableField(value = "create_by")
     private Long createBy;
 
+    @Schema(description = "创建人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "create_by_name")
+    private String createByName;
+
     @Schema(description = "更新人 ID", example = "100")
     @TableField(value = "update_by")
     private Long updateBy;
+
+    @Schema(description = "更新人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "update_by_name")
+    private String updateByName;
 
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "create_time", fill = FieldFill.INSERT)
