@@ -37,3 +37,35 @@ mybatis-plus:
       logic-delete-value: 1
       # 逻辑未删除值
       logic-not-delete-value: 0
+
+# Knife4j 配置
+knife4j:
+  enable: true
+  setting:
+    # 开启动态请求参数
+    enable-dynamic-parameter: true
+    # 开启调试功能
+    enable-debug: true
+    # 隐藏文档中默认字段
+    enable-footer: false
+    # 开启自定义主页内容
+    enable-home-custom: true
+    # 语言设置
+    language: zh-CN
+
+# SpringDoc 配置
+springdoc:
+  api-docs:
+    # 开启 API 文档
+    enabled: true
+    # API 文档路径
+    path: /v3/api-docs
+  swagger-ui:
+    # 开启 Swagger UI
+    enabled: true
+    # Swagger UI 路径
+    path: /swagger-ui.html
+  # 包扫描路径
+  packages-to-scan: com.shy.nexusix
+  # 路径匹配规则
+  paths-to-match: /**
