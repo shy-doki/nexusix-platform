@@ -11,6 +11,7 @@ import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
 import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/tenant")
+@Tag(name = "租户管理", description = "租户基础信息管理相关接口")
 public class SysTenantController {
 
     @Autowired
