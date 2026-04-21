@@ -2,7 +2,7 @@ package com.shy.nexusix.tenant.rto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.annotation.EnumField;
-import com.shy.nexusix.common.enums.GlobalEnum.TenantStatus;
+import com.shy.nexusix.common.enums.GlobalEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -14,7 +14,15 @@ import static com.shy.nexusix.common.constant.RegexConstant.Code.SNOWFLAKE_ID;
 import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 
 @Data
-public class SysTenantAddRTO {
+public class SysTenantUpdateRTO {
+
+    /**
+     * <p>主键Id</p>
+     * <p>TODO 后续考虑加入加解密注解 这里就不加入正则判断 因为id默认加密传输</p>
+     */
+    @NotNull(message = "Id不能为空")
+    @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
+    private Long id;
 
     /**
      * 租户名称
@@ -70,7 +78,7 @@ public class SysTenantAddRTO {
     @NotBlank(message = "状态不能为空")
     @EnumField
     @Schema(description = "状态(通过枚举转换)", example = "正常")
-    private TenantStatus status;
+    private GlobalEnum.TenantStatus status;
 
     /**
      * 服务过期时间
