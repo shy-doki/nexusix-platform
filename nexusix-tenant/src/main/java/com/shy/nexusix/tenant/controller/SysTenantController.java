@@ -73,7 +73,7 @@ public class SysTenantController {
      */
     @GetMapping("/page")
     @Operation(summary = "分页查询租户列表", description = "返回分页后的租户列表")
-    public ApiResponse queryTenantPage(@RequestParam PageCommonRTO page) {
+    public ApiResponse queryTenantPage(PageCommonRTO page) {
         IPage<SysTenantCommonVO> tenantPage = iSysTenantService.queryTenantPage(page);
         return ApiResponse.success(tenantPage);
     }
@@ -94,7 +94,7 @@ public class SysTenantController {
      * @since 2026-04-19
      */
     @GetMapping("/tree/{tenantCode}")
-    @Operation(summary = "查询租户树形结构", description = "返回所有租户的层级树形结构，租户编码会自动脱敏显示")
+    @Operation(summary = "查询租户树形结构", description = "返回所有租户的层级树形结构")
     public ApiResponse queryTenantTree(@RequestParam String tenantCode) {
        List<SysTenantTreeVO> tenantTree = iSysTenantService.queryTenantTree(tenantCode);
        return ApiResponse.success(tenantTree);
@@ -181,6 +181,7 @@ public class SysTenantController {
      * @since 2026-04-20
      */
     @PutMapping("/update")
+    @Operation(summary = "修改租户", description = "修改租户信息")
     public ApiResponse updateTenant(@RequestBody SysTenantUpdateRTO updateParam) {
         Integer affectedRows = iSysTenantService.updateTenant(updateParam);
         return  ApiResponse.success(affectedRows);
@@ -202,6 +203,7 @@ public class SysTenantController {
      * @since 2026-04-20
      */
     @DeleteMapping("/delete")
+    @Operation(summary = "删除租户", description = "删除租户信息")
     public ApiResponse deleteTenant(@RequestParam @Valid String id) {
         Integer affectedRows = iSysTenantService.deleteTenant(id);
         return  ApiResponse.success(affectedRows);
@@ -223,6 +225,7 @@ public class SysTenantController {
      * @since 2026-04-20
      */
     @PostMapping("/batch")
+    @Operation(summary = "批量新增租户", description = "批量新增租户信息")
     public ApiResponse batchAddTenant(@RequestBody List<SysTenantAddRTO> addParamList) {
         Integer affectedRows = iSysTenantService.batchAddTenant(addParamList);
         return ApiResponse.success(affectedRows);
@@ -244,6 +247,7 @@ public class SysTenantController {
      * @since 2026-04-20
      */
     @PutMapping("/batch")
+    @Operation(summary = "批量修改租户", description = "批量修改租户信息")
     public ApiResponse batchUpdateTenant(@RequestBody List<SysTenantUpdateRTO> updateParamList) {
         Integer affectedRows = iSysTenantService.batchUpdateTenant(updateParamList);
         return ApiResponse.success(affectedRows);
@@ -265,6 +269,7 @@ public class SysTenantController {
      * @since 2026-04-20
      */
     @DeleteMapping("/batch")
+    @Operation(summary = "批量删除租户", description = "批量删除租户信息")
     public ApiResponse batchDeleteTenant(List<String> ids) {
         Integer affectedRows =  iSysTenantService.batchDeleteTenant(ids);
         return ApiResponse.success(affectedRows);

@@ -1,6 +1,9 @@
 package com.shy.nexusix.tenant.rto;
 
+import com.shy.nexusix.common.annotation.EnumField;
+import com.shy.nexusix.common.enums.GlobalEnum.TenantStatus;
 import com.shy.nexusix.common.rto.PageCommonRTO;
+import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -40,8 +43,8 @@ public class SysTenantQueryRTO extends PageCommonRTO {
     /**
      * 服务过期时间
      */
-    @Schema(description = "服务过期时间", example = "2026-12-31 23:59:59")
-    private String expireTime;
+    @Schema(description = "服务过期时间范围(一个/多个)[第一个参数为开始时间;第二个参数为结束时间]", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
+    private TimeRangeCommonRTO expireTime;
 
     /**
      * 创建人姓名
@@ -52,7 +55,7 @@ public class SysTenantQueryRTO extends PageCommonRTO {
     /**
      * 创建时间
      */
-    @Schema(description = "创建时间", example = "2026-04-07 15:45:30")
-    private String createTime;
+    @Schema(description = "创建时间范围(一个/多个)[第一个参数为开始时间;第二个参数为结束时间]", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
+    private TimeRangeCommonRTO createTime;
 
 }

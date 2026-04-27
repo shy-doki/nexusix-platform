@@ -166,7 +166,8 @@ public class SysTenantUpdateRTO {
      * 默认为0
      * 超级管理员可以指定逻辑删除状态
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
-    private Integer isDeleted;
+    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "未删除")
+    @EnumField
+    private GlobalEnum.Deleted isDeleted;
 
 }

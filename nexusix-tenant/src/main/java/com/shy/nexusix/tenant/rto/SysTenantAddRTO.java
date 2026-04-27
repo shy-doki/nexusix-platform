@@ -2,6 +2,7 @@ package com.shy.nexusix.tenant.rto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.annotation.EnumField;
+import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.enums.GlobalEnum.TenantStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
@@ -47,6 +48,12 @@ public class SysTenantAddRTO {
     @Size(min = 2, max = 100, message = "父租户名称必须在2-100字符之间")
     @Schema(description = "父租户名称", example = "阿里云")
     private String parentName;
+
+    /**
+     * 祖级路径
+     */
+    @Schema(description = "祖级列表 (物化路径，如 0/100/200)", example = "0/100/200")
+    private String ancestors;
 
     /**
      * 联系人姓名
@@ -159,6 +166,7 @@ public class SysTenantAddRTO {
      * 超级管理员可以指定逻辑删除状态
      */
     @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
-    private Integer isDeleted;
+    @EnumField
+    private GlobalEnum.Deleted isDeleted;
 
 }

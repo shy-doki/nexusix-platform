@@ -26,7 +26,7 @@ public class SysTenantCommonVO {
      * 新增、更新、删除操作需要同步该字段
      */
     @Schema(description = "父租户名称", example = "阿里云")
-    private String parentTenantName;
+    private String parentName;
 
     /**
      * 联系人姓名
