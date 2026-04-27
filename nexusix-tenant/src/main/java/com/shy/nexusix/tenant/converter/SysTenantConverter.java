@@ -63,9 +63,10 @@ public interface SysTenantConverter {
      * @author shy
      * @since 2026-04-27
      */
+    @Named("toEntityAdd")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
-    SysTenant toEntity(SysTenantAddRTO rto);
+    SysTenant toEntityAdd(SysTenantAddRTO rto);
 
     /**
      * <p>
@@ -77,15 +78,16 @@ public interface SysTenantConverter {
      * @author shy
      * @since 2026-04-27
      */
+    @Named("toEntityUpdate")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
-    SysTenant toEntity(SysTenantUpdateRTO rto);
+    SysTenant toEntityUpdate(SysTenantUpdateRTO rto);
 
-    @IterableMapping(qualifiedByName = "toEntity")
-    List<SysTenant> toEntityList(List<SysTenantAddRTO> list);
+    @IterableMapping(qualifiedByName = "toEntityAdd")
+    List<SysTenant> toEntityListAdd(List<SysTenantAddRTO> list);
 
-    @IterableMapping(qualifiedByName = "toEntity")
-    List<SysTenant> toEntityList(List<SysTenantUpdateRTO> list);
+    @IterableMapping(qualifiedByName = "toEntityUpdate")
+    List<SysTenant> toEntityListUpdate(List<SysTenantUpdateRTO> list);
 
     /**
      * <p>
