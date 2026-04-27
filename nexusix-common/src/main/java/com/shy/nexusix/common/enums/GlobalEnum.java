@@ -2716,6 +2716,76 @@ public final class GlobalEnum {
         }
 
         /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static Deleted getByDesc(String desc) {
+            if (desc == null) return null;
+            for (Deleted e : values()) {
+                if (e.getDesc().equals(desc)) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static Deleted getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 Deleted 枚举:
+         * <ul>
+         *   <li>数字类型: 0, 1 → NOT_DELETED, DELETED</li>
+         *   <li>字符串数字: "0", "1" → NOT_DELETED, DELETED</li>
+         *   <li>中文描述: "未删除", "已删除" → NOT_DELETED, DELETED</li>
+         *   <li>枚举名称: "NOT_DELETED", "DELETED" → 对应枚举</li>
+         *   <li>枚举对象: Deleted.NOT_DELETED → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static Deleted parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof Deleted) {
+                return (Deleted) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            Deleted byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
+        }
+
+        /**
          * 判断编码是否有效
          *
          * @param code 枚举编码
