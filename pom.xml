@@ -58,6 +58,7 @@
         <redis.version>3.4.0</redis.version>
         <fastjson2.version>2.0.54</fastjson2.version>
         <knife4j.version>4.5.0</knife4j.version>
+        <fastexcel.version>1.2.0</fastexcel.version>
     </properties>
 
     <!-- 依赖管理：仅声明依赖版本，不实际引入，子模块可直接使用无需写版本 -->
@@ -237,6 +238,13 @@
 <!--                    </exclusion>-->
 <!--                </exclusions>-->
             </dependency>
+
+            <dependency>
+                <groupId>cn.idev.excel</groupId>
+                <artifactId>fastexcel</artifactId>
+                <version>${fastexcel.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
