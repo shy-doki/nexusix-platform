@@ -1,5 +1,6 @@
 package com.shy.nexusix.system.vo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -53,6 +54,7 @@ public class SysFileVO {
     @Schema(description = "上传人名称", example = "张三")
     private String uploadName;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @Schema(description = "上传时间", example = "2026-04-29 10:30:00")
     private LocalDateTime uploadTime;
 
