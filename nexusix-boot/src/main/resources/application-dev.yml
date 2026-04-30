@@ -47,7 +47,7 @@ spring:
 # 文件存储配置
 file:
   # 文件存储根目录（本地磁盘模式）
-  upload-root: ./data/files
+  upload-root: ./uploadFile
 
   # 单文件最大大小（默认 20MB）
   max-size: 20971520
