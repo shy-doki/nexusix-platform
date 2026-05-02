@@ -16,6 +16,12 @@ public class NexusixBootApplication {
 
         System.out.println("服务启动成功");
 
+        // Api文档访问地址
+        System.out.println("Api文档访问地址：http://localhost:8081/NexusIxService/doc.html#/home");
+
+        // swagger访问地址
+        System.out.println("swagger访问地址：http://localhost:8081/NexusIxService/swagger-ui/index.html");
+
     }
 
 }

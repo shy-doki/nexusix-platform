@@ -1,6 +1,9 @@
 server:
   # 服务端口
   port: 8081
+  # 统一前缀
+  servlet:
+    context-path: /NexusIxService
 
 spring:
   # 数据源配置
@@ -40,3 +43,39 @@ spring:
           max-wait: -1ms
           max-idle: 8
           min-idle: 0
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 200MB
+
+# 文件存储配置
+file:
+  # 文件存储根目录（本地磁盘模式）
+  upload-root: ${user.dir}/uploadFile
+
+  # 单文件最大大小（默认 20MB）
+  max-size: 20971520
+
+  # 批量上传单次最大文件数量
+  max-batch-count: 10
+
+  # 批量上传总大小上限（默认 200MB）
+  max-batch-total-size: 209715200
+
+  # 允许的文件类型分类
+  allowed-categories:
+    - image       # 图片: jpg/jpeg/png/gif/bmp/webp/svg
+    - document    # 文档: doc/docx/pdf/txt/xls/xlsx/ppt/pptx
+    - archive     # 压缩包: zip/rar/7z/tar/gz
+    - audio       # 音频: mp3/wav/flac/aac/ogg/wma
+    - video       # 视频: mp4/avi/mov/wmv/flv/mkv/webm
+
+  # 是否启用 Magic Number 校验（防伪造扩展名）
+  magic-number-check: true
+
+  # 访问 URL 前缀（用于拼接 fileUrl）
+  url-prefix: /sys-file/access
+
+  # 存储模式：local(本地磁盘) / oss(阿里云OSS) / minio(MinIO)
+  storage-mode: local
