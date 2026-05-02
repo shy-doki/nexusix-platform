@@ -239,7 +239,6 @@
 <!--                </exclusions>-->
             </dependency>
 
-            <!--  fastExcel 由原 EasyExcel 作者新开发的高性能 Excel 处理库  -->
             <dependency>
                 <groupId>cn.idev.excel</groupId>
                 <artifactId>fastexcel</artifactId>
