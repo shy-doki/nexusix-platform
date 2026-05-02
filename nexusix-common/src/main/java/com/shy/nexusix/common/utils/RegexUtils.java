@@ -35,6 +35,27 @@ public final class RegexUtils {
     }
 
     /**
+     * 检查字符串中是否包含匹配指定正则表达式的子串
+     * <p>
+     * 与 {@link #matches(String, String)} 的区别：
+     * <ul>
+     *   <li>{@code matches()} 要求整个字符串完全匹配正则（等同于 ^正则$）</li>
+     *   <li>{@code find()} 只要求字符串中存在子串匹配正则即可</li>
+     * </ul>
+     * </p>
+     *
+     * @param str 待检查的字符串
+     * @param regex 正则表达式
+     * @return true-包含匹配子串，false-不包含
+     */
+    public static boolean find(String str, String regex) {
+        if (str == null || regex == null) {
+            return false;
+        }
+        return Pattern.compile(regex).matcher(str).find();
+    }
+
+    /**
      * 验证中国大陆手机号
      *
      * @param mobile 手机号
@@ -471,7 +492,7 @@ public final class RegexUtils {
      * @return true-有效，false-无效
      */
     public static boolean isValidTimestampSeconds(String timestamp) {
-        return matches(timestamp, RegexConstant.DateTime.TIMESTAMP_SECONDS);
+        return find(timestamp, RegexConstant.DateTime.TIMESTAMP_SECONDS);
     }
 
     /**
@@ -481,7 +502,7 @@ public final class RegexUtils {
      * @return true-有效，false-无效
      */
     public static boolean isImageFile(String filename) {
-        return matches(filename, RegexConstant.File.IMAGE_EXTENSION);
+        return find(filename, RegexConstant.File.IMAGE_EXTENSION);
     }
 
     /**
@@ -491,7 +512,7 @@ public final class RegexUtils {
      * @return true-有效，false-无效
      */
     public static boolean isDocumentFile(String filename) {
-        return matches(filename, RegexConstant.File.DOCUMENT_EXTENSION);
+        return find(filename, RegexConstant.File.DOCUMENT_EXTENSION);
     }
 
     /**
@@ -501,7 +522,7 @@ public final class RegexUtils {
      * @return true-有效，false-无效
      */
     public static boolean isVideoFile(String filename) {
-        return matches(filename, RegexConstant.File.VIDEO_EXTENSION);
+        return find(filename, RegexConstant.File.VIDEO_EXTENSION);
     }
 
     /**
@@ -511,7 +532,7 @@ public final class RegexUtils {
      * @return true-有效，false-无效
      */
     public static boolean isAudioFile(String filename) {
-        return matches(filename, RegexConstant.File.AUDIO_EXTENSION);
+        return find(filename, RegexConstant.File.AUDIO_EXTENSION);
     }
 
     /**
@@ -521,7 +542,7 @@ public final class RegexUtils {
      * @return true-有效，false-无效
      */
     public static boolean isArchiveFile(String filename) {
-        return matches(filename, RegexConstant.File.ARCHIVE_EXTENSION);
+        return find(filename, RegexConstant.File.ARCHIVE_EXTENSION);
     }
 
     /**
