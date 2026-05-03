@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @Schema(description = "文件上传请求 RTO")
-public class FileUploadRTO {
+public class SysFileUploadRTO {
 
     @Schema(description = "业务类型标识", example = "tenant-export", allowableValues = {"logo", "avatar", "contract", "license", "attachment", "export"})
     @Size(max = 50, message = "业务类型不能超过50字符")

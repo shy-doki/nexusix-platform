@@ -1,17 +1,27 @@
 package com.shy.nexusix.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.constant.RegexConstant;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
+import com.shy.nexusix.common.rto.NumberRangeCommonRTO;
+import com.shy.nexusix.common.rto.PageCommonRTO;
+import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
 import com.shy.nexusix.common.utils.IdUtils;
 import com.shy.nexusix.common.utils.RegexUtils;
 import com.shy.nexusix.system.config.FileStorageProperties;
+import com.shy.nexusix.system.converter.SysFileConverter;
 import com.shy.nexusix.system.entity.SysFile;
 import com.shy.nexusix.system.mapper.SysFileMapper;
-import com.shy.nexusix.system.rto.FileUploadRTO;
-import com.shy.nexusix.system.service.ISysFileService;
+import com.shy.nexusix.system.rto.SysFileQueryRTO;
+import com.shy.nexusix.system.rto.SysFileUpdateRTO;
+import com.shy.nexusix.system.rto.SysFileUploadRTO;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.shy.nexusix.system.service.ISysFileService;
+import com.shy.nexusix.system.vo.SysFileCommonVO;
+import com.shy.nexusix.system.vo.SysFileDetailVO;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
@@ -25,7 +35,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.shy.nexusix.common.utils.DateUtils.DATE_FORMATTER;
 
@@ -42,6 +55,135 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
 
     @Autowired
     private FileStorageProperties FILE_STORAGE_PROPERTIES;
+
+    @Autowired
+    private SysFileConverter sysFileConverter;
+
+    @Override
+    public List<SysFileCommonVO> queryFileList() {
+
+        LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
+                .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .orderByDesc(SysFile::getUploadTime);
+
+        List<SysFile> fileList = this.list(wrapper);
+
+        return sysFileConverter.toVoList(fileList);
+
+    }
+
+    @Override
+    public IPage<SysFileCommonVO> queryFilePage(PageCommonRTO page) {
+
+        Page<SysFile> pageParam = new Page<>(page.getPageNum(), page.getPageSize());
+
+        LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
+                .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .orderByDesc(SysFile::getUploadTime);
+
+        IPage<SysFile> filePage = this.page(pageParam, wrapper);
+
+        return sysFileConverter.toVOPage(filePage);
+
+    }
+
+    @Override
+    public IPage<SysFileCommonVO> queryFile(SysFileQueryRTO queryParam) {
+
+        Page<SysFile> pageParam = new Page<>(queryParam.getPageNum(), queryParam.getPageSize());
+
+        LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<>();
+
+        // 租户名称条件
+        wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantName()),
+                SysFile::getTenantName, queryParam.getTenantName());
+
+        // 原始文件名条件
+        wrapper.eq(StringUtils.isNotBlank(queryParam.getOriginalName()),
+                SysFile::getOriginalName, queryParam.getOriginalName());
+
+        // 文件大小范围(字节)条件
+        NumberRangeCommonRTO fileSize = queryParam.getFileSize();
+        if (fileSize != null) {
+            Long startSize = fileSize.getMinValue();
+            Long endSize = fileSize.getMaxValue();
+
+            // 校验大小范围
+            if (startSize != null && endSize != null && startSize > endSize) {
+                throw new BusinessException(400, "文件最小大小不能超过最大大小");
+            }
+
+            if (startSize != null && endSize != null) {
+                wrapper.between(SysFile::getFileSize, startSize, endSize);
+            } else if (startSize != null) {
+                wrapper.ge(SysFile::getFileSize, startSize);
+            } else if (endSize != null) {
+                wrapper.le(SysFile::getFileSize, endSize);
+            }
+        }
+
+        // 文件类型条件
+        wrapper.eq(StringUtils.isNotBlank(queryParam.getFileType()),
+                SysFile::getFileType, queryParam.getFileType());
+
+        // 业务类型分类条件
+        wrapper.eq(StringUtils.isNotBlank(queryParam.getBizType()),
+                SysFile::getBizType, queryParam.getBizType());
+
+        // 上传人名称条件
+        wrapper.eq(StringUtils.isNotBlank(queryParam.getUploadName()),
+                SysFile::getUploadName, queryParam.getUploadName());
+
+        // 上传时间范围条件
+        TimeRangeCommonRTO uploadTime = queryParam.getUploadTime();
+        if (uploadTime != null) {
+            LocalDateTime startTime = uploadTime.getStartTime();
+            LocalDateTime endTime = uploadTime.getEndTime();
+
+            // 校验时间范围
+            if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
+                throw new BusinessException(400, "开始时间不能晚于结束时间");
+            }
+            if (startTime != null && endTime != null && endTime.isBefore(startTime)) {
+                throw new BusinessException(400, "结束时间不能早于开始时间");
+            }
+
+            if (startTime != null && endTime != null) {
+                wrapper.between(SysFile::getUploadTime, startTime, endTime);
+            } else if (startTime != null) {
+                wrapper.ge(SysFile::getUploadTime, startTime);
+            } else if (endTime != null) {
+                wrapper.le(SysFile::getUploadTime, endTime);
+            }
+        }
+
+        // 条件分页查询
+        IPage<SysFile> fileQueryPage = this.page(pageParam, wrapper);
+
+        return sysFileConverter.toVOPage(fileQueryPage);
+
+    }
+
+    @Override
+    public SysFileDetailVO queryFileDetail(String fileName) {
+
+        if (StringUtils.isBlank(fileName)) {
+            throw new BusinessException(400, "文件名称不能为空");
+        }
+
+        LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
+                .eq(SysFile::getFileName, fileName)
+                .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+
+        SysFile fileDetail = this.getOne(wrapper);
+
+        if (fileDetail == null) {
+            throw new BusinessException(404, "文件不存在");
+        }
+
+        return sysFileConverter.toDetailVO(fileDetail);
+
+    }
 
     /**
      * <p>
@@ -66,7 +208,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean upload(MultipartFile file, FileUploadRTO param) {
+    public boolean upload(MultipartFile file, SysFileUploadRTO param) {
 
         // 验证文件是否为空
         if (file == null || file.isEmpty()) {
@@ -188,6 +330,121 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         return result;
     }
 
+    @Override
+    public Integer updateFile(SysFileUpdateRTO updateParam) {
+
+        LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
+                .eq(SysFile::getId, updateParam.getId())
+                .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        SysFile existFile = this.getOne(wrapper);
+
+        if (existFile == null) {
+            throw new BusinessException(404, "文件不存在");
+        }
+
+        if (!existFile.getTenantId().equals(updateParam.getTenantId())) {
+            LambdaQueryWrapper<SysFile> tenantWrapper = new LambdaQueryWrapper<SysFile>()
+                    .eq(SysFile::getTenantId, updateParam.getTenantId())
+                    .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+            long tenantFileCount = this.count(tenantWrapper);
+            if (tenantFileCount == 0) {
+                // TODO 后续接入租户模块后，校验目标租户是否存在于 sys_tenant 表
+            }
+        }
+
+        if (!existFile.getOriginalName().equals(updateParam.getOriginalName())) {
+            if (updateParam.getOriginalName().contains("..")) {
+                throw new BusinessException(400, "文件名包含非法路径遍历字符");
+            }
+
+            if (!RegexUtils.matches(updateParam.getOriginalName(), RegexConstant.File.FILENAME)) {
+                throw new BusinessException(400, "文件名包含非法字符: " + updateParam.getOriginalName());
+            }
+
+            LambdaQueryWrapper<SysFile> nameWrapper = new LambdaQueryWrapper<SysFile>()
+                    .eq(SysFile::getTenantId, updateParam.getTenantId())
+                    .eq(SysFile::getOriginalName, updateParam.getOriginalName())
+                    .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                    .ne(SysFile::getId, updateParam.getId());
+            long nameCount = this.count(nameWrapper);
+            if (nameCount > 0) {
+                throw new BusinessException(400, "该租户下已存在同名文件");
+            }
+        }
+
+        if (!existFile.getBizType().equals(updateParam.getBizType())) {
+            List<String> allowedBizTypes = List.of(
+                    "logo", "avatar", "contract", "license", "attachment", "export"
+            );
+            if (!allowedBizTypes.contains(updateParam.getBizType())) {
+                throw new BusinessException(400, "不支持的文件业务类型: " + updateParam.getBizType());
+            }
+        }
+
+        SysFile updateEntity = sysFileConverter.toEntityUpdate(updateParam);
+
+        if (!existFile.getOriginalName().equals(updateParam.getOriginalName())) {
+            String newOriginalName = updateParam.getOriginalName();
+            if (newOriginalName != null && newOriginalName.contains(".")) {
+                String fileExt = newOriginalName.substring(
+                        newOriginalName.lastIndexOf(".")
+                ).toLowerCase();
+                updateEntity.setFileType(fileExt);
+            }
+        }
+
+        boolean result = this.updateById(updateEntity);
+
+        if (!result) {
+            throw new BusinessException(500, "修改文件信息失败");
+        }
+
+        return 1;
+
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer deleteFile(String id) {
+
+        if (StringUtils.isBlank(id)) {
+            throw new BusinessException(400, "文件ID不能为空");
+        }
+
+        LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
+                .eq(SysFile::getId, id)
+                .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        SysFile existFile = this.getOne(wrapper);
+
+        if (existFile == null) {
+            throw new BusinessException(404, "文件不存在");
+        }
+
+        // TODO 租户隔离校验
+
+        Path basePath = Paths.get(FILE_STORAGE_PROPERTIES.getUploadRoot())
+                .toAbsolutePath().normalize();
+        Path filePath = Paths.get(existFile.getFileUrl())
+                .toAbsolutePath().normalize();
+
+        if (!filePath.startsWith(basePath)) {
+            throw new BusinessException(400, "非法文件路径，拒绝删除");
+        }
+
+        SysFile deleteFile = new SysFile();
+        deleteFile.setId(Long.parseLong(id));
+        deleteFile.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
+
+        boolean result = this.updateById(deleteFile);
+
+        if (!result) {
+            throw new BusinessException(500, "删除文件失败");
+        }
+
+        return 1;
+
+    }
+
     /**
      * <p>
      * 下载文件
@@ -246,6 +503,67 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         }
 
         return fileInfo;
+
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer batchDeleteFile(List<String> ids) {
+
+        if (ids.size() > 100) {
+            throw new BusinessException(400, "单次批量删除数量不能超过100条");
+        }
+
+        Set<Long> idSet = new HashSet<>();
+        for (String id : ids) {
+            if (StringUtils.isBlank(id)) {
+                throw new BusinessException(400, "批量删除中存在ID为空的记录");
+            }
+            // 重复检测
+            Long parsedId = Long.parseLong(id);
+            if (idSet.contains(parsedId)) {
+                throw new BusinessException(400, "批量删除中存在重复的文件ID: " + id);
+            }
+            idSet.add(parsedId);
+        }
+
+        LambdaQueryWrapper<SysFile> existWrapper = new LambdaQueryWrapper<SysFile>()
+                .in(SysFile::getId, idSet)
+                .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysFile> existFiles = this.list(existWrapper);
+
+        if (existFiles.isEmpty()) {
+            throw new BusinessException(404, "未找到可删除的文件");
+        }
+
+        Path basePath = Paths.get(FILE_STORAGE_PROPERTIES.getUploadRoot())
+                .toAbsolutePath().normalize();
+
+        // TODO 租户隔离校验
+
+        for (SysFile file : existFiles) {
+            Path filePath = Paths.get(file.getFileUrl())
+                    .toAbsolutePath().normalize();
+            if (!filePath.startsWith(basePath)) {
+                throw new BusinessException(400, "文件[" + file.getOriginalName() + "]路径非法，拒绝删除");
+            }
+        }
+
+        List<SysFile> deleteFileList = new ArrayList<>();
+        for (SysFile file : existFiles) {
+            SysFile deleteFile = new SysFile();
+            deleteFile.setId(file.getId());
+            deleteFile.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
+            deleteFileList.add(deleteFile);
+        }
+
+        boolean batch = this.updateBatchById(deleteFileList);
+
+        if (!batch) {
+            throw new BusinessException(500, "批量删除文件失败");
+        }
+
+        return deleteFileList.size();
 
     }
 

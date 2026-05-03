@@ -1,12 +1,20 @@
 package com.shy.nexusix.system.controller;
 
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.shy.nexusix.common.result.ApiResponse;
+import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.system.config.FileStorageProperties;
 import com.shy.nexusix.system.entity.SysFile;
-import com.shy.nexusix.system.rto.FileUploadRTO;
+import com.shy.nexusix.system.rto.SysFileQueryRTO;
+import com.shy.nexusix.system.rto.SysFileUpdateRTO;
+import com.shy.nexusix.system.rto.SysFileUploadRTO;
 import com.shy.nexusix.system.service.ISysFileService;
+import com.shy.nexusix.system.vo.SysFileCommonVO;
+import com.shy.nexusix.system.vo.SysFileDetailVO;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
@@ -22,6 +30,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * <p>
@@ -32,7 +41,8 @@ import java.nio.file.Paths;
  * @since 2026-04-07
  */
 @RestController
-@RequestMapping("/sys-file")
+@RequestMapping("/file")
+@Tag(name = "文件管理", description = "文件基础信息管理相关接口")
 public class SysFileController {
 
     @Autowired
@@ -42,10 +52,36 @@ public class SysFileController {
     private FileStorageProperties FILE_STORAGE_PROPERTIES;
 
     // 查询文件列表
+    @GetMapping("/list")
+    @Operation(summary = "查询文件列表", description = "返回所有文件列表")
+    public ApiResponse queryFileList() {
+        List<SysFileCommonVO> fileList = iSysFileService.queryFileList();
+        return ApiResponse.success(fileList);
+    }
 
     // 分页查询文件列表
+    @GetMapping("/page")
+    @Operation(summary = "分页查询文件列表", description = "返回分页后的文件列表")
+    public ApiResponse queryFilePage(PageCommonRTO page) {
+        IPage<SysFileCommonVO> filePage = iSysFileService.queryFilePage(page);
+        return ApiResponse.success(filePage);
+    }
+
+    // 条件查询文件列表 分页
+    @PostMapping("/query")
+    @Operation(summary = "条件查询文件列表", description = "返回满足条件的文件列表")
+    public ApiResponse queryFile(@RequestBody SysFileQueryRTO queryParam) {
+        IPage<SysFileCommonVO> filePage = iSysFileService.queryFile(queryParam);
+        return ApiResponse.success(filePage);
+    }
 
     // 查询文件详情
+    @GetMapping("/detail/{fileName}")
+    @Operation(summary = "查询文件详情", description = "返回指定文件的详情信息")
+    public ApiResponse queryFileDetail(@PathVariable String fileName) {
+        SysFileDetailVO fileDetail = iSysFileService.queryFileDetail(fileName);
+        return ApiResponse.success(fileDetail);
+    }
 
     /**
      * <p>
@@ -62,14 +98,26 @@ public class SysFileController {
      */
     @PostMapping("/upload")
     @Operation(summary = "单文件上传", description = "上传单个文件，支持图片/文档/压缩包等格式")
-    public ApiResponse upload(@RequestPart MultipartFile file, @ParameterObject FileUploadRTO param) {
+    public ApiResponse upload(@RequestPart MultipartFile file, @ParameterObject SysFileUploadRTO param) {
         boolean result = iSysFileService.upload(file, param);
         return result ? ApiResponse.success("上传成功") : ApiResponse.error("上传失败");
     }
 
     // 更新文件信息
+    @PutMapping("/update")
+    @Operation(summary = "修改文件", description = "修改文件信息")
+    public ApiResponse updateFile(@RequestBody SysFileUpdateRTO updateParam) {
+        Integer affectedRows = iSysFileService.updateFile(updateParam);
+        return ApiResponse.success(affectedRows);
+    }
 
     // 删除文件
+    @DeleteMapping("/delete")
+    @Operation(summary = "删除文件", description = "删除文件信息")
+    public ApiResponse deleteFile(@RequestParam @Valid String id) {
+        Integer affectedRows = iSysFileService.deleteFile(id);
+        return ApiResponse.success(affectedRows);
+    }
 
     /**
      * <p>
@@ -112,6 +160,14 @@ public class SysFileController {
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                 .body(resource);
+    }
+
+    // 批量删除文件
+    @DeleteMapping("/batch")
+    @Operation(summary = "批量删除文件", description = "批量逻辑删除文件，单次不超过100条")
+    public ApiResponse batchDeleteFile(@RequestBody List<String> ids) {
+        Integer affectedRows = iSysFileService.batchDeleteFile(ids);
+        return ApiResponse.success(affectedRows);
     }
 
 }
