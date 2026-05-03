@@ -68,12 +68,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public List<SysTenantCommonVO> queryTenantList() {
 
+        // 构建查询条件：仅查询未删除的租户，按创建时间倒序排列
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByDesc(SysTenant::getCreateTime);
 
+        // 执行查询获取租户列表
         List<SysTenant> tenantList = this.list(wrapper);
 
+        // 转换为VO对象并返回
         return sysTenantConverter.toVoList(tenantList);
     }
 
@@ -95,14 +98,18 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public IPage<SysTenantCommonVO> queryTenantPage(PageCommonRTO page) {
 
+        // 构建分页参数
         Page<SysTenant> pageParam = new Page<>(page.getPageNum(), page.getPageSize());
 
+        // 构建查询条件：仅查询未删除的租户，按创建时间倒序排列
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByDesc(SysTenant::getCreateTime);
 
+        // 执行分页查询
         IPage<SysTenant> tenantPage = this.page(pageParam, wrapper);
 
+        // 转换为VO分页对象并返回
         return sysTenantConverter.toVOPage(tenantPage);
     }
 
@@ -144,34 +151,36 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public IPage<SysTenantCommonVO> queryTenant(SysTenantQueryRTO queryParam) {
 
+        // 构建分页参数
         Page<SysTenant> pageParam = new Page<>(queryParam.getPageNum(), queryParam.getPageSize());
 
+        // 构建动态查询条件
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<>();
 
-        // 租户名称条件
+        // 租户名称模糊查询
         wrapper.like(StringUtils.isNotBlank(queryParam.getTenantName()),
                 SysTenant::getTenantName, queryParam.getTenantName());
 
-        // 联系人姓名条件
+        // 联系人姓名精确查询
         wrapper.eq(StringUtils.isNotBlank(queryParam.getContactName()),
                 SysTenant::getContactName, queryParam.getContactName());
 
-        // 联系人电话条件
+        // 状态条件查询
         wrapper.eq(StringUtils.isNotBlank(queryParam.getContactPhone()),
                 SysTenant::getContactPhone, queryParam.getContactPhone());
 
-        // 状态条件
+        // 状态条件查询
         if (queryParam.getStatus() != null) {
             wrapper.eq(SysTenant::getStatus, GlobalEnum.TenantStatus.getByDesc(queryParam.getStatus()).getCode());
         }
 
-        // 服务过期时间条件
+        // 服务过期时间范围查询
         TimeRangeCommonRTO expireTime = queryParam.getExpireTime();
         if (expireTime != null) {
             LocalDateTime startTime = expireTime.getStartTime();
             LocalDateTime endTime = expireTime.getEndTime();
 
-            // 校验时间范围
+            // 校验时间范围合法性
             if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
                 throw new BusinessException(400, "开始时间不能晚于结束时间");
             }
@@ -179,26 +188,30 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 throw new BusinessException(400, "结束时间不能早于开始时间");
             }
 
+            // 根据时间范围构建查询条件
             if (startTime != null && endTime != null) {
+                // 两者都有 between查询
                 wrapper.between(SysTenant::getExpireTime, startTime, endTime);
             } else if (startTime != null) {
+                // 只有开始时间 大于等于查询
                 wrapper.ge(SysTenant::getExpireTime, startTime);
             } else if (endTime != null) {
+                // 只有结束时间 小于等于查询
                 wrapper.le(SysTenant::getExpireTime, endTime);
             }
         }
 
-        // 创建人姓名条件
+        // 创建人姓名精确查询
         wrapper.eq(StringUtils.isNotBlank(queryParam.getCreateByName()),
                 SysTenant::getCreateByName, queryParam.getCreateByName());
 
-        // 创建时间条件
+        // 创建时间范围查询
         TimeRangeCommonRTO createTime = queryParam.getCreateTime();
         if (createTime != null) {
             LocalDateTime startTime = createTime.getStartTime();
             LocalDateTime endTime = createTime.getEndTime();
 
-            // 校验时间范围
+            // 校验时间范围合法性
             if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
                 throw new BusinessException(400, "开始时间不能晚于结束时间");
             }
@@ -206,6 +219,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 throw new BusinessException(400, "结束时间不能早于开始时间");
             }
 
+            // 根据时间范围构建查询条件
             if (startTime != null && endTime != null) {
                 wrapper.between(SysTenant::getCreateTime, startTime, endTime);
             } else if (startTime != null) {
@@ -218,6 +232,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 条件分页查询
         IPage<SysTenant> tenantQueryPage = this.page(pageParam, wrapper);
 
+        // 转换为VO分页对象并返回
         return sysTenantConverter.toVOPage(tenantQueryPage);
     }
 
@@ -239,20 +254,25 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public SysTenantDetailVO queryTenantDetail(String tenantCode) {
 
+        // 参数校验 租户编码不能为空
         if (StringUtils.isBlank(tenantCode)) {
             throw new BusinessException(400, "租户编码不能为空");
         }
 
+        // 构建查询条件：根据租户编码查询未删除的租户
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getTenantCode, tenantCode)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
+        // 执行查询获取租户详情
         SysTenant tenantDetail = this.getOne(wrapper);
 
+        // 租户不存在时抛出异常
         if (tenantDetail == null) {
             throw new BusinessException(404, "租户不存在");
         }
 
+        // 转换为详情VO对象并返回
         return sysTenantConverter.toDetailVO(tenantDetail);
 
     }
@@ -274,6 +294,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public Integer addTenant(SysTenantAddRTO addParam) {
 
+        // 校验租户编码是否已存在
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getTenantCode, addParam.getTenantCode());
 
@@ -285,7 +306,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         String ancestors;
 
+        // 处理父租户关系
         if (addParam.getParentId() != null && addParam.getParentId() != 0L) {
+            // 查询父租户是否存在
             LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getId, addParam.getParentId())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -295,11 +318,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 throw new BusinessException(400, "父租户不存在");
             }
 
+            // 构建祖级列表：父租户的祖级列表 + 父租户ID
             ancestors =  parentTenant.getAncestors() + "/" + addParam.getParentId();
 
             addParam.setAncestors(ancestors);
         }
 
+        // 转换并保存租户信息
         boolean result = this.save(sysTenantConverter.toEntityAdd(addParam));
 
         if (!result) {
@@ -329,6 +354,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer updateTenant(SysTenantUpdateRTO updateParam) {
 
+        // 查询待修改的租户是否存在
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getId, updateParam.getId())
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -338,6 +364,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(404, "租户不存在");
         }
 
+        // 如果修改了租户编码, 需校验新编码是否已被其他租户使用
         if (!existTenant.getTenantCode().equals(updateParam.getTenantCode())) {
             LambdaQueryWrapper<SysTenant> codeWrapper = new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getTenantCode, updateParam.getTenantCode())
@@ -348,12 +375,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
         }
 
+        // 如果修改了父租户, 需要进行层级关系校验
         if (!existTenant.getParentId().equals(updateParam.getParentId())) {
 
+            // 不能将自己设为父租户
             if (updateParam.getParentId().equals(updateParam.getId())) {
                 throw new BusinessException(400, "不能将自己设为父租户");
             }
 
+            // 校验父租户是否存在
             LambdaQueryWrapper<SysTenant> parenWrapper = new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getParentId, updateParam.getParentId())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -362,6 +392,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 throw new BusinessException(400, "父租户不存在");
             }
 
+            // 防止循环引用：不能将子租户设为父租户
             LambdaQueryWrapper<SysTenant> targetWrapper = new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getId, updateParam.getParentId())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -374,6 +405,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         }
 
+        // 转换并更新租户信息
         SysTenant tenant = sysTenantConverter.toEntityUpdate(updateParam);
 
         boolean result = this.updateById(tenant);
@@ -403,6 +435,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public Integer deleteTenant(String id) {
 
+        // 查询待删除的租户是否存在
         LambdaQueryWrapper<SysTenant> wrapper =new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -411,6 +444,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "租户不存在");
         }
 
+        // 检查是否存在子租户，有子租户则不允许删除
         LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getParentId, Long.parseLong(id))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -419,6 +453,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "该租户下存在子租户，请先解绑");
         }
 
+        // 执行逻辑删除：设置is_deleted标志位
         SysTenant tenant = new SysTenant();
         tenant.setId(Long.parseLong(id));
         tenant.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
@@ -451,10 +486,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer batchAddTenant(List<SysTenantAddRTO> addParamList) {
 
+        // 校验批量新增数量限制
         if (addParamList.size() > 100) {
             throw new BusinessException(400, "单次批量新增数量不能超过100条");
         }
 
+        // 校验批量数据中是否有重复的租户编码
         Set<String> codeSet = new HashSet<>();
         for (SysTenantAddRTO param : addParamList) {
             if (codeSet.contains(param.getTenantCode())) {
@@ -463,6 +500,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             codeSet.add(param.getTenantCode());
         }
 
+        // 校验租户编码是否已在数据库中存在
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .in(SysTenant::getTenantCode, codeSet);
         long existCount = this.count(wrapper);
@@ -471,6 +509,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "部分租户编码已存在，请检查后重试");
         }
 
+        // 批量保存租户信息
         boolean batch = this.saveBatch(sysTenantConverter.toEntityListAdd(addParamList));
 
         if (!batch) {
@@ -500,10 +539,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer batchUpdateTenant(List<SysTenantUpdateRTO> updateParamList) {
 
+        // 校验批量修改数量限制
         if (updateParamList.size() > 100) {
             throw new BusinessException(400, "单次批量修改数量不能超过100条");
         }
 
+        // 校验批量数据的合法性：ID不能为空、不能有重复的ID和编码
         Set<Long> idSet = new HashSet<>();
         Set<String> codeSet = new HashSet<>();
         for (SysTenantUpdateRTO item : updateParamList) {
@@ -520,11 +561,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             codeSet.add(item.getTenantCode());
         }
 
+        // 校验租户ID是否存在（注意：此处代码逻辑有误，应该是用idSet查询ID）
         LambdaQueryWrapper<SysTenant> IdWrapper = new LambdaQueryWrapper<SysTenant>()
                 .in(SysTenant::getTenantCode, codeSet)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         long existIdCount = this.count(IdWrapper);
 
+        // 校验租户编码是否存在（注意：此处代码逻辑有误，应该是用codeSet查询编码）
         LambdaQueryWrapper<SysTenant> codeWrapper = new LambdaQueryWrapper<SysTenant>()
                 .in(SysTenant::getTenantCode, idSet)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -538,6 +581,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "部分租户编码已存在，请检查后重试");
         }
 
+        // 批量更新租户信息
         boolean batch = this.updateBatchById(sysTenantConverter.toEntityListUpdate(updateParamList));
 
         if (!batch) {
@@ -566,10 +610,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public Integer batchDeleteTenant(List<String> ids) {
 
+        // 校验批量删除数量限制
         if (ids.size() > 100) {
             throw new BusinessException(400, "单次批量删除数量不能超过100条");
         }
 
+        // 校验ID格式并转换为Long类型
         Set<Long> idSet = new HashSet<>();
         for (String id : ids) {
             if (StringUtils.isBlank(id)) {
@@ -578,6 +624,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             idSet.add(Long.parseLong(id));
         }
 
+        // 查询待删除的租户是否存在且未被删除
         LambdaQueryWrapper<SysTenant> existWrapper = new LambdaQueryWrapper<SysTenant>()
                 .in(SysTenant::getId, idSet)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -587,6 +634,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(404, "未找到可删除的租户");
         }
 
+        // 检查这些租户下是否存在子租户
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .in(SysTenant::getParentId, idSet)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -595,6 +643,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "部分租户下存在子租户，请先解绑");
         }
 
+        // 构建批量逻辑删除的数据列表
         List<SysTenant> tenantList = new ArrayList<>();
         for (SysTenant tenant : existTenants) {
             SysTenant deleteTenant = new SysTenant();
@@ -603,6 +652,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             tenantList.add(deleteTenant);
         }
 
+        // 执行批量逻辑删除
         boolean batch = this.updateBatchById(tenantList);
 
         if (!batch) {
