@@ -80,6 +80,49 @@ public class SysTenantController {
 
     /**
      * <p>
+     * 查询租户树形结构
+     * </p>
+     * <p>
+     * 返回所有租户的层级树形结构
+     * 需要登录并具备租户查看权限才能访问。
+     * </p>
+     *
+     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
+     * @author shy
+     * @since 2026-04-19
+     */
+    @GetMapping("/tree/list")
+    @Operation(summary = "查询租户树形结构", description = "返回所有租户的层级树形结构")
+    public ApiResponse queryTenantTreeList() {
+        List<SysTenantTreeVO> tenantTreeList = iSysTenantService.queryTenantTreeList();
+        return ApiResponse.success(tenantTreeList);
+    }
+
+    /**
+     * <p>
+     * 分页查询租户树形结构
+     * </p>
+     * <p>
+     * 返回所有租户的层级树形结构
+     * 需要登录并具备租户查看权限才能访问。
+     * </p>
+     *
+     * @param page 分页参数
+     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
+     * @author shy
+     * @since 2026-04-19
+     */
+    @GetMapping("/tree/page")
+    @Operation(summary = "查询租户树形结构", description = "返回所有租户的层级树形结构")
+    public ApiResponse queryTenantTreePage(PageCommonRTO page) {
+        IPage<SysTenantTreeVO> tenantTreePage = iSysTenantService.queryTenantTreePage(page);
+        return ApiResponse.success(tenantTreePage);
+    }
+
+    /**
+     * <p>
      * 查询指定租户的树形结构
      * </p>
      * <p>
@@ -87,16 +130,16 @@ public class SysTenantController {
      * 需要登录并具备租户查看权限才能访问。
      * </p>
      *
-     * @param tenantCode 租户编码，用于定位要查询的租户节点
+     * @param id 租户Id，用于定位要查询的租户节点
      * @return 租户树形结构列表，包含租户名称、脱敏后的租户编码、父租户ID等信息
      * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
      * @author shy
      * @since 2026-04-19
      */
-    @GetMapping("/tree/{tenantCode}")
+    @GetMapping("/tree/{id}")
     @Operation(summary = "查询租户树形结构", description = "返回所有租户的层级树形结构")
-    public ApiResponse queryTenantTree(@RequestParam String tenantCode) {
-       List<SysTenantTreeVO> tenantTree = iSysTenantService.queryTenantTree(tenantCode);
+    public ApiResponse queryTenantTree(@RequestParam String id) {
+       List<SysTenantTreeVO> tenantTree = iSysTenantService.queryTenantTree(id);
        return ApiResponse.success(tenantTree);
     }
 

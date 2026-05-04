@@ -1,13 +1,12 @@
 package com.shy.nexusix.tenant.rto;
 
-import com.shy.nexusix.common.annotation.EnumField;
-import com.shy.nexusix.common.enums.GlobalEnum.TenantStatus;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
+@Schema(description = "租户条件查询请求对象")
 public class SysTenantQueryRTO extends PageCommonRTO {
 
     /**

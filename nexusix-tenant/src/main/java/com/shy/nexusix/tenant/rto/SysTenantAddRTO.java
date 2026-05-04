@@ -15,6 +15,7 @@ import static com.shy.nexusix.common.constant.RegexConstant.Code.SNOWFLAKE_ID;
 import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 
 @Data
+@Schema(description = "租户新增请求对象")
 public class SysTenantAddRTO {
 
     /**

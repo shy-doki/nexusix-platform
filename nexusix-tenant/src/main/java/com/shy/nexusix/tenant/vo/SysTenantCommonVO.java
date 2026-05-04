@@ -7,7 +7,14 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
+@Schema(description = "租户公共视图对象")
 public class SysTenantCommonVO {
+
+    /**
+     * 租户ID
+     */
+    @Schema(description = "租户ID", example = "1987654321098765432")
+    private Long id;
 
     /**
      * 租户名称
@@ -53,6 +60,12 @@ public class SysTenantCommonVO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @Schema(description = "服务过期时间", example = "2026-12-31 23:59:59")
     private LocalDateTime expireTime;
+
+    /**
+     * 是否有子租户
+     */
+    @Schema(description = "是否有子租户", example = "true")
+    private Boolean hasChildren;
 
     /**
      * 创建人姓名

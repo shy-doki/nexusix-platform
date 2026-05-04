@@ -115,6 +115,45 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>
+     * 查询租户树形结构
+     * </p>
+     * <p>
+     * 返回所有租户的层级树形结构
+     * 需要登录并具备租户查看权限才能访问。
+     * </p>
+     *
+     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
+     * @author shy
+     * @since 2026-04-19
+     */
+    @Override
+    public List<SysTenantTreeVO> queryTenantTreeList() {
+
+    }
+
+    /**
+     * <p>
+     * 分页查询租户树形结构
+     * </p>
+     * <p>
+     * 返回所有租户的层级树形结构
+     * 需要登录并具备租户查看权限才能访问。
+     * </p>
+     *
+     * @param page 分页参数
+     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
+     * @author shy
+     * @since 2026-04-19
+     */
+    @Override
+    public IPage<SysTenantTreeVO> queryTenantTreePage(PageCommonRTO page) {
+
+    }
+
+    /**
+     * <p>
      * 查询指定租户的树形结构
      * </p>
      * <p>
@@ -122,14 +161,14 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
      * 返回的租户编码会自动进行脱敏处理（保留前3位和后3位，中间用星号替换）。
      * </p>
      *
-     * @param tenantCode 租户编码，用于定位要查询的租户节点
+     * @param id 租户Id，用于定位要查询的租户节点
      * @return 租户树形结构列表，每个节点包含租户名称、脱敏后的租户编码、父租户ID、联系人、状态等信息
      * @throws com.shy.nexusix.common.exception.BusinessException 当数据库查询失败或数据异常时抛出
      * @author shy
      * @since 2026-04-19
      */
     @Override
-    public List<SysTenantTreeVO> queryTenantTree(String tenantCode) {
+    public List<SysTenantTreeVO> queryTenantTree(String id) {
         return List.of();
     }
 
@@ -318,8 +357,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 throw new BusinessException(400, "父租户不存在");
             }
 
-            // 构建祖级列表：父租户的祖级列表 + 父租户ID
-            ancestors =  parentTenant.getAncestors() + "/" + addParam.getParentId();
+            // 构建祖级列表：父租户的祖级列表 + 父租户编码
+            ancestors =  parentTenant.getAncestors() + "/" + addParam.getTenantCode();
 
             addParam.setAncestors(ancestors);
         }
