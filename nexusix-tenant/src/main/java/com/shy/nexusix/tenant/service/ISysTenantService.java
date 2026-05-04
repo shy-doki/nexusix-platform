@@ -5,6 +5,7 @@ import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.tenant.entity.SysTenant;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
+import com.shy.nexusix.tenant.rto.SysTenantAssignRTO;
 import com.shy.nexusix.tenant.rto.SysTenantQueryRTO;
 import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
@@ -105,7 +106,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      * @author shy
      * @since 2026-04-19
      */
-    List<SysTenantTreeVO> queryTenantTree(String id);
+    SysTenantTreeVO queryTenantTree(String id);
 
     /**
      * <p>
@@ -241,5 +242,40 @@ public interface ISysTenantService extends IService<SysTenant> {
      * @since 2026-04-20
      */
     Integer batchDeleteTenant(List<String> ids);
+
+    /**
+     * <p>
+     * 分配子租户
+     * </p>
+     * <p>
+     * 为指定父租户分配一个新的子租户，自动处理层级关系和ancestors字段更新。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 子租户分配参数
+     * @return 更新子租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、父租户不存在或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    Integer assignSubTenant(SysTenantAssignRTO assignParam);
+
+    /**
+     * <p>
+     * 分配父租户
+     * </p>
+     * <p>
+     * 为指定租户分配一个新的父租户，处理层级关系调整及数据关联更新。
+     * 会进行循环层级验证，避免形成环状结构。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 父租户分配参数
+     * @return 更新子租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、参数非法或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    Integer assignParentTenant(SysTenantAssignRTO assignParam);
 
 }

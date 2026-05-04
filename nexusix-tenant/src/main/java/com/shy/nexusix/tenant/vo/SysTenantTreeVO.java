@@ -7,14 +7,30 @@ import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
+/**
+ * <p>
+ * 租户树形视图对象
+ * </p>
+ *
+ * @author shy
+ * @since 2026-04-19
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Schema(description = "租户树形视图对象")
 public class SysTenantTreeVO extends SysTenantCommonVO {
 
     /**
+     * 父租户ID
+     */
+    @Schema(description = "父租户ID", example = "1987654321098765432")
+    private Long parentId;
+
+
+    /**
      * 子租户
      */
-    private List<SysTenantTreeVO> chileTenant;
+    @Schema(description = "子租户列表")
+    private List<SysTenantTreeVO> childTenant;
 
 }

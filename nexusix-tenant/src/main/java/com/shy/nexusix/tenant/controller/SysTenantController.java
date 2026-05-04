@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
+import com.shy.nexusix.tenant.rto.SysTenantAssignRTO;
 import com.shy.nexusix.tenant.rto.SysTenantQueryRTO;
 import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.service.ISysTenantService;
@@ -93,7 +94,7 @@ public class SysTenantController {
      * @since 2026-04-19
      */
     @GetMapping("/tree/list")
-    @Operation(summary = "查询租户树形结构", description = "返回所有租户的层级树形结构")
+    @Operation(summary = "查询租户树形结构列表", description = "返回所有租户的层级树形结构")
     public ApiResponse queryTenantTreeList() {
         List<SysTenantTreeVO> tenantTreeList = iSysTenantService.queryTenantTreeList();
         return ApiResponse.success(tenantTreeList);
@@ -115,7 +116,7 @@ public class SysTenantController {
      * @since 2026-04-19
      */
     @GetMapping("/tree/page")
-    @Operation(summary = "查询租户树形结构", description = "返回所有租户的层级树形结构")
+    @Operation(summary = "分页查询租户树形结构", description = "返回所有租户的层级树形结构")
     public ApiResponse queryTenantTreePage(PageCommonRTO page) {
         IPage<SysTenantTreeVO> tenantTreePage = iSysTenantService.queryTenantTreePage(page);
         return ApiResponse.success(tenantTreePage);
@@ -137,10 +138,10 @@ public class SysTenantController {
      * @since 2026-04-19
      */
     @GetMapping("/tree/{id}")
-    @Operation(summary = "查询租户树形结构", description = "返回所有租户的层级树形结构")
+    @Operation(summary = "查询指定租户树形结构", description = "返回所有租户的层级树形结构")
     public ApiResponse queryTenantTree(@RequestParam String id) {
-       List<SysTenantTreeVO> tenantTree = iSysTenantService.queryTenantTree(id);
-       return ApiResponse.success(tenantTree);
+        SysTenantTreeVO tenantTree = iSysTenantService.queryTenantTree(id);
+        return ApiResponse.success(tenantTree);
     }
 
     /**
@@ -315,6 +316,51 @@ public class SysTenantController {
     @Operation(summary = "批量删除租户", description = "批量删除租户信息")
     public ApiResponse batchDeleteTenant(List<String> ids) {
         Integer affectedRows =  iSysTenantService.batchDeleteTenant(ids);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 分配子租户
+     * </p>
+     * <p>
+     * 为指定父租户分配一个新的子租户，自动处理层级关系和ancestors字段更新。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 子租户分配参数
+     * @return 更新子租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、父租户不存在或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    @PutMapping("/assign/sub")
+    @Operation(summary = "分配子租户", description = "为指定父租户分配子租户，自动处理层级关系")
+    public ApiResponse assignSubTenant(@RequestBody @Valid SysTenantAssignRTO assignParam) {
+        Integer affectedRows = iSysTenantService.assignSubTenant(assignParam);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 分配父租户
+     * </p>
+     * <p>
+     * 为指定租户分配一个新的父租户，处理层级关系调整及数据关联更新。
+     * 会进行循环层级验证，避免形成环状结构。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 父租户分配参数
+     * @return 更新子租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、参数非法或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    @PutMapping("/assign/parent")
+    @Operation(summary = "分配父租户", description = "为指定租户分配父租户，处理层级调整及数据关联更新")
+    public ApiResponse assignParentTenant(@RequestBody @Valid SysTenantAssignRTO assignParam) {
+        Integer affectedRows = iSysTenantService.assignParentTenant(assignParam);
         return ApiResponse.success(affectedRows);
     }
 

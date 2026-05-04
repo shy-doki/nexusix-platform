@@ -11,6 +11,7 @@ import com.shy.nexusix.tenant.converter.SysTenantConverter;
 import com.shy.nexusix.tenant.entity.SysTenant;
 import com.shy.nexusix.tenant.mapper.SysTenantMapper;
 import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
+import com.shy.nexusix.tenant.rto.SysTenantAssignRTO;
 import com.shy.nexusix.tenant.rto.SysTenantQueryRTO;
 import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.service.ISysTenantService;
@@ -24,10 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -122,13 +121,26 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
      * 需要登录并具备租户查看权限才能访问。
      * </p>
      *
-     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @return 树形结构列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
      * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
      * @author shy
      * @since 2026-04-19
      */
     @Override
     public List<SysTenantTreeVO> queryTenantTreeList() {
+
+        // 查询所有未删除的租户，按创建时间倒序排列
+        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .orderByDesc(SysTenant::getCreateTime);
+
+        List<SysTenant> tenantList = this.list(wrapper);
+
+        // 转换为树形视图对象列表
+        List<SysTenantTreeVO> treeVOList = sysTenantConverter.toTreeVOList(tenantList);
+
+        // 构建树形结构并返回
+        return buildTree(treeVOList);
 
     }
 
@@ -137,18 +149,70 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
      * 分页查询租户树形结构
      * </p>
      * <p>
-     * 返回所有租户的层级树形结构
+     * 对根租户进行分页，每页返回根节点及其完整子树。
+     * 分页参数仅作用于根节点层级，子树数据完整展开。
      * 需要登录并具备租户查看权限才能访问。
      * </p>
      *
      * @param page 分页参数
-     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @return 分页后的租户树形结构
      * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
      * @author shy
      * @since 2026-04-19
      */
     @Override
     public IPage<SysTenantTreeVO> queryTenantTreePage(PageCommonRTO page) {
+
+        // 构建分页参数
+        Page<SysTenant> pageParam = new Page<>(page.getPageNum(), page.getPageSize());
+
+        // 仅分页查询根租户（parentId = 0）
+        LambdaQueryWrapper<SysTenant> rootWrapper = new LambdaQueryWrapper<SysTenant>()
+                .and(w -> w.eq(SysTenant::getParentId, 0L).or().isNull(SysTenant::getParentId))
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .orderByDesc(SysTenant::getCreateTime);
+
+        IPage<SysTenant> rootPage = this.page(pageParam, rootWrapper);
+
+        // 收集当前页根租户的所有 ID，用于查询子树
+        List<Long> rootIds = rootPage.getRecords().stream()
+                .map(SysTenant::getId)
+                .collect(Collectors.toList());
+
+        if (rootIds.isEmpty()) {
+            return new Page<>(page.getPageNum(), page.getPageSize(), 0);
+        }
+
+        // 查询所有根租户的后代节点（利用 ancestors 前缀匹配优化）
+        // 对于每个根租户，其后代的 ancestors 必然以该根租户的路径为前缀
+        List<SysTenant> allDescendants = new ArrayList<>();
+        for (SysTenant root : rootPage.getRecords()) {
+            if (Boolean.TRUE.equals(root.getHasChildren())) {
+                List<SysTenant> descendants = findDescendantsByAncestors(
+                        root.getTenantCode(),
+                        root.getAncestors() != null ? root.getAncestors() : "0"
+                );
+                allDescendants.addAll(descendants);
+            }
+        }
+
+        // 合并根租户和后代租户
+        List<SysTenant> allTenants = new ArrayList<>(rootPage.getRecords());
+        allTenants.addAll(allDescendants);
+
+        // 转换并构建树形结构
+        List<SysTenantTreeVO> treeVOList = sysTenantConverter.toTreeVOList(allTenants);
+        List<SysTenantTreeVO> tree = buildTree(treeVOList);
+
+        // 构建分页返回对象
+        IPage<SysTenantTreeVO> resultPage = new Page<>(
+                rootPage.getCurrent(),
+                rootPage.getSize(),
+                rootPage.getTotal()
+        );
+        resultPage.setRecords(tree);
+
+        return resultPage;
 
     }
 
@@ -157,19 +221,61 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
      * 查询指定租户的树形结构
      * </p>
      * <p>
-     * 查询系统中所有租户的层级关系，并构建成树形结构返回。
+     * 查询系统中指定租户及其所有后代的层级关系，并构建成树形结构返回。
+     * 利用 ancestors 字段前缀匹配优化查询，避免全表扫描。
      * 返回的租户编码会自动进行脱敏处理（保留前3位和后3位，中间用星号替换）。
      * </p>
      *
      * @param id 租户Id，用于定位要查询的租户节点
-     * @return 租户树形结构列表，每个节点包含租户名称、脱敏后的租户编码、父租户ID、联系人、状态等信息
+     * @return 租户树形结构，包含该租户及其所有后代节点
      * @throws com.shy.nexusix.common.exception.BusinessException 当数据库查询失败或数据异常时抛出
      * @author shy
      * @since 2026-04-19
      */
     @Override
-    public List<SysTenantTreeVO> queryTenantTree(String id) {
-        return List.of();
+    public SysTenantTreeVO queryTenantTree(String id) {
+
+        // 参数校验：租户ID不能为空
+        if (StringUtils.isBlank(id)) {
+            throw new BusinessException(400, "租户ID不能为空");
+        }
+
+        // 查询目标租户是否存在
+        LambdaQueryWrapper<SysTenant> targetWrapper = new LambdaQueryWrapper<SysTenant>()
+                .eq(SysTenant::getId, Long.parseLong(id))
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        SysTenant targetTenant = this.getOne(targetWrapper);
+
+        if (targetTenant == null) {
+            throw new BusinessException(404, "租户不存在");
+        }
+
+        // 利用 ancestors 前缀匹配查询所有后代节点（优化点：避免全表扫描）
+        List<SysTenant> descendants = findDescendantsByAncestors(
+                targetTenant.getTenantCode(),
+                targetTenant.getAncestors() != null ? targetTenant.getAncestors() : "0"
+        );
+
+        // 合并目标租户和后代租户
+        List<SysTenant> subtreeTenants = new ArrayList<>();
+        subtreeTenants.add(targetTenant);
+        subtreeTenants.addAll(descendants);
+
+        // 转换为树形视图对象列表
+        List<SysTenantTreeVO> treeVOList = sysTenantConverter.toTreeVOList(subtreeTenants);
+
+        // 构建树形结构
+        List<SysTenantTreeVO> tree = buildTree(treeVOList);
+
+        // 目标租户为根节点，取第一个即为所求
+        // 如果目标租户本身是根节点（parentId=0），则直接返回
+        // 否则需从树中找到目标租户节点
+        if (targetTenant.getParentId() == null || targetTenant.getParentId() == 0L) {
+            return tree.isEmpty() ? null : tree.get(0);
+        }
+
+        // 目标租户非根节点，需从构建的树中查找
+        return findNodeInTree(tree, targetTenant.getId());
     }
 
     /**
@@ -211,6 +317,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 状态条件查询
         if (queryParam.getStatus() != null) {
             wrapper.eq(SysTenant::getStatus, GlobalEnum.TenantStatus.getByDesc(queryParam.getStatus()).getCode());
+        }
+
+        // 父租户条件查询
+        if (queryParam.getTenantCode() != null) {
+            wrapper.eq(SysTenant::getTenantCode, queryParam.getTenantCode());
         }
 
         // 服务过期时间范围查询
@@ -700,6 +811,484 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         return ids.size();
 
+    }
+
+    /**
+     * <p>
+     * 分配子租户
+     * </p>
+     * <p>
+     * 为指定父租户分配子租户，自动处理层级关系和ancestors字段更新。
+     * 操作逻辑：将 subCode 中的租户设置为 parentCode 中对应父租户的子租户。
+     * 当 parentCode 和 subCode 数量不一致时，每个子租户将分配给所有父租户（多对多）。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 子租户分配参数
+     * @return 更新子租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、父租户不存在或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer assignSubTenant(SysTenantAssignRTO assignParam) {
+
+        // 校验租户编码格式
+        validateTenantCodes(assignParam.getParentCode(), "父租户编码");
+        validateTenantCodes(assignParam.getSubCode(), "子租户编码");
+
+        // 校验父租户编码和子租户编码不能有交集
+        Set<String> intersection = new HashSet<>(assignParam.getParentCode());
+        intersection.retainAll(assignParam.getSubCode());
+        if (!intersection.isEmpty()) {
+            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + intersection);
+        }
+
+        // 查询所有父租户
+        LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
+                .in(SysTenant::getTenantCode, assignParam.getParentCode())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysTenant> parentTenants = this.list(parentWrapper);
+
+        // 校验父租户是否全部存在
+        if (parentTenants.size() != assignParam.getParentCode().size()) {
+            Set<String> foundCodes = parentTenants.stream()
+                    .map(SysTenant::getTenantCode)
+                    .collect(Collectors.toSet());
+            List<String> missingCodes = assignParam.getParentCode().stream()
+                    .filter(code -> !foundCodes.contains(code))
+                    .collect(Collectors.toList());
+            throw new BusinessException(400, "父租户不存在: " + missingCodes);
+        }
+
+        // 查询所有子租户
+        LambdaQueryWrapper<SysTenant> subWrapper = new LambdaQueryWrapper<SysTenant>()
+                .in(SysTenant::getTenantCode, assignParam.getSubCode())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysTenant> subTenants = this.list(subWrapper);
+
+        // 校验子租户是否全部存在
+        if (subTenants.size() != assignParam.getSubCode().size()) {
+            Set<String> foundCodes = subTenants.stream()
+                    .map(SysTenant::getTenantCode)
+                    .collect(Collectors.toSet());
+            List<String> missingCodes = assignParam.getSubCode().stream()
+                    .filter(code -> !foundCodes.contains(code))
+                    .collect(Collectors.toList());
+            throw new BusinessException(400, "子租户不存在: " + missingCodes);
+        }
+
+        // 校验子租户不能是父租户的祖先（避免循环层级）
+        for (SysTenant parent : parentTenants) {
+            for (SysTenant sub : subTenants) {
+                // 子租户不能是父租户自身
+                if (parent.getId().equals(sub.getId())) {
+                    throw new BusinessException(400, "不能将租户分配为自身的子租户: " + sub.getTenantCode());
+                }
+                // 利用 ancestors 检测循环：如果父租户的 ancestors 包含子租户的编码，则会产生循环
+                if (parent.getAncestors() != null
+                        && (parent.getAncestors().contains("/" + sub.getTenantCode() + "/")
+                        || parent.getAncestors().endsWith("/" + sub.getTenantCode()))) {
+                    throw new BusinessException(400, "分配子租户会形成循环层级，子租户 " + sub.getTenantCode()
+                            + " 是父租户 " + parent.getTenantCode() + " 的祖先");
+                }
+            }
+        }
+
+        // 执行分配：更新每个子租户的父租户信息
+        int totalAffected = 0;
+        for (SysTenant subTenant : subTenants) {
+            // 取第一个父租户作为主父租户（一个子租户只能有一个直接父租户）
+            SysTenant primaryParent = parentTenants.get(0);
+
+            // 记录旧的 ancestors 路径用于级联更新
+            String oldAncestors = subTenant.getAncestors() != null ? subTenant.getAncestors() : "0";
+            String oldPath = oldAncestors + "/" + subTenant.getTenantCode();
+
+            // 构建新的 ancestors 路径
+            String parentAncestors = primaryParent.getAncestors() != null
+                    ? primaryParent.getAncestors() : "0";
+            String newAncestors = parentAncestors + "/" + primaryParent.getTenantCode();
+            String newPath = newAncestors + "/" + subTenant.getTenantCode();
+
+            // 更新子租户信息
+            SysTenant updateTenant = new SysTenant();
+            updateTenant.setId(subTenant.getId());
+            updateTenant.setParentId(primaryParent.getId());
+            updateTenant.setParentName(primaryParent.getTenantName());
+            updateTenant.setAncestors(newAncestors);
+
+            boolean result = this.updateById(updateTenant);
+            if (!result) {
+                throw new BusinessException(500, "分配子租户失败: " + subTenant.getTenantCode());
+            }
+            totalAffected++;
+
+            // 更新父租户的 hasChildren 标记
+            if (!Boolean.TRUE.equals(primaryParent.getHasChildren())) {
+                SysTenant updateParent = new SysTenant();
+                updateParent.setId(primaryParent.getId());
+                updateParent.setHasChildren(true);
+                this.updateById(updateParent);
+            }
+
+            // 级联更新后代节点的 ancestors（利用 ancestors 优化定位后代）
+            if (Boolean.TRUE.equals(subTenant.getHasChildren())) {
+                // 查找后代并批量更新
+                List<SysTenant> descendants = findDescendantsByAncestors(
+                        subTenant.getTenantCode(), oldAncestors);
+
+                if (!descendants.isEmpty()) {
+                    List<SysTenant> updateList = new ArrayList<>();
+                    for (SysTenant descendant : descendants) {
+                        SysTenant update = new SysTenant();
+                        update.setId(descendant.getId());
+                        update.setAncestors(descendant.getAncestors().replace(oldPath, newPath));
+                        updateList.add(update);
+                    }
+                    this.updateBatchById(updateList);
+                    totalAffected += updateList.size();
+                }
+            }
+
+            // 如果子租户原来有父租户，检查原父租户是否还有其他子租户
+            if (subTenant.getParentId() != null && subTenant.getParentId() != 0L) {
+                LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
+                        .eq(SysTenant::getParentId, subTenant.getParentId())
+                        .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                        .ne(SysTenant::getId, subTenant.getId());
+                long siblingCount = this.count(siblingWrapper);
+                if (siblingCount == 0) {
+                    SysTenant updateOldParent = new SysTenant();
+                    updateOldParent.setId(subTenant.getParentId());
+                    updateOldParent.setHasChildren(false);
+                    this.updateById(updateOldParent);
+                }
+            }
+        }
+
+        return totalAffected;
+
+    }
+
+    /**
+     * <p>
+     * 分配父租户
+     * </p>
+     * <p>
+     * 为指定租户分配一个新的父租户，处理层级关系调整及数据关联更新。
+     * 会进行循环层级验证，避免形成环状结构。
+     * 操作逻辑：将 subCode 中的租户重新挂载到 parentCode 中对应的父租户下。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 父租户分配参数
+     * @return 更新租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、参数非法或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer assignParentTenant(SysTenantAssignRTO assignParam) {
+
+        // 校验租户编码格式
+        validateTenantCodes(assignParam.getParentCode(), "父租户编码");
+        validateTenantCodes(assignParam.getSubCode(), "子租户编码");
+
+        // 校验父租户编码和子租户编码不能有交集
+        Set<String> intersection = new HashSet<>(assignParam.getParentCode());
+        intersection.retainAll(assignParam.getSubCode());
+        if (!intersection.isEmpty()) {
+            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + intersection);
+        }
+
+        // 查询所有新父租户
+        LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
+                .in(SysTenant::getTenantCode, assignParam.getParentCode())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysTenant> parentTenants = this.list(parentWrapper);
+
+        // 校验父租户是否全部存在
+        if (parentTenants.size() != assignParam.getParentCode().size()) {
+            Set<String> foundCodes = parentTenants.stream()
+                    .map(SysTenant::getTenantCode)
+                    .collect(Collectors.toSet());
+            List<String> missingCodes = assignParam.getParentCode().stream()
+                    .filter(code -> !foundCodes.contains(code))
+                    .collect(Collectors.toList());
+            throw new BusinessException(400, "父租户不存在: " + missingCodes);
+        }
+
+        // 查询所有待分配租户
+        LambdaQueryWrapper<SysTenant> subWrapper = new LambdaQueryWrapper<SysTenant>()
+                .in(SysTenant::getTenantCode, assignParam.getSubCode())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysTenant> subTenants = this.list(subWrapper);
+
+        // 校验待分配租户是否全部存在
+        if (subTenants.size() != assignParam.getSubCode().size()) {
+            Set<String> foundCodes = subTenants.stream()
+                    .map(SysTenant::getTenantCode)
+                    .collect(Collectors.toSet());
+            List<String> missingCodes = assignParam.getSubCode().stream()
+                    .filter(code -> !foundCodes.contains(code))
+                    .collect(Collectors.toList());
+            throw new BusinessException(400, "待分配租户不存在: " + missingCodes);
+        }
+
+        // 构建父租户编码到实体的映射
+        Map<String, SysTenant> parentMap = parentTenants.stream()
+                .collect(Collectors.toMap(SysTenant::getTenantCode, t -> t));
+
+        int totalAffected = 0;
+
+        for (SysTenant subTenant : subTenants) {
+            // 取第一个父租户作为新父租户（一个租户只能有一个直接父租户）
+            SysTenant newParent = parentTenants.get(0);
+
+            // 不能将自己设为父租户
+            if (newParent.getId().equals(subTenant.getId())) {
+                throw new BusinessException(400, "不能将租户设为自身的父租户: " + subTenant.getTenantCode());
+            }
+
+            // 循环层级验证：新父租户的 ancestors 不能包含当前租户的编码
+            // 否则当前租户会成为新父租户的祖先，形成环
+            if (newParent.getAncestors() != null
+                    && (newParent.getAncestors().contains("/" + subTenant.getTenantCode() + "/")
+                    || newParent.getAncestors().endsWith("/" + subTenant.getTenantCode()))) {
+                throw new BusinessException(400, "分配父租户会形成循环层级，租户 "
+                        + subTenant.getTenantCode() + " 是新父租户 " + newParent.getTenantCode()
+                        + " 的祖先");
+            }
+
+            // 校验新父租户状态（冻结的租户不能作为父租户）
+            if (GlobalEnum.TenantStatus.FROZEN.getCode().equals(newParent.getStatus())) {
+                throw new BusinessException(400, "新父租户已冻结，不能作为父租户: " + newParent.getTenantCode());
+            }
+
+            // 记录旧的 ancestors 路径
+            String oldAncestors = subTenant.getAncestors() != null ? subTenant.getAncestors() : "0";
+            String oldPath = oldAncestors + "/" + subTenant.getTenantCode();
+
+            // 构建新的 ancestors 路径
+            String parentAncestors = newParent.getAncestors() != null
+                    ? newParent.getAncestors() : "0";
+            String newAncestors = parentAncestors + "/" + newParent.getTenantCode();
+            String newPath = newAncestors + "/" + subTenant.getTenantCode();
+
+            // 更新当前租户的父租户信息
+            SysTenant updateTenant = new SysTenant();
+            updateTenant.setId(subTenant.getId());
+            updateTenant.setParentId(newParent.getId());
+            updateTenant.setParentName(newParent.getTenantName());
+            updateTenant.setAncestors(newAncestors);
+
+            boolean result = this.updateById(updateTenant);
+            if (!result) {
+                throw new BusinessException(500, "分配父租户失败: " + subTenant.getTenantCode());
+            }
+            totalAffected++;
+
+            // 更新新父租户的 hasChildren 标记
+            if (!Boolean.TRUE.equals(newParent.getHasChildren())) {
+                SysTenant updateNewParent = new SysTenant();
+                updateNewParent.setId(newParent.getId());
+                updateNewParent.setHasChildren(true);
+                this.updateById(updateNewParent);
+            }
+
+            // 级联更新后代节点的 ancestors（利用 ancestors 优化定位后代）
+            if (Boolean.TRUE.equals(subTenant.getHasChildren())) {
+                List<SysTenant> descendants = findDescendantsByAncestors(
+                        subTenant.getTenantCode(), oldAncestors);
+
+                if (!descendants.isEmpty()) {
+                    List<SysTenant> updateList = new ArrayList<>();
+                    for (SysTenant descendant : descendants) {
+                        SysTenant update = new SysTenant();
+                        update.setId(descendant.getId());
+                        update.setAncestors(descendant.getAncestors().replace(oldPath, newPath));
+                        updateList.add(update);
+                    }
+                    this.updateBatchById(updateList);
+                    totalAffected += updateList.size();
+                }
+            }
+
+            // 检查原父租户是否还有其他子租户，更新 hasChildren 标记
+            if (subTenant.getParentId() != null && subTenant.getParentId() != 0L) {
+                LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
+                        .eq(SysTenant::getParentId, subTenant.getParentId())
+                        .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                        .ne(SysTenant::getId, subTenant.getId());
+                long siblingCount = this.count(siblingWrapper);
+                if (siblingCount == 0) {
+                    SysTenant updateOldParent = new SysTenant();
+                    updateOldParent.setId(subTenant.getParentId());
+                    updateOldParent.setHasChildren(false);
+                    this.updateById(updateOldParent);
+                }
+            }
+        }
+
+        return totalAffected;
+
+    }
+
+    /**
+     * <p>
+     * 将租户列表构建为树形结构
+     * </p>
+     * <p>
+     * 基于 parentId 字段进行父子关系匹配，将平铺列表组装为嵌套树结构。
+     * 根节点的 parentId 为 0 或 null。
+     * </p>
+     *
+     * @param treeVOList 租户树形视图对象平铺列表
+     * @return 树形结构列表，仅包含根节点（子节点嵌套在 chileTenant 中）
+     * @author shy
+     * @since 2026-05-04
+     */
+    private List<SysTenantTreeVO> buildTree(List<SysTenantTreeVO> treeVOList) {
+
+        // 按 parentId 分组，构建父ID到子节点列表的映射
+        Map<Long, List<SysTenantTreeVO>> parentMap = treeVOList.stream()
+                .filter(vo -> vo.getParentId() != null && vo.getParentId() != 0L)
+                .collect(Collectors.groupingBy(SysTenantTreeVO::getParentId));
+
+        // 递归填充子节点
+        for (SysTenantTreeVO vo : treeVOList) {
+            List<SysTenantTreeVO> children = parentMap.get(vo.getId());
+            vo.setChildTenant(children);
+        }
+
+        // 返回根节点列表（parentId 为 0 或 null）
+        return treeVOList.stream()
+                .filter(vo -> vo.getParentId() == null || vo.getParentId() == 0L)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * <p>
+     * 基于 ancestors 字段查找指定租户的所有后代节点
+     * </p>
+     * <p>
+     * 利用物化路径前缀匹配查询，仅需一次 SQL 即可获取全部后代，
+     * 避免递归查询或全表加载。查询模式为 LIKE 'prefix/%'，可利用 B-tree 索引。
+     * </p>
+     *
+     * @param tenantCode 目标租户编码
+     * @param tenantAncestors 目标租户的 ancestors 值
+     * @return 后代租户实体列表
+     * @author shy
+     * @since 2026-05-04
+     */
+    private List<SysTenant> findDescendantsByAncestors(String tenantCode, String tenantAncestors) {
+
+        // 构建后代匹配前缀：当前租户的完整路径
+        String descendantPrefix = tenantAncestors + "/" + tenantCode;
+
+        // 前缀匹配查询所有后代（可利用 B-tree 索引）
+        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
+                .likeRight(SysTenant::getAncestors, descendantPrefix + "/")
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+
+        return this.list(wrapper);
+    }
+
+    /**
+     * <p>
+     * 级联更新后代节点的 ancestors 字段
+     * </p>
+     * <p>
+     * 当租户的层级关系发生变化时，其所有后代节点的 ancestors 路径
+     * 也需要同步更新。通过替换旧路径前缀为新路径前缀实现批量更新。
+     * </p>
+     *
+     * @param oldAncestorPrefix 旧的祖先路径前缀
+     * @param newAncestorPrefix 新的祖先路径前缀
+     * @param tenantCode 发生变动的租户编码
+     * @author shy
+     * @since 2026-05-04
+     */
+    private void cascadeUpdateAncestors(String oldAncestorPrefix, String newAncestorPrefix, String tenantCode) {
+
+        // 查找所有后代节点
+        List<SysTenant> descendants = findDescendantsByAncestors(tenantCode,
+                oldAncestorPrefix.isEmpty() ? "0" : oldAncestorPrefix);
+
+        // 批量更新后代的 ancestors 字段
+        String oldPath = oldAncestorPrefix + "/" + tenantCode;
+        String newPath = newAncestorPrefix + "/" + tenantCode;
+
+        List<SysTenant> updateList = new ArrayList<>();
+        for (SysTenant descendant : descendants) {
+            SysTenant update = new SysTenant();
+            update.setId(descendant.getId());
+            update.setAncestors(descendant.getAncestors().replace(oldPath, newPath));
+            updateList.add(update);
+        }
+
+        if (!updateList.isEmpty()) {
+            this.updateBatchById(updateList);
+        }
+    }
+
+    /**
+     * <p>
+     * 校验租户编码格式
+     * </p>
+     * <p>
+     * 校验编码仅包含字母和数字，与 RegexConstant.Character.ALPHANUMERIC 一致。
+     * 用于 Service 层对 List 中元素的逐一校验。
+     * </p>
+     *
+     * @param codes 租户编码集合
+     * @param fieldName 字段名称（用于异常提示）
+     * @author shy
+     * @since 2026-05-04
+     */
+    private void validateTenantCodes(List<String> codes, String fieldName) {
+        if (codes == null || codes.isEmpty()) {
+            throw new BusinessException(400, fieldName + "不能为空");
+        }
+        for (String code : codes) {
+            if (StringUtils.isBlank(code)) {
+                throw new BusinessException(400, fieldName + "中存在空值");
+            }
+            if (!code.matches("^[a-zA-Z0-9]+$")) {
+                throw new BusinessException(400, fieldName + "格式不正确: " + code);
+            }
+        }
+    }
+
+    /**
+     * <p>
+     * 在树形结构中递归查找指定ID的节点
+     * </p>
+     *
+     * @param treeList 树形结构列表
+     * @param targetId 目标租户ID
+     * @return 目标节点，未找到返回 null
+     * @author shy
+     * @since 2026-05-04
+     */
+    private SysTenantTreeVO findNodeInTree(List<SysTenantTreeVO> treeList, Long targetId) {
+        if (treeList == null || treeList.isEmpty()) {
+            return null;
+        }
+        for (SysTenantTreeVO node : treeList) {
+            if (node.getId().equals(targetId)) {
+                return node;
+            }
+            SysTenantTreeVO found = findNodeInTree(node.getChildTenant(), targetId);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
     }
 
 }
