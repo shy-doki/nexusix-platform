@@ -6,7 +6,6 @@ import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.iam.rto.SysPermissionPolicyAddRTO;
 import com.shy.nexusix.iam.rto.SysPermissionPolicyQueryRTO;
 import com.shy.nexusix.iam.rto.SysPermissionPolicyUpdateRTO;
-import com.shy.nexusix.iam.rto.SysRolePermissionAssignRTO;
 import com.shy.nexusix.iam.service.ISysPermissionPolicyService;
 import com.shy.nexusix.iam.vo.SysPermissionPolicyCommonVO;
 import com.shy.nexusix.iam.vo.SysPermissionPolicyDetailVO;
@@ -62,8 +61,7 @@ public class SysPermissionPolicyController {
      * 分页查询权限策略列表
      * </p>
      *
-     * @param pageNum  页码
-     * @param pageSize 每页条数
+     * @param page 分页参数
      * @return 分页后的权限策略公共视图对象
      * @author shy
      * @since 2026-05-05
@@ -210,28 +208,6 @@ public class SysPermissionPolicyController {
     @Operation(summary = "批量删除权限策略", description = "批量删除权限策略信息")
     public ApiResponse batchDeletePolicy(@NotEmpty(message = "权限策略Id列表不能为空") @RequestBody List<String> ids) {
         Integer affectedRows = iSysPermissionPolicyService.batchDeletePolicy(ids);
-        return ApiResponse.success(affectedRows);
-    }
-
-    /**
-     * <p>
-     * 分配角色权限
-     * </p>
-     * <p>
-     * 采用先清后写模式：先删除该角色的所有已有策略，再批量新增新策略。
-     * 所有策略动作默认为允许(ALLOW)，优先级从100递增，默认开启继承。
-     * </p>
-     *
-     * @param assignParam 角色权限分配参数
-     * @return 新增策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 当角色不存在时抛出
-     * @author shy
-     * @since 2026-05-05
-     */
-    @PostMapping("/assign/role")
-    @Operation(summary = "分配角色权限", description = "为指定角色分配权限，先清后写")
-    public ApiResponse assignRolePermission(@Valid @RequestBody SysRolePermissionAssignRTO assignParam) {
-        Integer affectedRows = iSysPermissionPolicyService.assignRolePermission(assignParam);
         return ApiResponse.success(affectedRows);
     }
 
