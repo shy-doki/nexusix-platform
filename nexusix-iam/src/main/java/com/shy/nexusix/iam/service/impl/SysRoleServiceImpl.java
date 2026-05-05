@@ -61,7 +61,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     public List<SysRoleCommonVO> queryRoleList() {
 
-        /* 构建查询条件：仅查询未删除的角色，按排序和ID升序 */
+        // 构建查询条件：仅查询未删除的角色，按排序和ID升序
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByAsc(SysRole::getSortOrder)
@@ -78,10 +78,10 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     public IPage<SysRoleCommonVO> queryRolePage(PageCommonRTO page) {
 
-        /* 构建分页参数 */
+        // 构建分页参数
         Page<SysRole> pageParam = new Page<>(page.getPageNum(), page.getPageSize());
 
-        /* 构建查询条件：仅查询未删除的角色，按排序和ID升序 */
+        // 构建查询条件：仅查询未删除的角色，按排序和ID升序
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByAsc(SysRole::getSortOrder)
@@ -101,21 +101,21 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     public IPage<SysRoleCommonVO> queryRole(SysRoleQueryRTO queryParam) {
 
-        /* 构建分页参数 */
+        // 构建分页参数
         Page<SysRole> pageParam = new Page<>(queryParam.getPageNum(), queryParam.getPageSize());
 
-        /* 构建动态查询条件 */
+        // 构建动态查询条件
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<>();
 
-        /* 按角色名称模糊匹配 */
+        // 按角色名称模糊匹配
         wrapper.like(StringUtils.isNotBlank(queryParam.getRoleName()),
                 SysRole::getRoleName, queryParam.getRoleName());
 
-        /* 按角色编码模糊匹配 */
+        // 按角色编码模糊匹配
         wrapper.like(StringUtils.isNotBlank(queryParam.getRoleCode()),
                 SysRole::getRoleCode, queryParam.getRoleCode());
 
-        /* 按角色层级精确筛选（支持数字编码、枚举名称、中文描述智能解析） */
+        // 按角色层级精确筛选（支持数字编码、枚举名称、中文描述智能解析）
         if (queryParam.getRoleLevel() != null) {
             GlobalEnum.RoleLevel roleLevel = GlobalEnum.RoleLevel.parse(queryParam.getRoleLevel());
             if (roleLevel != null) {
@@ -123,12 +123,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             }
         }
 
-        /* 按所属租户ID精确筛选 */
+        // 按所属租户ID精确筛选
         if (queryParam.getTenantId() != null) {
             wrapper.eq(SysRole::getTenantId, queryParam.getTenantId());
         }
 
-        /* 按状态精确筛选（支持数字编码、枚举名称、中文描述智能解析） */
+        // 按状态精确筛选（支持数字编码、枚举名称、中文描述智能解析）
         if (queryParam.getStatus() != null) {
             GlobalEnum.Status status = GlobalEnum.Status.parse(queryParam.getStatus());
             if (status != null) {
@@ -136,18 +136,18 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             }
         }
 
-        /* 按创建人姓名精确筛选 */
+        // 按创建人姓名精确筛选
         if (StringUtils.isNotBlank(queryParam.getCreateByName())) {
             wrapper.eq(SysRole::getCreateByName, queryParam.getCreateByName());
         }
 
-        /* 按创建时间范围筛选 */
+        // 按创建时间范围筛选
         TimeRangeCommonRTO createTime = queryParam.getCreateTime();
         if (createTime != null) {
             LocalDateTime startTime = createTime.getStartTime();
             LocalDateTime endTime = createTime.getEndTime();
 
-            /* 校验时间范围合法性 */
+            // 校验时间范围合法性
             if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
                 throw new BusinessException(400, "开始时间不能晚于结束时间");
             }
@@ -175,12 +175,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     public SysRoleDetailVO queryRoleDetail(String id) {
 
-        /* 参数校验 */
+        // 参数校验
         if (StringUtils.isBlank(id)) {
             throw new BusinessException(400, "角色ID不能为空");
         }
 
-        /* 查询角色实体 */
+        // 查询角色实体
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getId, Long.parseLong(id))
                 .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -204,7 +204,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     public Integer addRole(SysRoleAddRTO addParam) {
 
-        /* 校验角色编码唯一性 */
+        // 校验角色编码唯一性
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getRoleCode, addParam.getRoleCode());
 
@@ -214,23 +214,23 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "角色编码已存在");
         }
 
-        /* RTO转Entity，枚举自动转编码 */
+        // RTO转Entity，枚举自动转编码
         SysRole entity = sysRoleConverter.toEntityAdd(addParam);
 
-        /* tenantId为空时默认设为0（系统级） */
+        // tenantId为空时默认设为0（系统级）
         if (entity.getTenantId() == null) {
             entity.setTenantId(0L);
         }
 
-        /* sortOrder为空时默认设为0 */
+        // sortOrder为空时默认设为0
         if (entity.getSortOrder() == null) {
             entity.setSortOrder(0);
         }
 
-        /* TODO: 后续接入租户服务后，根据tenantId查询租户名称替换硬编码 */
+        // TODO: 后续接入租户服务后，根据tenantId查询租户名称替换硬编码
         entity.setTenantName("系统");
 
-        /* TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码 */
+        // TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码
         entity.setCreateBy(1L);
         entity.setCreateByName("系统管理员");
 
@@ -254,7 +254,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Transactional(rollbackFor = Exception.class)
     public Integer updateRole(SysRoleUpdateRTO updateParam) {
 
-        /* 校验角色是否存在 */
+        // 校验角色是否存在
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getId, updateParam.getId())
                 .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -264,7 +264,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(404, "角色不存在");
         }
 
-        /* 校验角色编码唯一性（排除自身） */
+        // 校验角色编码唯一性（排除自身）
         if (!existRole.getRoleCode().equals(updateParam.getRoleCode())) {
             LambdaQueryWrapper<SysRole> codeWrapper = new LambdaQueryWrapper<SysRole>()
                     .eq(SysRole::getRoleCode, updateParam.getRoleCode())
@@ -275,18 +275,18 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             }
         }
 
-        /* RTO转Entity，枚举自动转编码 */
+        // RTO转Entity，枚举自动转编码
         SysRole entity = sysRoleConverter.toEntityUpdate(updateParam);
 
-        /* tenantId为空时默认设为0 */
+        // tenantId为空时默认设为0
         if (entity.getTenantId() == null) {
             entity.setTenantId(0L);
         }
 
-        /* TODO: 后续接入租户服务后，根据tenantId查询租户名称替换硬编码 */
+        // TODO: 后续接入租户服务后，根据tenantId查询租户名称替换硬编码
         entity.setTenantName("系统");
 
-        /* TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码 */
+        // TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码
         entity.setUpdateBy(1L);
         entity.setUpdateByName("系统管理员");
 
@@ -308,7 +308,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     public Integer updateRoleStatus(String id, String status) {
 
-        /* 参数校验 */
+        // 参数校验
         if (StringUtils.isBlank(id)) {
             throw new BusinessException(400, "角色ID不能为空");
         }
@@ -317,7 +317,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "状态不能为空");
         }
 
-        /* 解析状态值：支持数字编码和枚举名称两种格式 */
+        // 解析状态值：支持数字编码和枚举名称两种格式
         GlobalEnum.Status roleStatus;
         try {
             int statusCode = Integer.parseInt(status);
@@ -329,7 +329,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "状态值不合法，仅支持：1-启用、0-禁用");
         }
 
-        /* 校验角色是否存在 */
+        // 校验角色是否存在
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getId, Long.parseLong(id))
                 .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -339,17 +339,17 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "角色不存在");
         }
 
-        /* 校验状态是否发生变更 */
+        // 校验状态是否发生变更
         if (roleStatus.getCode().equals(existRole.getStatus())) {
             throw new BusinessException(400, "角色状态未变更");
         }
 
-        /* 执行状态更新 */
+        // 执行状态更新
         SysRole updateRole = new SysRole();
         updateRole.setId(Long.parseLong(id));
         updateRole.setStatus(roleStatus.getCode());
 
-        /* TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码 */
+        // TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码
         updateRole.setUpdateBy(1L);
         updateRole.setUpdateByName("系统管理员");
 
@@ -371,7 +371,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     public Integer deleteRole(String id) {
 
-        /* 校验角色是否存在 */
+        // 校验角色是否存在
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getId, id)
                 .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -381,7 +381,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "角色不存在");
         }
 
-        /* 校验是否存在用户关联 */
+        // 校验是否存在用户关联
         LambdaQueryWrapper<SysUserRoleRel> userRoleWrapper = new LambdaQueryWrapper<SysUserRoleRel>()
                 .eq(SysUserRoleRel::getRoleId, Long.parseLong(id));
         long userRelCount = iSysUserRoleRelService.count(userRoleWrapper);
@@ -389,12 +389,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "该角色下存在用户关联，请先解除关联");
         }
 
-        /* 执行逻辑删除 */
+        // 执行逻辑删除
         SysRole role = new SysRole();
         role.setId(Long.parseLong(id));
         role.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
 
-        /* TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码 */
+        // TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码
         role.setUpdateBy(1L);
         role.setUpdateByName("系统管理员");
 
@@ -417,12 +417,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Transactional(rollbackFor = Exception.class)
     public Integer batchAddRole(List<SysRoleAddRTO> addParamList) {
 
-        /* 校验批量上限 */
+        // 校验批量上限
         if (addParamList.size() > 100) {
             throw new BusinessException(400, "单次批量新增数量不能超过100条");
         }
 
-        /* 校验批量内部编码去重 */
+        // 校验批量内部编码去重
         Set<String> codeSet = new HashSet<>();
         for (SysRoleAddRTO param : addParamList) {
             if (codeSet.contains(param.getRoleCode())) {
@@ -431,7 +431,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             codeSet.add(param.getRoleCode());
         }
 
-        /* 校验数据库编码唯一性 */
+        // 校验数据库编码唯一性
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
                 .in(SysRole::getRoleCode, codeSet);
         long existCount = this.count(wrapper);
@@ -440,10 +440,10 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "部分角色编码已存在，请检查后重试");
         }
 
-        /* RTO列表转Entity列表 */
+        // RTO列表转Entity列表
         List<SysRole> entityList = sysRoleConverter.toEntityListAdd(addParamList);
 
-        /* 填充默认值和冗余字段 */
+        // 填充默认值和冗余字段
         for (SysRole entity : entityList) {
             if (entity.getTenantId() == null) {
                 entity.setTenantId(0L);
@@ -451,9 +451,9 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             if (entity.getSortOrder() == null) {
                 entity.setSortOrder(0);
             }
-            /* TODO: 后续接入租户服务后，根据tenantId查询租户名称替换硬编码 */
+            // TODO: 后续接入租户服务后，根据tenantId查询租户名称替换硬编码
             entity.setTenantName("系统");
-            /* TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码 */
+            // TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码
             entity.setCreateBy(1L);
             entity.setCreateByName("系统管理员");
         }
@@ -477,12 +477,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Transactional(rollbackFor = Exception.class)
     public Integer batchUpdateRole(List<SysRoleUpdateRTO> updateParamList) {
 
-        /* 校验批量上限 */
+        // 校验批量上限
         if (updateParamList.size() > 100) {
             throw new BusinessException(400, "单次批量修改数量不能超过100条");
         }
 
-        /* 校验批量内部ID和编码去重 */
+        // 校验批量内部ID和编码去重
         Set<Long> idSet = new HashSet<>();
         Set<String> codeSet = new HashSet<>();
         for (SysRoleUpdateRTO item : updateParamList) {
@@ -499,7 +499,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             codeSet.add(item.getRoleCode());
         }
 
-        /* 校验所有角色是否存在 */
+        // 校验所有角色是否存在
         LambdaQueryWrapper<SysRole> existWrapper = new LambdaQueryWrapper<SysRole>()
                 .in(SysRole::getId, idSet)
                 .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -509,16 +509,16 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "部分角色不存在，请检查后重试");
         }
 
-        /* RTO转Entity并填充默认值和冗余字段 */
+        // RTO转Entity并填充默认值和冗余字段
         List<SysRole> entityList = new ArrayList<>();
         for (SysRoleUpdateRTO rto : updateParamList) {
             SysRole entity = sysRoleConverter.toEntityUpdate(rto);
             if (entity.getTenantId() == null) {
                 entity.setTenantId(0L);
             }
-            /* TODO: 后续接入租户服务后，根据tenantId查询租户名称替换硬编码 */
+            // TODO: 后续接入租户服务后，根据tenantId查询租户名称替换硬编码
             entity.setTenantName("系统");
-            /* TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码 */
+            // TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码
             entity.setUpdateBy(1L);
             entity.setUpdateByName("系统管理员");
             entityList.add(entity);
@@ -542,12 +542,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Override
     public Integer batchDeleteRole(List<String> ids) {
 
-        /* 校验批量上限 */
+        // 校验批量上限
         if (ids.size() > 100) {
             throw new BusinessException(400, "单次批量删除数量不能超过100条");
         }
 
-        /* 收集并校验ID */
+        // 收集并校验ID
         Set<Long> idSet = new HashSet<>();
         for (String id : ids) {
             if (StringUtils.isBlank(id)) {
@@ -556,7 +556,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             idSet.add(Long.parseLong(id));
         }
 
-        /* 查询存在的角色 */
+        // 查询存在的角色
         LambdaQueryWrapper<SysRole> existWrapper = new LambdaQueryWrapper<SysRole>()
                 .in(SysRole::getId, idSet)
                 .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -566,7 +566,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(404, "未找到可删除的角色");
         }
 
-        /* 校验是否存在用户关联 */
+        // 校验是否存在用户关联
         LambdaQueryWrapper<SysUserRoleRel> userRoleWrapper = new LambdaQueryWrapper<SysUserRoleRel>()
                 .in(SysUserRoleRel::getRoleId, idSet);
         long userRelCount = iSysUserRoleRelService.count(userRoleWrapper);
@@ -574,13 +574,13 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "部分角色下存在用户关联，请先解除关联");
         }
 
-        /* 构建逻辑删除列表 */
+        // 构建逻辑删除列表
         List<SysRole> deleteList = new ArrayList<>();
         for (SysRole role : existRoles) {
             SysRole deleteRole = new SysRole();
             deleteRole.setId(role.getId());
             deleteRole.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
-            /* TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码 */
+            // TODO: 后续接入登录上下文后，从StpUtil获取当前用户ID和姓名替换硬编码
             deleteRole.setUpdateBy(1L);
             deleteRole.setUpdateByName("系统管理员");
             deleteList.add(deleteRole);
@@ -605,7 +605,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     @Transactional(rollbackFor = Exception.class)
     public Integer assignRoleUsers(SysRoleUserAssignRTO assignParam) {
 
-        /* 校验角色是否存在 */
+        // 校验角色是否存在
         LambdaQueryWrapper<SysRole> roleWrapper = new LambdaQueryWrapper<SysRole>()
                 .eq(SysRole::getId, assignParam.getRoleId())
                 .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -614,18 +614,18 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             throw new BusinessException(400, "角色不存在");
         }
 
-        /* 先清：删除该角色在指定租户下的所有用户关联 */
+        // 先清：删除该角色在指定租户下的所有用户关联
         LambdaQueryWrapper<SysUserRoleRel> deleteWrapper = new LambdaQueryWrapper<SysUserRoleRel>()
                 .eq(SysUserRoleRel::getRoleId, assignParam.getRoleId())
                 .eq(SysUserRoleRel::getTenantId, assignParam.getTenantId());
         iSysUserRoleRelService.remove(deleteWrapper);
 
-        /* 若用户ID列表为空，仅清除关联后返回 */
+        // 若用户ID列表为空，仅清除关联后返回
         if (assignParam.getUserIds().isEmpty()) {
             return 0;
         }
 
-        /* 后写：批量新增角色用户关联 */
+        // 后写：批量新增角色用户关联
         List<SysUserRoleRel> newRels = new ArrayList<>();
         for (Long userId : assignParam.getUserIds()) {
             SysUserRoleRel rel = new SysUserRoleRel();
