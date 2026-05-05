@@ -569,6 +569,82 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>
+     * 更新租户状态
+     * </p>
+     * <p>
+     * 更新指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param id 租户ID
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    @Override
+    public Integer updateTenantStatus(String id, String status) {
+
+        // 参数校验：租户ID不能为空
+        if (StringUtils.isBlank(id)) {
+            throw new BusinessException(400, "租户ID不能为空");
+        }
+
+        // 参数校验：状态不能为空
+        if (StringUtils.isBlank(status)) {
+            throw new BusinessException(400, "状态不能为空");
+        }
+
+        // 校验状态值是否合法
+        GlobalEnum.TenantStatus tenantStatus = GlobalEnum.TenantStatus.parse(status);
+        if (tenantStatus == null) {
+            throw new BusinessException(400, "状态值不合法，仅支持：正常、冻结");
+        }
+
+        // 查询待更新状态的租户是否存在
+        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
+                .eq(SysTenant::getId, Long.parseLong(id))
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        SysTenant existTenant = this.getOne(wrapper);
+
+        if (existTenant == null) {
+            throw new BusinessException(400, "租户不存在");
+        }
+
+        // 如果状态未变更则直接返回
+        if (tenantStatus.getCode().equals(existTenant.getStatus())) {
+            throw new BusinessException(400, "租户状态未变更");
+        }
+
+        // 冻结租户时，校验该租户下是否存在正常状态的子租户
+        if (GlobalEnum.TenantStatus.FROZEN.equals(tenantStatus)) {
+            LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
+                    .eq(SysTenant::getParentId, existTenant.getId())
+                    .eq(SysTenant::getStatus, GlobalEnum.TenantStatus.NORMAL.getCode())
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+            long childCount = this.count(childWrapper);
+            if (childCount > 0) {
+                throw new BusinessException(400, "该租户下存在正常状态的子租户，请先冻结子租户");
+            }
+        }
+
+        // 执行状态更新
+        SysTenant updateTenant = new SysTenant();
+        updateTenant.setId(Long.parseLong(id));
+        updateTenant.setStatus(tenantStatus.getCode());
+
+        boolean result = this.updateById(updateTenant);
+
+        if (!result) {
+            throw new BusinessException(500, "更新租户状态失败");
+        }
+
+        return 1;
+    }
+
+    /**
+     * <p>
      * 删除租户
      * </p>
      * <p>
@@ -740,6 +816,101 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         return updateParamList.size();
 
+    }
+
+    /**
+     * <p>
+     * 批量更新租户状态
+     * </p>
+     * <p>
+     * 批量更新多个指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 批量操作支持事务回滚，任一租户更新失败则全部失败。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param ids 租户ID集合
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer batchUpdateTenantStatus(List<String> ids, String status) {
+
+        // 校验批量更新数量限制
+        if (ids.size() > 100) {
+            throw new BusinessException(400, "单次批量更新数量不能超过100条");
+        }
+
+        // 参数校验：状态不能为空
+        if (StringUtils.isBlank(status)) {
+            throw new BusinessException(400, "状态不能为空");
+        }
+
+        // 校验状态值是否合法
+        GlobalEnum.TenantStatus tenantStatus = GlobalEnum.TenantStatus.parse(status);
+        if (tenantStatus == null) {
+            throw new BusinessException(400, "状态值不合法");
+        }
+
+        // 校验ID格式并转换为Long类型
+        Set<Long> idSet = new HashSet<>();
+        for (String id : ids) {
+            if (StringUtils.isBlank(id)) {
+                throw new BusinessException(400, "租户ID不能为空");
+            }
+            idSet.add(Long.parseLong(id));
+        }
+
+        // 查询待更新状态的租户是否存在且未被删除
+        LambdaQueryWrapper<SysTenant> existWrapper = new LambdaQueryWrapper<SysTenant>()
+                .in(SysTenant::getId, idSet)
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysTenant> existTenants = this.list(existWrapper);
+
+        if (existTenants.isEmpty()) {
+            throw new BusinessException(404, "未找到可更新状态的租户");
+        }
+
+        // 冻结租户时，校验这些租户下是否存在正常状态的子租户
+        if (GlobalEnum.TenantStatus.FROZEN.equals(tenantStatus)) {
+            LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
+                    .in(SysTenant::getParentId, idSet)
+                    .eq(SysTenant::getStatus, GlobalEnum.TenantStatus.NORMAL.getCode())
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+            long childCount = this.count(childWrapper);
+            if (childCount > 0) {
+                throw new BusinessException(400, "部分租户下存在正常状态的子租户，请先冻结子租户");
+            }
+        }
+
+        // 构建批量状态更新的数据列表
+        List<SysTenant> updateList = new ArrayList<>();
+        for (SysTenant tenant : existTenants) {
+            // 跳过状态未变更的租户
+            if (tenantStatus.getCode().equals(tenant.getStatus())) {
+                continue;
+            }
+            SysTenant updateTenant = new SysTenant();
+            updateTenant.setId(tenant.getId());
+            updateTenant.setStatus(tenantStatus.getCode());
+            updateList.add(updateTenant);
+        }
+
+        if (updateList.isEmpty()) {
+            throw new BusinessException(400, "所有租户状态均未变更");
+        }
+
+        // 执行批量状态更新
+        boolean batch = this.updateBatchById(updateList);
+
+        if (!batch) {
+            throw new BusinessException(500, "批量更新租户状态失败");
+        }
+
+        return updateList.size();
     }
 
     /**

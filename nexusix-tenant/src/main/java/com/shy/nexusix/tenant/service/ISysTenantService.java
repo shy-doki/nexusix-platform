@@ -177,6 +177,24 @@ public interface ISysTenantService extends IService<SysTenant> {
 
     /**
      * <p>
+     * 更新租户状态
+     * </p>
+     * <p>
+     * 更新指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param id 租户ID
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    Integer updateTenantStatus(String id, String status);
+
+    /**
+     * <p>
      * 删除租户
      * </p>
      * <p>
@@ -225,6 +243,25 @@ public interface ISysTenantService extends IService<SysTenant> {
      * @since 2026-04-20
      */
     Integer batchUpdateTenant(List<SysTenantUpdateRTO> updateParamList);
+
+    /**
+     * <p>
+     * 批量更新租户状态
+     * </p>
+     * <p>
+     * 批量更新多个指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 批量操作支持事务回滚，任一租户更新失败则全部失败。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param ids 租户ID集合
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    Integer batchUpdateTenantStatus(List<String> ids, String status);
 
     /**
      * <p>

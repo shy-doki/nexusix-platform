@@ -237,6 +237,30 @@ public class SysTenantController {
 
     /**
      * <p>
+     * 更新租户状态
+     * </p>
+     * <p>
+     * 更新指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param id 租户ID
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    @PutMapping("/status")
+    @Operation(summary = "更新租户状态", description = "更新指定租户的状态（正常/冻结）")
+    public ApiResponse updateTenantStatus(@NotBlank(message = "Id不能为空") @RequestParam String id,
+                                          @NotBlank(message = "状态不能为空") @RequestParam String status) {
+        Integer affectedRows = iSysTenantService.updateTenantStatus(id, status);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
      * 删除租户
      * </p>
      * <p>
@@ -298,6 +322,31 @@ public class SysTenantController {
     @Operation(summary = "批量修改租户", description = "批量修改租户信息")
     public ApiResponse batchUpdateTenant(@Valid @RequestBody List<SysTenantUpdateRTO> updateParamList) {
         Integer affectedRows = iSysTenantService.batchUpdateTenant(updateParamList);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 批量更新租户状态
+     * </p>
+     * <p>
+     * 批量更新多个指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 批量操作支持事务回滚，任一租户更新失败则全部失败。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param ids 租户ID集合
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    @PutMapping("/status/batch")
+    @Operation(summary = "批量更新租户状态", description = "批量更新多个指定租户的状态（正常/冻结）")
+    public ApiResponse batchUpdateTenantStatus(@NotEmpty(message = "租户ID集合不能为空") @RequestBody List<String> ids,
+                                               @NotBlank(message = "状态不能为空") @RequestParam String status) {
+        Integer affectedRows = iSysTenantService.batchUpdateTenantStatus(ids, status);
         return ApiResponse.success(affectedRows);
     }
 
