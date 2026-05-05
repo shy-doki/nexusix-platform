@@ -57,6 +57,12 @@ public class SysPermissionCommonVO {
     private String status;
 
     /**
+     * 创建人姓名
+     */
+    @Schema(description = "创建人姓名", example = "张三")
+    private String createByName;
+
+    /**
      * 创建时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

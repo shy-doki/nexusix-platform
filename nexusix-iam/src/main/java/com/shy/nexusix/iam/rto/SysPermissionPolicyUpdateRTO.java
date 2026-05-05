@@ -36,6 +36,14 @@ public class SysPermissionPolicyUpdateRTO {
     private Long targetId;
 
     /**
+     * 目标名称
+     */
+    @NotBlank(message = "权限名称不能为空")
+    @Schema(description = "目标名称 (对应租户/角色/用户名称)", example = "某科技公司")
+    private String targetName;
+
+
+    /**
      * 关联权限ID
      */
     @NotNull(message = "关联权限ID不能为空")

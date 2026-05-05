@@ -18,4 +18,17 @@ public class SysPermissionDetailVO extends SysPermissionCommonVO {
     @Schema(description = "资源路径", example = "/system/user")
     private String path;
 
+    /**
+     * 更新人姓名
+     */
+    @Schema(description = "更新人姓名", example = "张三")
+    private String updateByName;
+
+    /**
+     * 更新时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
+    private LocalDateTime updateTime;
+
 }

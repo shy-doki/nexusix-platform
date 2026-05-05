@@ -24,6 +24,12 @@ public class SysPermissionPolicyCommonVO {
     private String targetType;
 
     /**
+     * 目标名称
+     */
+    @Schema(description = "目标名称 (对应租户/角色/用户名称)", example = "某科技公司")
+    private String targetName;
+
+    /**
      * 目标ID
      * 对应租户/角色/用户的ID
      */
@@ -61,12 +67,6 @@ public class SysPermissionPolicyCommonVO {
      */
     @Schema(description = "是否向下继承", example = "true")
     private Boolean inheritanceEnabled;
-
-    /**
-     * 创建人ID
-     */
-    @Schema(description = "创建人ID", example = "100")
-    private Long createBy;
 
     /**
      * 创建人姓名
