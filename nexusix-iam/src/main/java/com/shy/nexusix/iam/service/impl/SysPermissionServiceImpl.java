@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
  * <p>
  * 提供权限资源的CRUD、树形结构构建、批量操作、状态切换等业务逻辑实现。
  * 所有删除操作均为逻辑删除，新增/修改操作会校验权限标识唯一性。
+ * parentName冗余字段在新增/修改时根据parentId自动填充。
  * </p>
  *
  * @author shy
@@ -52,6 +53,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     @Override
     public List<SysPermissionCommonVO> queryPermissionList() {
 
+        /* 构建查询条件：仅查询未删除的权限，按类型和ID升序 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<SysPermission>()
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByAsc(SysPermission::getPermType)
@@ -64,12 +66,17 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
 
     /**
      * 分页查询权限
+     * <p>
+     * 返回分页后的权限列表
+     * </p>
      */
     @Override
     public IPage<SysPermissionCommonVO> queryPermissionPage(PageCommonRTO page) {
 
+        /* 构建分页参数 */
         Page<SysPermission> pageParam = new Page<>(page.getPageNum(), page.getPageSize());
 
+        /* 构建查询条件：仅查询未删除的权限，按类型和ID升序 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<SysPermission>()
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByAsc(SysPermission::getPermType)
@@ -89,6 +96,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     @Override
     public List<SysPermissionTreeVO> queryPermissionTreeList() {
 
+        /* 查询所有未删除的权限 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<SysPermission>()
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByAsc(SysPermission::getPermType)
@@ -96,8 +104,10 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
 
         List<SysPermission> permissionList = this.list(wrapper);
 
+        /* 转换为树形VO列表 */
         List<SysPermissionTreeVO> treeVOList = sysPermissionConverter.toTreeVOList(permissionList);
 
+        /* 构建树形结构 */
         return buildPermissionTree(treeVOList);
     }
 
@@ -110,20 +120,26 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     @Override
     public IPage<SysPermissionCommonVO> queryPermission(SysPermissionQueryRTO queryParam) {
 
+        /* 构建分页参数 */
         Page<SysPermission> pageParam = new Page<>(queryParam.getPageNum(), queryParam.getPageSize());
 
+        /* 构建动态查询条件 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<>();
 
+        /* 按权限名称模糊匹配 */
         wrapper.like(StringUtils.isNotBlank(queryParam.getPermName()),
                 SysPermission::getPermName, queryParam.getPermName());
 
+        /* 按权限标识模糊匹配 */
         wrapper.like(StringUtils.isNotBlank(queryParam.getPermCode()),
                 SysPermission::getPermCode, queryParam.getPermCode());
 
+        /* 按权限类型精确筛选 */
         if (queryParam.getPermType() != null) {
             wrapper.eq(SysPermission::getPermType, queryParam.getPermType());
         }
 
+        /* 按状态精确筛选 */
         if (queryParam.getStatus() != null) {
             wrapper.eq(SysPermission::getStatus, queryParam.getStatus());
         }
@@ -138,14 +154,20 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
 
     /**
      * 查询权限详情
+     *
+     * @param id 权限ID
+     * @return 权限详情视图对象
+     * @throws BusinessException 当权限不存在时抛出
      */
     @Override
     public SysPermissionDetailVO queryPermissionDetail(String id) {
 
+        /* 参数校验 */
         if (StringUtils.isBlank(id)) {
             throw new BusinessException(400, "权限ID不能为空");
         }
 
+        /* 查询权限实体 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<SysPermission>()
                 .eq(SysPermission::getId, Long.parseLong(id))
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -162,12 +184,14 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     /**
      * 新增权限
      * <p>
-     * 校验权限标识唯一性，parentId为空时默认设为0（顶级权限）
+     * 校验权限标识唯一性，parentId为空时默认设为0（顶级权限），
+     * 根据parentId自动填充parentName冗余字段
      * </p>
      */
     @Override
     public Integer addPermission(SysPermissionAddRTO addParam) {
 
+        /* 校验权限标识唯一性 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<SysPermission>()
                 .eq(SysPermission::getPermCode, addParam.getPermCode());
 
@@ -177,11 +201,16 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(400, "权限标识已存在");
         }
 
+        /* RTO转Entity，枚举自动转编码 */
         SysPermission entity = sysPermissionConverter.toEntityAdd(addParam);
 
+        /* parentId为空时默认设为0（顶级权限） */
         if (entity.getParentId() == null) {
             entity.setParentId(0L);
         }
+
+        /* 根据parentId自动填充parentName冗余字段 */
+        fillParentName(entity);
 
         boolean result = this.save(entity);
 
@@ -195,13 +224,15 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     /**
      * 修改权限
      * <p>
-     * 校验权限存在性和标识唯一性（排除自身），parentId为空时默认设为0
+     * 校验权限存在性和标识唯一性（排除自身），parentId为空时默认设为0，
+     * 根据parentId自动更新parentName冗余字段
      * </p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer updatePermission(SysPermissionUpdateRTO updateParam) {
 
+        /* 校验权限是否存在 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<SysPermission>()
                 .eq(SysPermission::getId, updateParam.getId())
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -211,6 +242,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(404, "权限不存在");
         }
 
+        /* 校验权限标识唯一性（排除自身） */
         if (!existPermission.getPermCode().equals(updateParam.getPermCode())) {
             LambdaQueryWrapper<SysPermission> codeWrapper = new LambdaQueryWrapper<SysPermission>()
                     .eq(SysPermission::getPermCode, updateParam.getPermCode())
@@ -221,11 +253,16 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             }
         }
 
+        /* RTO转Entity，枚举自动转编码 */
         SysPermission entity = sysPermissionConverter.toEntityUpdate(updateParam);
 
+        /* parentId为空时默认设为0 */
         if (entity.getParentId() == null) {
             entity.setParentId(0L);
         }
+
+        /* 根据parentId自动更新parentName冗余字段 */
+        fillParentName(entity);
 
         boolean result = this.updateById(entity);
 
@@ -245,6 +282,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     @Override
     public Integer updatePermissionStatus(String id, String status) {
 
+        /* 参数校验 */
         if (StringUtils.isBlank(id)) {
             throw new BusinessException(400, "权限ID不能为空");
         }
@@ -253,6 +291,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(400, "状态不能为空");
         }
 
+        /* 解析状态值：支持数字编码和枚举名称两种格式 */
         GlobalEnum.Status permStatus;
         try {
             int statusCode = Integer.parseInt(status);
@@ -264,6 +303,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(400, "状态值不合法，仅支持：1-启用、0-禁用");
         }
 
+        /* 校验权限是否存在 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<SysPermission>()
                 .eq(SysPermission::getId, Long.parseLong(id))
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -273,10 +313,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(400, "权限不存在");
         }
 
+        /* 校验状态是否发生变更 */
         if (permStatus.getCode().equals(existPermission.getStatus())) {
             throw new BusinessException(400, "权限状态未变更");
         }
 
+        /* 执行状态更新 */
         SysPermission updatePermission = new SysPermission();
         updatePermission.setId(Long.parseLong(id));
         updatePermission.setStatus(permStatus.getCode());
@@ -299,6 +341,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     @Override
     public Integer deletePermission(String id) {
 
+        /* 校验权限是否存在 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<SysPermission>()
                 .eq(SysPermission::getId, id)
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -308,6 +351,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(400, "权限不存在");
         }
 
+        /* 校验是否存在子权限 */
         LambdaQueryWrapper<SysPermission> childWrapper = new LambdaQueryWrapper<SysPermission>()
                 .eq(SysPermission::getParentId, Long.parseLong(id))
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -316,6 +360,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(400, "该权限下存在子权限，请先删除子权限");
         }
 
+        /* 执行逻辑删除 */
         SysPermission permission = new SysPermission();
         permission.setId(Long.parseLong(id));
         permission.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
@@ -332,17 +377,20 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     /**
      * 批量新增权限
      * <p>
-     * 单次上限100条，校验批量内部去重和数据库唯一性
+     * 单次上限100条，校验批量内部去重和数据库唯一性，
+     * 根据parentId自动填充parentName冗余字段
      * </p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer batchAddPermission(List<SysPermissionAddRTO> addParamList) {
 
+        /* 校验批量上限 */
         if (addParamList.size() > 100) {
             throw new BusinessException(400, "单次批量新增数量不能超过100条");
         }
 
+        /* 校验批量内部标识去重 */
         Set<String> codeSet = new HashSet<>();
         for (SysPermissionAddRTO param : addParamList) {
             if (codeSet.contains(param.getPermCode())) {
@@ -351,6 +399,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             codeSet.add(param.getPermCode());
         }
 
+        /* 校验数据库标识唯一性 */
         LambdaQueryWrapper<SysPermission> wrapper = new LambdaQueryWrapper<SysPermission>()
                 .in(SysPermission::getPermCode, codeSet);
         long existCount = this.count(wrapper);
@@ -359,11 +408,16 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(400, "部分权限标识已存在，请检查后重试");
         }
 
+        /* RTO列表转Entity列表 */
         List<SysPermission> entityList = sysPermissionConverter.toEntityListAdd(addParamList);
+
+        /* 填充默认值和parentName冗余字段 */
         for (SysPermission entity : entityList) {
             if (entity.getParentId() == null) {
                 entity.setParentId(0L);
             }
+            /* 根据parentId自动填充parentName冗余字段 */
+            fillParentName(entity);
         }
 
         boolean batch = this.saveBatch(entityList);
@@ -378,17 +432,20 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     /**
      * 批量修改权限
      * <p>
-     * 单次上限100条，校验ID存在性和标识唯一性（含批量内部去重）
+     * 单次上限100条，校验ID存在性和标识唯一性（含批量内部去重），
+     * 根据parentId自动更新parentName冗余字段
      * </p>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer batchUpdatePermission(List<SysPermissionUpdateRTO> updateParamList) {
 
+        /* 校验批量上限 */
         if (updateParamList.size() > 100) {
             throw new BusinessException(400, "单次批量修改数量不能超过100条");
         }
 
+        /* 校验批量内部ID和标识去重 */
         Set<Long> idSet = new HashSet<>();
         Set<String> codeSet = new HashSet<>();
         for (SysPermissionUpdateRTO item : updateParamList) {
@@ -405,6 +462,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             codeSet.add(item.getPermCode());
         }
 
+        /* 校验所有权限是否存在 */
         LambdaQueryWrapper<SysPermission> existWrapper = new LambdaQueryWrapper<SysPermission>()
                 .in(SysPermission::getId, idSet)
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -414,12 +472,15 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(400, "部分权限不存在，请检查后重试");
         }
 
+        /* RTO转Entity并填充默认值和parentName冗余字段 */
         List<SysPermission> entityList = new ArrayList<>();
         for (SysPermissionUpdateRTO rto : updateParamList) {
             SysPermission entity = sysPermissionConverter.toEntityUpdate(rto);
             if (entity.getParentId() == null) {
                 entity.setParentId(0L);
             }
+            /* 根据parentId自动更新parentName冗余字段 */
+            fillParentName(entity);
             entityList.add(entity);
         }
 
@@ -441,10 +502,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     @Override
     public Integer batchDeletePermission(List<String> ids) {
 
+        /* 校验批量上限 */
         if (ids.size() > 100) {
             throw new BusinessException(400, "单次批量删除数量不能超过100条");
         }
 
+        /* 收集并校验ID */
         Set<Long> idSet = new HashSet<>();
         for (String id : ids) {
             if (StringUtils.isBlank(id)) {
@@ -453,6 +516,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             idSet.add(Long.parseLong(id));
         }
 
+        /* 查询存在的权限 */
         LambdaQueryWrapper<SysPermission> existWrapper = new LambdaQueryWrapper<SysPermission>()
                 .in(SysPermission::getId, idSet)
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -462,6 +526,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(404, "未找到可删除的权限");
         }
 
+        /* 校验是否存在子权限 */
         LambdaQueryWrapper<SysPermission> childWrapper = new LambdaQueryWrapper<SysPermission>()
                 .in(SysPermission::getParentId, idSet)
                 .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -470,6 +535,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
             throw new BusinessException(400, "部分权限下存在子权限，请先删除子权限");
         }
 
+        /* 构建逻辑删除列表 */
         List<SysPermission> deleteList = new ArrayList<>();
         for (SysPermission perm : existPermissions) {
             SysPermission deletePerm = new SysPermission();
@@ -488,6 +554,33 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     }
 
     /**
+     * 根据parentId自动填充parentName冗余字段
+     * <p>
+     * 当parentId为0或null时，parentName设为"顶级"；
+     * 否则查询父权限的permName进行填充
+     * </p>
+     *
+     * @param entity 权限实体对象
+     */
+    private void fillParentName(SysPermission entity) {
+
+        /* 顶级权限：parentId为0或null */
+        if (entity.getParentId() == null || entity.getParentId() == 0L) {
+            entity.setParentName("顶级");
+            return;
+        }
+
+        /* 查询父权限的名称 */
+        SysPermission parentPermission = this.getById(entity.getParentId());
+        if (parentPermission != null) {
+            entity.setParentName(parentPermission.getPermName());
+        } else {
+            /* 父权限不存在时设为空字符串，避免脏数据 */
+            entity.setParentName("");
+        }
+    }
+
+    /**
      * 构建权限树形结构
      * <p>
      * 根据parentId将平铺列表组装为父子层级结构，
@@ -499,15 +592,18 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
      */
     private List<SysPermissionTreeVO> buildPermissionTree(List<SysPermissionTreeVO> treeVOList) {
 
+        /* 按parentId分组，构建父→子映射 */
         Map<Long, List<SysPermissionTreeVO>> parentMap = treeVOList.stream()
                 .filter(vo -> vo.getParentId() != null && vo.getParentId() != 0L)
                 .collect(Collectors.groupingBy(SysPermissionTreeVO::getParentId));
 
+        /* 为每个节点设置子节点列表 */
         for (SysPermissionTreeVO vo : treeVOList) {
             List<SysPermissionTreeVO> children = parentMap.get(vo.getId());
             vo.setChildPermission(children);
         }
 
+        /* 返回根节点列表（parentId为0或null） */
         return treeVOList.stream()
                 .filter(vo -> vo.getParentId() == null || vo.getParentId() == 0L)
                 .collect(Collectors.toList());

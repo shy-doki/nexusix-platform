@@ -19,7 +19,8 @@ import java.util.List;
  * <p>
  * 基于MapStruct实现Entity/RTO/VO之间的对象映射，
  * 包含目标类型、动作、删除标记等枚举与描述的互转逻辑。
-     * permName和permCode需在Service层通过关联查询手动填充。
+ * permName字段已冗余至策略表，Converter自动映射；
+ * permCode需在Service层通过关联查询手动填充至DetailVO。
  * </p>
  *
  * @author shy
@@ -30,22 +31,19 @@ public interface SysPermissionPolicyConverter {
 
     /**
      * Entity转CommonVO（列表展示）
-     * 目标类型和动作自动转为中文描述，权限名称和标识需外部填充
+     * 目标类型和动作自动转为中文描述，permName从Entity冗余字段直接映射
      */
     @Named("toCommonVO")
     @Mapping(target = "targetType", source = "targetType", qualifiedByName = "intTargetTypeToDesc")
     @Mapping(target = "action", source = "action", qualifiedByName = "intActionToDesc")
-    @Mapping(target = "permName", ignore = true)
-    @Mapping(target = "permCode", ignore = true)
     SysPermissionPolicyCommonVO toCommonVO(SysPermissionPolicy entity);
 
     /**
      * Entity转DetailVO（详情展示）
-     * 包含逻辑删除描述，权限名称和标识需外部填充
+     * 包含逻辑删除描述，permName从Entity冗余字段直接映射，permCode需外部填充
      */
     @Mapping(target = "targetType", source = "targetType", qualifiedByName = "intTargetTypeToDesc")
     @Mapping(target = "action", source = "action", qualifiedByName = "intActionToDesc")
-    @Mapping(target = "permName", ignore = true)
     @Mapping(target = "permCode", ignore = true)
     @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "intDeletedToDesc")
     SysPermissionPolicyDetailVO toDetailVO(SysPermissionPolicy entity);
