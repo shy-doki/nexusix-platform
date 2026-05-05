@@ -2525,6 +2525,70 @@ public final class GlobalEnum {
         public static boolean isValidCode(Integer code) {
             return getByCode(code) != null;
         }
+
+        /**
+         * 根据描述获取枚举
+         */
+        public static RoleLevel getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (RoleLevel e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         */
+        public static RoleLevel getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 RoleLevel 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 2, 3 → SYSTEM, TENANT, USER</li>
+         *   <li>字符串数字: "1", "2" → SYSTEM, TENANT</li>
+         *   <li>中文描述: "系统级", "租户级" → SYSTEM, TENANT</li>
+         *   <li>枚举名称: "SYSTEM", "TENANT" → 对应枚举</li>
+         *   <li>枚举对象: RoleLevel.SYSTEM → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static RoleLevel parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof RoleLevel) {
+                return (RoleLevel) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            RoleLevel byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
+        }
     }
 
     /**
