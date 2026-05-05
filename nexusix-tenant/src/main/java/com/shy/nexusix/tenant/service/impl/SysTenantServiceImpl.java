@@ -3,7 +3,6 @@ package com.shy.nexusix.tenant.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.shy.nexusix.common.constant.GlobalConstant;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
@@ -41,6 +40,14 @@ import java.util.Set;
 @Service
 public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant> implements ISysTenantService {
 
+    // TODO 业务校验 + 软删除考虑使用aop结合注解去做
+
+    // TODO 权限校验 控制器层/aop处理
+
+    // TODO 业务校验(如不同角色查看的数据内容)
+
+    // TODO 后续实现逻辑删除仅超级管理可见 才返回 否则剔除
+
     @Autowired
     private SysTenantConverter sysTenantConverter;
 
@@ -61,19 +68,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public List<SysTenantCommonVO> queryTenantList() {
 
-        // TODO 业务校验 + 软删除考虑使用aop结合注解去做
-
-        // TODO 权限校验 控制器层/aop处理
-
-        // TODO 业务校验(如不同角色查看的数据内容)
-
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByDesc(SysTenant::getCreateTime);
 
         List<SysTenant> tenantList = this.list(wrapper);
-
-        // TODO 后续实现逻辑删除仅超级管理可见 才返回 否则剔除
 
         return sysTenantConverter.toVoList(tenantList);
     }
@@ -301,7 +300,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             addParam.setAncestors(ancestors);
         }
 
-        boolean result = this.save(sysTenantConverter.toEntity(addParam));
+        boolean result = this.save(sysTenantConverter.toEntityAdd(addParam));
 
         if (!result) {
             throw new BusinessException(500, "新增租户失败");
@@ -375,7 +374,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         }
 
-        SysTenant tenant = sysTenantConverter.toEntity(updateParam);
+        SysTenant tenant = sysTenantConverter.toEntityUpdate(updateParam);
 
         boolean result = this.updateById(tenant);
 
@@ -472,7 +471,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "部分租户编码已存在，请检查后重试");
         }
 
-        boolean batch = this.saveBatch(sysTenantConverter.toEntityList(addParamList));
+        boolean batch = this.saveBatch(sysTenantConverter.toEntityListAdd(addParamList));
 
         if (!batch) {
             throw new BusinessException(500, "批量新增租户失败");
@@ -539,7 +538,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "部分租户编码已存在，请检查后重试");
         }
 
-        boolean batch = this.updateBatchById(sysTenantConverter.toEntityList(updateParamList));
+        boolean batch = this.updateBatchById(sysTenantConverter.toEntityListUpdate(updateParamList));
 
         if (!batch) {
             throw new BusinessException(500, "批量更新租户失败");

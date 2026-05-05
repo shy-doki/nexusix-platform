@@ -63,9 +63,10 @@ public interface SysTenantConverter {
      * @author shy
      * @since 2026-04-27
      */
+    @Named("toEntityAdd")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
-    SysTenant toEntity(SysTenantAddRTO rto);
+    SysTenant toEntityAdd(SysTenantAddRTO rto);
 
     /**
      * <p>
@@ -77,15 +78,36 @@ public interface SysTenantConverter {
      * @author shy
      * @since 2026-04-27
      */
+    @Named("toEntityUpdate")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
-    SysTenant toEntity(SysTenantUpdateRTO rto);
+    SysTenant toEntityUpdate(SysTenantUpdateRTO rto);
 
-    @IterableMapping(qualifiedByName = "toEntity")
-    List<SysTenant> toEntityList(List<SysTenantAddRTO> list);
+    /**
+     * <p>
+     * 将新增租户请求对象列表转换为租户实体列表
+     * </p>
+     *
+     * @param list 新增租户请求对象列表
+     * @return 租户实体列表，可用于批量持久化操作
+     * @author shy
+     * @since 2026-04-27
+     */
+    @IterableMapping(qualifiedByName = "toEntityAdd")
+    List<SysTenant> toEntityListAdd(List<SysTenantAddRTO> list);
 
-    @IterableMapping(qualifiedByName = "toEntity")
-    List<SysTenant> toEntityList(List<SysTenantUpdateRTO> list);
+    /**
+     * <p>
+     * 将更新租户请求对象列表转换为租户实体列表
+     * </p>
+     *
+     * @param list 更新租户请求对象列表
+     * @return 租户实体列表，可用于批量更新操作
+     * @author shy
+     * @since 2026-04-27
+     */
+    @IterableMapping(qualifiedByName = "toEntityUpdate")
+    List<SysTenant> toEntityListUpdate(List<SysTenantUpdateRTO> list);
 
     /**
      * <p>
