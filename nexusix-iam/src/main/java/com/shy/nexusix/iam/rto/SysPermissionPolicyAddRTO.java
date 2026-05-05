@@ -35,6 +35,12 @@ public class SysPermissionPolicyAddRTO {
     private Long permissionId;
 
     /**
+     * 权限名称
+     */
+    @Schema(description = "权限名称", example = "用户管理")
+    private String permName;
+
+    /**
      * 动作(通过枚举转换)
      * 1-允许 2-拒绝
      */

@@ -13,17 +13,9 @@ import java.time.LocalDateTime;
 public class SysPermissionDetailVO extends SysPermissionCommonVO {
 
     /**
-     * 逻辑删除描述
-     * 未删除/已删除
+     * 资源路径
      */
-    @Schema(description = "逻辑删除描述", example = "未删除")
-    private String isDeleted;
-
-    /**
-     * 更新时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-    @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
-    private LocalDateTime updateTime;
+    @Schema(description = "资源路径", example = "/system/user")
+    private String path;
 
 }

@@ -50,6 +50,10 @@ public class SysPermission implements Serializable {
     @TableField(value = "parent_id")
     private Long parentId;
 
+    @Schema(description = "父权限名称", example = "用户管理")
+    @TableField(value = "parent_name")
+    private String parentName;
+
     @Schema(description = "资源路径", example = "/system/user")
     @TableField(value = "path")
     private String path;

@@ -45,6 +45,12 @@ public class SysPermissionAddRTO {
     private Long parentId;
 
     /**
+     * 父权限名称
+     */
+    @Schema(description = "父权限名称", example = "用户管理")
+    private String parentName;
+
+    /**
      * 资源路径
      * 菜单类型对应路由地址，接口类型对应API路径
      */

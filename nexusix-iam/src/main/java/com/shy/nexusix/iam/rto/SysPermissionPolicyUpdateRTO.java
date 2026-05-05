@@ -3,6 +3,7 @@ package com.shy.nexusix.iam.rto;
 import com.shy.nexusix.common.annotation.EnumField;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -40,6 +41,13 @@ public class SysPermissionPolicyUpdateRTO {
     @NotNull(message = "关联权限ID不能为空")
     @Schema(description = "关联权限 ID", example = "1001")
     private Long permissionId;
+
+    /**
+     * 权限名称
+     */
+    @NotBlank(message = "关联权限名称不能为空")
+    @Schema(description = "权限名称", example = "用户管理")
+    private String permName;
 
     /**
      * 动作(通过枚举转换)

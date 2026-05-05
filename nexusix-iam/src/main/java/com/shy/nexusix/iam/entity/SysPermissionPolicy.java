@@ -46,6 +46,10 @@ public class SysPermissionPolicy implements Serializable {
     @TableField(value = "permission_id")
     private Long permissionId;
 
+    @Schema(description = "关联权限姓名", example = "用户管理")
+    @TableField(value = "perm_name")
+    private String permName;
+
     @Schema(description = "动作 (1-允许 2-拒绝)", example = "1")
     @TableField(value = "action")
     private Integer action;
@@ -61,6 +65,10 @@ public class SysPermissionPolicy implements Serializable {
     @Schema(description = "创建人 ID", example = "100")
     @TableField(value = "create_by")
     private Long createBy;
+
+    @Schema(description = "创建人姓名", example = "张三")
+    @TableField(value = "create_by_name")
+    private String createByName;
 
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "create_time", fill = FieldFill.INSERT)

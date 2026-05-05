@@ -10,16 +10,9 @@ import lombok.EqualsAndHashCode;
 public class SysPermissionPolicyDetailVO extends SysPermissionPolicyCommonVO {
 
     /**
-     * 创建人ID
+     * 权限标识（关联查询填充）
      */
-    @Schema(description = "创建人ID", example = "100")
-    private Long createBy;
-
-    /**
-     * 逻辑删除描述
-     * 未删除/已删除
-     */
-    @Schema(description = "逻辑删除描述", example = "未删除")
-    private String isDeleted;
+    @Schema(description = "权限标识", example = "system:user:add")
+    private String permCode;
 
 }
