@@ -21,7 +21,7 @@ public class SysTenantAssignRTO {
     /**
      * 父租户编码
      */
-    @NotEmpty(message = "父租户编码不能为空")
+    @NotBlank(message = "父租户编码不能为空")
     @Size(max = 100, message = "父租户编码长度不能超过100")
     @Schema(description = "父租户编码", example = "PAREN_TENANT_001")
     private String parentCode;

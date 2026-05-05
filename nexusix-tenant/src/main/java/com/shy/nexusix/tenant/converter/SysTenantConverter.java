@@ -67,6 +67,8 @@ public interface SysTenantConverter {
     @Named("toEntityAdd")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
+    @Mapping(target = "parentId", source = "parentId", qualifiedByName = "stringToLong")
+    @Mapping(target = "packageId", source = "packageId", qualifiedByName = "stringToLong")
     SysTenant toEntityAdd(SysTenantAddRTO rto);
 
     /**
@@ -82,6 +84,8 @@ public interface SysTenantConverter {
     @Named("toEntityUpdate")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
+    @Mapping(target = "parentId", source = "parentId", qualifiedByName = "stringToLong")
+    @Mapping(target = "packageId", source = "packageId", qualifiedByName = "stringToLong")
     SysTenant toEntityUpdate(SysTenantUpdateRTO rto);
 
     /**
@@ -293,6 +297,24 @@ public interface SysTenantConverter {
         if (code == null) return null;
         Deleted deleted = Deleted.getByCode(code);
         return deleted != null ? deleted.getDesc() : null;
+    }
+
+    /**
+     * <p>
+     * 将 String 类型的 ID 转换为 Long 类型
+     * </p>
+     *
+     * @param value String 类型的 ID
+     * @return Long 类型的 ID
+     * @author shy
+     * @since 2026-05-05
+     */
+    @Named("stringToLong")
+    default Long stringToLong(String value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        return Long.parseLong(value);
     }
 
 } 

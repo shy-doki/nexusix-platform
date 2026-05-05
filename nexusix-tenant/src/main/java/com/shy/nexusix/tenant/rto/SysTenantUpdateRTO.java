@@ -37,7 +37,6 @@ public class SysTenantUpdateRTO {
      * 租户编码
      */
     @NotBlank(message = "租户编码不能为空")
-    @Pattern(regexp = ALPHANUMERIC, message = "租户编码格式不正确")
     @Schema(description = "租户编码", example = "TEN0000001")
     private String tenantCode;
 
@@ -47,7 +46,7 @@ public class SysTenantUpdateRTO {
     @NotNull(message = "父租户ID不能为空")
     @Pattern(regexp = SNOWFLAKE_ID, message = "父租户ID格式不正确")
     @Schema(description = "父租户ID", example = "1987654321098765432")
-    private Long parentId;
+    private String parentId;
 
     /**
      * 父租户名称
@@ -76,7 +75,7 @@ public class SysTenantUpdateRTO {
     /**
      * 状态(通过枚举转换)
      */
-    @NotBlank(message = "状态不能为空")
+    @NotNull(message = "状态不能为空")
     @EnumField
     @Schema(description = "状态(通过枚举转换)", example = "正常")
     private GlobalEnum.TenantStatus status;
@@ -96,7 +95,7 @@ public class SysTenantUpdateRTO {
     @NotNull(message = "套餐ID不能为空")
     @Pattern(regexp = SNOWFLAKE_ID, message = "套餐ID格式不正确")
     @Schema(description = "套餐ID", example = "1001")
-    private Long packageId;
+    private String packageId;
 
     /**
      * 套餐名称

@@ -457,7 +457,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         String ancestors;
 
         // 处理父租户关系
-        if (addParam.getParentId() != null && addParam.getParentId() != 0L) {
+        if (StringUtils.isNotBlank(addParam.getParentId())) {
             // 查询父租户是否存在
             LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getId, addParam.getParentId())

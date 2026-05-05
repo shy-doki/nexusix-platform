@@ -15,7 +15,10 @@ import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +34,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/tenant")
 @Tag(name = "租户管理", description = "租户基础信息管理相关接口")
+@Validated
 public class SysTenantController {
 
     @Autowired
@@ -74,7 +78,7 @@ public class SysTenantController {
      */
     @GetMapping("/page")
     @Operation(summary = "分页查询租户列表", description = "返回分页后的租户列表")
-    public ApiResponse queryTenantPage(PageCommonRTO page) {
+    public ApiResponse queryTenantPage(@Valid PageCommonRTO page) {
         IPage<SysTenantCommonVO> tenantPage = iSysTenantService.queryTenantPage(page);
         return ApiResponse.success(tenantPage);
     }
@@ -117,7 +121,7 @@ public class SysTenantController {
      */
     @GetMapping("/tree/page")
     @Operation(summary = "分页查询租户树形结构", description = "返回所有租户的层级树形结构")
-    public ApiResponse queryTenantTreePage(PageCommonRTO page) {
+    public ApiResponse queryTenantTreePage(@Valid PageCommonRTO page) {
         IPage<SysTenantTreeVO> tenantTreePage = iSysTenantService.queryTenantTreePage(page);
         return ApiResponse.success(tenantTreePage);
     }
@@ -139,7 +143,7 @@ public class SysTenantController {
      */
     @GetMapping("/tree/{id}")
     @Operation(summary = "查询指定租户树形结构", description = "返回所有租户的层级树形结构")
-    public ApiResponse queryTenantTree(@RequestParam String id) {
+    public ApiResponse queryTenantTree(@NotBlank(message = "Id不能为空") @RequestParam String id) {
         SysTenantTreeVO tenantTree = iSysTenantService.queryTenantTree(id);
         return ApiResponse.success(tenantTree);
     }
@@ -161,7 +165,7 @@ public class SysTenantController {
      */
     @PostMapping("/query")
     @Operation(summary = "条件查询租户列表", description = "返回满足条件的租户列表")
-    public ApiResponse queryTenant(@RequestBody SysTenantQueryRTO queryParam) {
+    public ApiResponse queryTenant(@Valid @RequestBody SysTenantQueryRTO queryParam) {
         IPage<SysTenantCommonVO> tenantPage = iSysTenantService.queryTenant(queryParam);
         return ApiResponse.success(tenantPage);
     }
@@ -183,7 +187,7 @@ public class SysTenantController {
      */
     @GetMapping("/detail/{tenantCode}")
     @Operation(summary = "查询租户详情", description = "返回指定租户的详情信息")
-    public ApiResponse queryTenantDetail(@PathVariable String tenantCode) {
+    public ApiResponse queryTenantDetail(@NotBlank(message = "租户编码不能为空") @PathVariable String tenantCode) {
         SysTenantDetailVO tenantDetail = iSysTenantService.queryTenantDetail(tenantCode);
         return ApiResponse.success(tenantDetail);
     }
@@ -204,7 +208,7 @@ public class SysTenantController {
      */
     @PostMapping("/add")
     @Operation(summary = "新增租户", description = "新增租户信息")
-    public ApiResponse addTenant(@RequestBody SysTenantAddRTO addParam) {
+    public ApiResponse addTenant(@Valid @RequestBody SysTenantAddRTO addParam) {
         Integer affectedRows = iSysTenantService.addTenant(addParam);
         return ApiResponse.success(affectedRows);
     }
@@ -226,7 +230,7 @@ public class SysTenantController {
      */
     @PutMapping("/update")
     @Operation(summary = "修改租户", description = "修改租户信息")
-    public ApiResponse updateTenant(@RequestBody SysTenantUpdateRTO updateParam) {
+    public ApiResponse updateTenant(@Valid @RequestBody SysTenantUpdateRTO updateParam) {
         Integer affectedRows = iSysTenantService.updateTenant(updateParam);
         return  ApiResponse.success(affectedRows);
     }
@@ -248,7 +252,7 @@ public class SysTenantController {
      */
     @DeleteMapping("/delete")
     @Operation(summary = "删除租户", description = "删除租户信息")
-    public ApiResponse deleteTenant(@RequestParam @Valid String id) {
+    public ApiResponse deleteTenant(@NotBlank(message = "Id不能为空") @RequestParam String id) {
         Integer affectedRows = iSysTenantService.deleteTenant(id);
         return  ApiResponse.success(affectedRows);
     }
@@ -270,7 +274,7 @@ public class SysTenantController {
      */
     @PostMapping("/batch")
     @Operation(summary = "批量新增租户", description = "批量新增租户信息")
-    public ApiResponse batchAddTenant(@RequestBody List<SysTenantAddRTO> addParamList) {
+    public ApiResponse batchAddTenant(@Valid @NotEmpty @RequestBody List<SysTenantAddRTO> addParamList) {
         Integer affectedRows = iSysTenantService.batchAddTenant(addParamList);
         return ApiResponse.success(affectedRows);
     }
@@ -292,7 +296,7 @@ public class SysTenantController {
      */
     @PutMapping("/batch")
     @Operation(summary = "批量修改租户", description = "批量修改租户信息")
-    public ApiResponse batchUpdateTenant(@RequestBody List<SysTenantUpdateRTO> updateParamList) {
+    public ApiResponse batchUpdateTenant(@Valid @RequestBody List<SysTenantUpdateRTO> updateParamList) {
         Integer affectedRows = iSysTenantService.batchUpdateTenant(updateParamList);
         return ApiResponse.success(affectedRows);
     }
@@ -314,7 +318,7 @@ public class SysTenantController {
      */
     @DeleteMapping("/batch")
     @Operation(summary = "批量删除租户", description = "批量删除租户信息")
-    public ApiResponse batchDeleteTenant(List<String> ids) {
+    public ApiResponse batchDeleteTenant(@NotEmpty List<String> ids) {
         Integer affectedRows =  iSysTenantService.batchDeleteTenant(ids);
         return ApiResponse.success(affectedRows);
     }
@@ -336,7 +340,7 @@ public class SysTenantController {
      */
     @PostMapping("/assign/sub")
     @Operation(summary = "分配子租户", description = "为指定父租户分配子租户，自动处理层级关系")
-    public ApiResponse assignSubTenant(@RequestBody @Valid SysTenantAssignRTO assignParam) {
+    public ApiResponse assignSubTenant(@Valid @RequestBody SysTenantAssignRTO assignParam) {
         Integer affectedRows = iSysTenantService.assignSubTenant(assignParam);
         return ApiResponse.success(affectedRows);
     }
@@ -359,7 +363,7 @@ public class SysTenantController {
      */
     @PutMapping("/assign/parent")
     @Operation(summary = "分配父租户", description = "为指定租户分配父租户，处理层级调整及数据关联更新")
-    public ApiResponse assignParentTenant(@RequestBody @Valid SysTenantAssignRTO assignParam) {
+    public ApiResponse assignParentTenant(@Valid @RequestBody SysTenantAssignRTO assignParam) {
         Integer affectedRows = iSysTenantService.assignParentTenant(assignParam);
         return ApiResponse.success(affectedRows);
     }
