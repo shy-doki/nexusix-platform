@@ -5,6 +5,7 @@ import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.tenant.entity.SysTenant;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
+import com.shy.nexusix.tenant.rto.SysTenantAssignRTO;
 import com.shy.nexusix.tenant.rto.SysTenantQueryRTO;
 import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
@@ -59,6 +60,39 @@ public interface ISysTenantService extends IService<SysTenant> {
 
     /**
      * <p>
+     * 查询租户树形结构
+     * </p>
+     * <p>
+     * 返回所有租户的层级树形结构
+     * 需要登录并具备租户查看权限才能访问。
+     * </p>
+     *
+     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
+     * @author shy
+     * @since 2026-04-19
+     */
+    List<SysTenantTreeVO> queryTenantTreeList();
+
+    /**
+     * <p>
+     * 分页查询租户树形结构
+     * </p>
+     * <p>
+     * 返回所有租户的层级树形结构
+     * 需要登录并具备租户查看权限才能访问。
+     * </p>
+     *
+     * @param page 分页参数
+     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
+     * @author shy
+     * @since 2026-04-19
+     */
+    IPage<SysTenantTreeVO> queryTenantTreePage(PageCommonRTO page);
+
+    /**
+     * <p>
      * 查询指定租户的树形结构
      * </p>
      * <p>
@@ -66,13 +100,13 @@ public interface ISysTenantService extends IService<SysTenant> {
      * 返回的租户编码会自动进行脱敏处理（保留前3位和后3位，中间用星号替换）。
      * </p>
      *
-     * @param tenantCode 租户编码，用于定位要查询的租户节点
+     * @param id 租户Id，用于定位要查询的租户节点
      * @return 租户树形结构列表，每个节点包含租户名称、脱敏后的租户编码、父租户ID、联系人、状态等信息
      * @throws com.shy.nexusix.common.exception.BusinessException 当数据库查询失败或数据异常时抛出
      * @author shy
      * @since 2026-04-19
      */
-    List<SysTenantTreeVO> queryTenantTree(String tenantCode);
+    SysTenantTreeVO queryTenantTree(String id);
 
     /**
      * <p>
@@ -143,6 +177,24 @@ public interface ISysTenantService extends IService<SysTenant> {
 
     /**
      * <p>
+     * 更新租户状态
+     * </p>
+     * <p>
+     * 更新指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param id 租户ID
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    Integer updateTenantStatus(String id, String status);
+
+    /**
+     * <p>
      * 删除租户
      * </p>
      * <p>
@@ -194,6 +246,25 @@ public interface ISysTenantService extends IService<SysTenant> {
 
     /**
      * <p>
+     * 批量更新租户状态
+     * </p>
+     * <p>
+     * 批量更新多个指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 批量操作支持事务回滚，任一租户更新失败则全部失败。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param ids 租户ID集合
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    Integer batchUpdateTenantStatus(List<String> ids, String status);
+
+    /**
+     * <p>
      * 批量删除租户
      * </p>
      * <p>
@@ -208,4 +279,40 @@ public interface ISysTenantService extends IService<SysTenant> {
      * @since 2026-04-20
      */
     Integer batchDeleteTenant(List<String> ids);
+
+    /**
+     * <p>
+     * 分配子租户
+     * </p>
+     * <p>
+     * 为指定父租户分配一个新的子租户，自动处理层级关系和ancestors字段更新。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 子租户分配参数
+     * @return 更新子租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、父租户不存在或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    Integer assignSubTenant(SysTenantAssignRTO assignParam);
+
+    /**
+     * <p>
+     * 分配父租户
+     * </p>
+     * <p>
+     * 为指定租户分配一个新的父租户，处理层级关系调整及数据关联更新。
+     * 会进行循环层级验证，避免形成环状结构。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 父租户分配参数
+     * @return 更新子租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、参数非法或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    Integer assignParentTenant(SysTenantAssignRTO assignParam);
+
 }

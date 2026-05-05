@@ -84,6 +84,10 @@ public class SysTenant implements Serializable {
     @TableField(value = "ext_attributes")
     private String extAttributes;
 
+    @Schema(description = "是否有子租户", example = "有/无")
+    @TableField(value = "has_children")
+    private Boolean hasChildren;
+
     @Schema(description = "创建人 ID", example = "100")
     @TableField(value = "create_by")
     private Long createBy;

@@ -1,13 +1,15 @@
 package com.shy.nexusix.tenant.rto;
 
-import com.shy.nexusix.common.annotation.EnumField;
-import com.shy.nexusix.common.enums.GlobalEnum.TenantStatus;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
+
 @Data
+@Schema(description = "租户条件查询请求对象")
 public class SysTenantQueryRTO extends PageCommonRTO {
 
     /**
@@ -19,7 +21,7 @@ public class SysTenantQueryRTO extends PageCommonRTO {
     /**
      * 租户编码（脱敏）
      */
-    @Schema(description = "租户编码（脱敏）", example = "TEN******001")
+    @Schema(description = "租户编码", example = "TEN******001")
     private String tenantCode;
 
     /**
@@ -31,6 +33,7 @@ public class SysTenantQueryRTO extends PageCommonRTO {
     /**
      * 联系人电话
      */
+    @Pattern(regexp = CHINA_MOBILE, message = "联系人电话格式不正确")
     @Schema(description = "联系人电话", example = "13800138000")
     private String contactPhone;
 

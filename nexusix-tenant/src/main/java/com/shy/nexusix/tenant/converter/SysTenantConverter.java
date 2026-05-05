@@ -9,6 +9,7 @@ import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
 import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
+import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
 import org.mapstruct.*;
 
 import java.util.List;
@@ -66,6 +67,8 @@ public interface SysTenantConverter {
     @Named("toEntityAdd")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
+    @Mapping(target = "parentId", source = "parentId", qualifiedByName = "stringToLong")
+    @Mapping(target = "packageId", source = "packageId", qualifiedByName = "stringToLong")
     SysTenant toEntityAdd(SysTenantAddRTO rto);
 
     /**
@@ -81,7 +84,24 @@ public interface SysTenantConverter {
     @Named("toEntityUpdate")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
+    @Mapping(target = "parentId", source = "parentId", qualifiedByName = "stringToLong")
+    @Mapping(target = "packageId", source = "packageId", qualifiedByName = "stringToLong")
     SysTenant toEntityUpdate(SysTenantUpdateRTO rto);
+
+    /**
+     * <p>
+     * 将租户实体转换为树形视图对象
+     * </p>
+     *
+     * @param tenant 租户实体
+     * @return 租户树形视图对象
+     * @author shy
+     * @since 2026-05-04
+     */
+    @Named("toTreeVO")
+    @Mapping(target = "status", source = "status", qualifiedByName = "intStatusToDesc")
+    @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "intDeletedToDesc")
+    SysTenantTreeVO toTreeVO(SysTenant tenant);
 
     /**
      * <p>
@@ -124,6 +144,19 @@ public interface SysTenantConverter {
 
     /**
      * <p>
+     * 将租户实体列表转换为树形视图对象列表
+     * </p>
+     *
+     * @param list 租户实体列表
+     * @return 租户树形视图对象列表
+     * @author shy
+     * @since 2026-05-04
+     */
+    @IterableMapping(qualifiedByName = "toTreeVO")
+    List<SysTenantTreeVO> toTreeVOList(List<SysTenant> list);
+
+    /**
+     * <p>
      * 将租户实体分页对象转换为通用视图对象分页对象
      * </p>
      *
@@ -142,6 +175,31 @@ public interface SysTenantConverter {
         voPage.setTotal(entityPage.getTotal());
 
         List<SysTenantCommonVO> voList = toVoList(entityPage.getRecords());
+        voPage.setRecords(voList);
+
+        return voPage;
+    }
+
+    /**
+     * <p>
+     * 将租户实体分页对象转换为树形视图对象分页对象
+     * </p>
+     *
+     * @param entityPage 租户实体分页对象
+     * @return 租户树形视图对象分页对象
+     * @author shy
+     * @since 2026-05-04
+     */
+    default IPage<SysTenantTreeVO> toTreeVOPage(IPage<SysTenant> entityPage) {
+        if (entityPage == null) {
+            return null;
+        }
+        IPage<SysTenantTreeVO> voPage = new Page<>();
+        voPage.setCurrent(entityPage.getCurrent());
+        voPage.setSize(entityPage.getSize());
+        voPage.setTotal(entityPage.getTotal());
+
+        List<SysTenantTreeVO> voList = toTreeVOList(entityPage.getRecords());
         voPage.setRecords(voList);
 
         return voPage;
@@ -239,6 +297,24 @@ public interface SysTenantConverter {
         if (code == null) return null;
         Deleted deleted = Deleted.getByCode(code);
         return deleted != null ? deleted.getDesc() : null;
+    }
+
+    /**
+     * <p>
+     * 将 String 类型的 ID 转换为 Long 类型
+     * </p>
+     *
+     * @param value String 类型的 ID
+     * @return Long 类型的 ID
+     * @author shy
+     * @since 2026-05-05
+     */
+    @Named("stringToLong")
+    default Long stringToLong(String value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        return Long.parseLong(value);
     }
 
 } 

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
+import com.shy.nexusix.tenant.rto.SysTenantAssignRTO;
 import com.shy.nexusix.tenant.rto.SysTenantQueryRTO;
 import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.service.ISysTenantService;
@@ -14,7 +15,10 @@ import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +34,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/tenant")
 @Tag(name = "租户管理", description = "租户基础信息管理相关接口")
+@Validated
 public class SysTenantController {
 
     @Autowired
@@ -73,9 +78,52 @@ public class SysTenantController {
      */
     @GetMapping("/page")
     @Operation(summary = "分页查询租户列表", description = "返回分页后的租户列表")
-    public ApiResponse queryTenantPage(PageCommonRTO page) {
+    public ApiResponse queryTenantPage(@Valid PageCommonRTO page) {
         IPage<SysTenantCommonVO> tenantPage = iSysTenantService.queryTenantPage(page);
         return ApiResponse.success(tenantPage);
+    }
+
+    /**
+     * <p>
+     * 查询租户树形结构
+     * </p>
+     * <p>
+     * 返回所有租户的层级树形结构
+     * 需要登录并具备租户查看权限才能访问。
+     * </p>
+     *
+     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
+     * @author shy
+     * @since 2026-04-19
+     */
+    @GetMapping("/tree/list")
+    @Operation(summary = "查询租户树形结构列表", description = "返回所有租户的层级树形结构")
+    public ApiResponse queryTenantTreeList() {
+        List<SysTenantTreeVO> tenantTreeList = iSysTenantService.queryTenantTreeList();
+        return ApiResponse.success(tenantTreeList);
+    }
+
+    /**
+     * <p>
+     * 分页查询租户树形结构
+     * </p>
+     * <p>
+     * 返回所有租户的层级树形结构
+     * 需要登录并具备租户查看权限才能访问。
+     * </p>
+     *
+     * @param page 分页参数
+     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
+     * @author shy
+     * @since 2026-04-19
+     */
+    @GetMapping("/tree/page")
+    @Operation(summary = "分页查询租户树形结构", description = "返回所有租户的层级树形结构")
+    public ApiResponse queryTenantTreePage(@Valid PageCommonRTO page) {
+        IPage<SysTenantTreeVO> tenantTreePage = iSysTenantService.queryTenantTreePage(page);
+        return ApiResponse.success(tenantTreePage);
     }
 
     /**
@@ -87,17 +135,17 @@ public class SysTenantController {
      * 需要登录并具备租户查看权限才能访问。
      * </p>
      *
-     * @param tenantCode 租户编码，用于定位要查询的租户节点
+     * @param id 租户Id，用于定位要查询的租户节点
      * @return 租户树形结构列表，包含租户名称、脱敏后的租户编码、父租户ID等信息
      * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
      * @author shy
      * @since 2026-04-19
      */
-    @GetMapping("/tree/{tenantCode}")
-    @Operation(summary = "查询租户树形结构", description = "返回所有租户的层级树形结构")
-    public ApiResponse queryTenantTree(@RequestParam String tenantCode) {
-       List<SysTenantTreeVO> tenantTree = iSysTenantService.queryTenantTree(tenantCode);
-       return ApiResponse.success(tenantTree);
+    @GetMapping("/tree/{id}")
+    @Operation(summary = "查询指定租户树形结构", description = "返回所有租户的层级树形结构")
+    public ApiResponse queryTenantTree(@NotBlank(message = "Id不能为空") @RequestParam String id) {
+        SysTenantTreeVO tenantTree = iSysTenantService.queryTenantTree(id);
+        return ApiResponse.success(tenantTree);
     }
 
     /**
@@ -117,7 +165,7 @@ public class SysTenantController {
      */
     @PostMapping("/query")
     @Operation(summary = "条件查询租户列表", description = "返回满足条件的租户列表")
-    public ApiResponse queryTenant(@RequestBody SysTenantQueryRTO queryParam) {
+    public ApiResponse queryTenant(@Valid @RequestBody SysTenantQueryRTO queryParam) {
         IPage<SysTenantCommonVO> tenantPage = iSysTenantService.queryTenant(queryParam);
         return ApiResponse.success(tenantPage);
     }
@@ -139,7 +187,7 @@ public class SysTenantController {
      */
     @GetMapping("/detail/{tenantCode}")
     @Operation(summary = "查询租户详情", description = "返回指定租户的详情信息")
-    public ApiResponse queryTenantDetail(@PathVariable String tenantCode) {
+    public ApiResponse queryTenantDetail(@NotBlank(message = "租户编码不能为空") @PathVariable String tenantCode) {
         SysTenantDetailVO tenantDetail = iSysTenantService.queryTenantDetail(tenantCode);
         return ApiResponse.success(tenantDetail);
     }
@@ -160,7 +208,7 @@ public class SysTenantController {
      */
     @PostMapping("/add")
     @Operation(summary = "新增租户", description = "新增租户信息")
-    public ApiResponse addTenant(@RequestBody SysTenantAddRTO addParam) {
+    public ApiResponse addTenant(@Valid @RequestBody SysTenantAddRTO addParam) {
         Integer affectedRows = iSysTenantService.addTenant(addParam);
         return ApiResponse.success(affectedRows);
     }
@@ -182,9 +230,33 @@ public class SysTenantController {
      */
     @PutMapping("/update")
     @Operation(summary = "修改租户", description = "修改租户信息")
-    public ApiResponse updateTenant(@RequestBody SysTenantUpdateRTO updateParam) {
+    public ApiResponse updateTenant(@Valid @RequestBody SysTenantUpdateRTO updateParam) {
         Integer affectedRows = iSysTenantService.updateTenant(updateParam);
         return  ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 更新租户状态
+     * </p>
+     * <p>
+     * 更新指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param id 租户ID
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    @PutMapping("/status")
+    @Operation(summary = "更新租户状态", description = "更新指定租户的状态（正常/冻结）")
+    public ApiResponse updateTenantStatus(@NotBlank(message = "Id不能为空") @RequestParam String id,
+                                          @NotBlank(message = "状态不能为空") @RequestParam String status) {
+        Integer affectedRows = iSysTenantService.updateTenantStatus(id, status);
+        return ApiResponse.success(affectedRows);
     }
 
     /**
@@ -204,7 +276,7 @@ public class SysTenantController {
      */
     @DeleteMapping("/delete")
     @Operation(summary = "删除租户", description = "删除租户信息")
-    public ApiResponse deleteTenant(@RequestParam @Valid String id) {
+    public ApiResponse deleteTenant(@NotBlank(message = "Id不能为空") @RequestParam String id) {
         Integer affectedRows = iSysTenantService.deleteTenant(id);
         return  ApiResponse.success(affectedRows);
     }
@@ -226,7 +298,7 @@ public class SysTenantController {
      */
     @PostMapping("/batch")
     @Operation(summary = "批量新增租户", description = "批量新增租户信息")
-    public ApiResponse batchAddTenant(@RequestBody List<SysTenantAddRTO> addParamList) {
+    public ApiResponse batchAddTenant(@Valid @NotEmpty @RequestBody List<SysTenantAddRTO> addParamList) {
         Integer affectedRows = iSysTenantService.batchAddTenant(addParamList);
         return ApiResponse.success(affectedRows);
     }
@@ -248,8 +320,33 @@ public class SysTenantController {
      */
     @PutMapping("/batch")
     @Operation(summary = "批量修改租户", description = "批量修改租户信息")
-    public ApiResponse batchUpdateTenant(@RequestBody List<SysTenantUpdateRTO> updateParamList) {
+    public ApiResponse batchUpdateTenant(@Valid @RequestBody List<SysTenantUpdateRTO> updateParamList) {
         Integer affectedRows = iSysTenantService.batchUpdateTenant(updateParamList);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 批量更新租户状态
+     * </p>
+     * <p>
+     * 批量更新多个指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
+     * 批量操作支持事务回滚，任一租户更新失败则全部失败。
+     * 需要登录并具备租户修改权限才能访问。
+     * </p>
+     *
+     * @param ids 租户ID集合
+     * @param status 租户状态（正常/冻结）
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
+     * @author shy
+     * @since 2026-05-05
+     */
+    @PutMapping("/status/batch")
+    @Operation(summary = "批量更新租户状态", description = "批量更新多个指定租户的状态（正常/冻结）")
+    public ApiResponse batchUpdateTenantStatus(@NotEmpty(message = "租户ID集合不能为空") @RequestBody List<String> ids,
+                                               @NotBlank(message = "状态不能为空") @RequestParam String status) {
+        Integer affectedRows = iSysTenantService.batchUpdateTenantStatus(ids, status);
         return ApiResponse.success(affectedRows);
     }
 
@@ -270,8 +367,53 @@ public class SysTenantController {
      */
     @DeleteMapping("/batch")
     @Operation(summary = "批量删除租户", description = "批量删除租户信息")
-    public ApiResponse batchDeleteTenant(List<String> ids) {
+    public ApiResponse batchDeleteTenant(@NotEmpty List<String> ids) {
         Integer affectedRows =  iSysTenantService.batchDeleteTenant(ids);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 分配子租户
+     * </p>
+     * <p>
+     * 为指定父租户分配一个新的子租户，自动处理层级关系和ancestors字段更新。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 子租户分配参数
+     * @return 更新子租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、父租户不存在或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    @PostMapping("/assign/sub")
+    @Operation(summary = "分配子租户", description = "为指定父租户分配子租户，自动处理层级关系")
+    public ApiResponse assignSubTenant(@Valid @RequestBody SysTenantAssignRTO assignParam) {
+        Integer affectedRows = iSysTenantService.assignSubTenant(assignParam);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 分配父租户
+     * </p>
+     * <p>
+     * 为指定租户分配一个新的父租户，处理层级关系调整及数据关联更新。
+     * 会进行循环层级验证，避免形成环状结构。
+     * 需要登录并具备租户分配权限才能访问。
+     * </p>
+     *
+     * @param assignParam 父租户分配参数
+     * @return 更新子租户行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、参数非法或分配失败时抛出
+     * @author shy
+     * @since 2026-05-04
+     */
+    @PutMapping("/assign/parent")
+    @Operation(summary = "分配父租户", description = "为指定租户分配父租户，处理层级调整及数据关联更新")
+    public ApiResponse assignParentTenant(@Valid @RequestBody SysTenantAssignRTO assignParam) {
+        Integer affectedRows = iSysTenantService.assignParentTenant(assignParam);
         return ApiResponse.success(affectedRows);
     }
 

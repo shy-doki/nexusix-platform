@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Schema(description = "租户详情视图对象")
 public class SysTenantDetailVO extends SysTenantCommonVO {
 
     /**
