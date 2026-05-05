@@ -334,7 +334,7 @@ public class SysTenantController {
      * @author shy
      * @since 2026-05-04
      */
-    @PutMapping("/assign/sub")
+    @PostMapping("/assign/sub")
     @Operation(summary = "分配子租户", description = "为指定父租户分配子租户，自动处理层级关系")
     public ApiResponse assignSubTenant(@RequestBody @Valid SysTenantAssignRTO assignParam) {
         Integer affectedRows = iSysTenantService.assignSubTenant(assignParam);

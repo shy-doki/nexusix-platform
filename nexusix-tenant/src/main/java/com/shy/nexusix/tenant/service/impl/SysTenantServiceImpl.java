@@ -835,31 +835,23 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     public Integer assignSubTenant(SysTenantAssignRTO assignParam) {
 
         // 校验租户编码格式
-        validateTenantCodes(assignParam.getParentCode(), "父租户编码");
-        validateTenantCodes(assignParam.getSubCode(), "子租户编码");
+        validateTenantCode(assignParam.getParentCode(), "父租户编码");
+        validateTenantCode(assignParam.getSubCode(), "子租户编码");
 
-        // 校验父租户编码和子租户编码不能有交集
-        Set<String> intersection = new HashSet<>(assignParam.getParentCode());
-        intersection.retainAll(assignParam.getSubCode());
-        if (!intersection.isEmpty()) {
-            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + intersection);
+        // 校验父租户编码和子租户编码不能相同
+        if (assignParam.getSubCode().contains(assignParam.getParentCode())) {
+            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + assignParam.getParentCode());
         }
 
-        // 查询所有父租户
+        // 查询父租户
         LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
-                .in(SysTenant::getTenantCode, assignParam.getParentCode())
+                .eq(SysTenant::getTenantCode, assignParam.getParentCode())
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
-        List<SysTenant> parentTenants = this.list(parentWrapper);
+        SysTenant parentTenant = this.getOne(parentWrapper);
 
-        // 校验父租户是否全部存在
-        if (parentTenants.size() != assignParam.getParentCode().size()) {
-            Set<String> foundCodes = parentTenants.stream()
-                    .map(SysTenant::getTenantCode)
-                    .collect(Collectors.toSet());
-            List<String> missingCodes = assignParam.getParentCode().stream()
-                    .filter(code -> !foundCodes.contains(code))
-                    .collect(Collectors.toList());
-            throw new BusinessException(400, "父租户不存在: " + missingCodes);
+        // 校验父租户是否存在
+        if (parentTenant == null) {
+            throw new BusinessException(400, "父租户不存在: " + assignParam.getParentCode());
         }
 
         // 查询所有子租户
@@ -880,55 +872,51 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 校验子租户不能是父租户的祖先（避免循环层级）
-        for (SysTenant parent : parentTenants) {
-            for (SysTenant sub : subTenants) {
-                // 子租户不能是父租户自身
-                if (parent.getId().equals(sub.getId())) {
-                    throw new BusinessException(400, "不能将租户分配为自身的子租户: " + sub.getTenantCode());
-                }
-                // 利用 ancestors 检测循环：如果父租户的 ancestors 包含子租户的编码，则会产生循环
-                if (parent.getAncestors() != null
-                        && (parent.getAncestors().contains("/" + sub.getTenantCode() + "/")
-                        || parent.getAncestors().endsWith("/" + sub.getTenantCode()))) {
-                    throw new BusinessException(400, "分配子租户会形成循环层级，子租户 " + sub.getTenantCode()
-                            + " 是父租户 " + parent.getTenantCode() + " 的祖先");
-                }
+        for (SysTenant sub : subTenants) {
+            // 子租户不能是父租户自身
+            if (parentTenant.getId().equals(sub.getId())) {
+                throw new BusinessException(400, "不能将租户分配为自身的子租户: " + sub.getTenantCode());
+            }
+            // 利用 ancestors 检测循环：如果父租户的 ancestors 包含子租户的编码，则会产生循环
+            if (parentTenant.getAncestors() != null
+                    && (parentTenant.getAncestors().contains("/" + sub.getTenantCode() + "/")
+                    || parentTenant.getAncestors().endsWith("/" + sub.getTenantCode()))) {
+                throw new BusinessException(400, "分配子租户会形成循环层级，子租户 " + sub.getTenantCode()
+                        + " 是父租户 " + parentTenant.getTenantCode() + " 的祖先");
             }
         }
 
         // 执行分配：更新每个子租户的父租户信息
         int totalAffected = 0;
         for (SysTenant subTenant : subTenants) {
-            // 取第一个父租户作为主父租户（一个子租户只能有一个直接父租户）
-            SysTenant primaryParent = parentTenants.get(0);
-
             // 记录旧的 ancestors 路径用于级联更新
             String oldAncestors = subTenant.getAncestors() != null ? subTenant.getAncestors() : "0";
             String oldPath = oldAncestors + "/" + subTenant.getTenantCode();
 
             // 构建新的 ancestors 路径
-            String parentAncestors = primaryParent.getAncestors() != null
-                    ? primaryParent.getAncestors() : "0";
-            String newAncestors = parentAncestors + "/" + primaryParent.getTenantCode();
+            String parentAncestors = parentTenant.getAncestors() != null
+                    ? parentTenant.getAncestors() : "0";
+            String newAncestors = parentAncestors + "/" + parentTenant.getTenantCode();
             String newPath = newAncestors + "/" + subTenant.getTenantCode();
 
             // 更新子租户信息
             SysTenant updateTenant = new SysTenant();
             updateTenant.setId(subTenant.getId());
-            updateTenant.setParentId(primaryParent.getId());
-            updateTenant.setParentName(primaryParent.getTenantName());
+            updateTenant.setParentId(parentTenant.getId());
+            updateTenant.setParentName(parentTenant.getTenantName());
             updateTenant.setAncestors(newAncestors);
 
             boolean result = this.updateById(updateTenant);
             if (!result) {
                 throw new BusinessException(500, "分配子租户失败: " + subTenant.getTenantCode());
             }
+
             totalAffected++;
 
             // 更新父租户的 hasChildren 标记
-            if (!Boolean.TRUE.equals(primaryParent.getHasChildren())) {
+            if (!Boolean.TRUE.equals(parentTenant.getHasChildren())) {
                 SysTenant updateParent = new SysTenant();
-                updateParent.setId(primaryParent.getId());
+                updateParent.setId(parentTenant.getId());
                 updateParent.setHasChildren(true);
                 this.updateById(updateParent);
             }
@@ -994,31 +982,23 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     public Integer assignParentTenant(SysTenantAssignRTO assignParam) {
 
         // 校验租户编码格式
-        validateTenantCodes(assignParam.getParentCode(), "父租户编码");
-        validateTenantCodes(assignParam.getSubCode(), "子租户编码");
+        validateTenantCode(assignParam.getParentCode(), "父租户编码");
+        validateTenantCode(assignParam.getSubCode(), "子租户编码");
 
-        // 校验父租户编码和子租户编码不能有交集
-        Set<String> intersection = new HashSet<>(assignParam.getParentCode());
-        intersection.retainAll(assignParam.getSubCode());
-        if (!intersection.isEmpty()) {
-            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + intersection);
+        // 校验父租户编码和子租户编码不能相同
+        if (assignParam.getSubCode().contains(assignParam.getParentCode())) {
+            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + assignParam.getParentCode());
         }
 
-        // 查询所有新父租户
+        // 查询新父租户
         LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
-                .in(SysTenant::getTenantCode, assignParam.getParentCode())
+                .eq(SysTenant::getTenantCode, assignParam.getParentCode())
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
-        List<SysTenant> parentTenants = this.list(parentWrapper);
+        SysTenant newParent = this.getOne(parentWrapper);
 
-        // 校验父租户是否全部存在
-        if (parentTenants.size() != assignParam.getParentCode().size()) {
-            Set<String> foundCodes = parentTenants.stream()
-                    .map(SysTenant::getTenantCode)
-                    .collect(Collectors.toSet());
-            List<String> missingCodes = assignParam.getParentCode().stream()
-                    .filter(code -> !foundCodes.contains(code))
-                    .collect(Collectors.toList());
-            throw new BusinessException(400, "父租户不存在: " + missingCodes);
+        // 校验新父租户是否存在
+        if (newParent == null) {
+            throw new BusinessException(400, "父租户不存在: " + assignParam.getParentCode());
         }
 
         // 查询所有待分配租户
@@ -1038,16 +1018,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "待分配租户不存在: " + missingCodes);
         }
 
-        // 构建父租户编码到实体的映射
-        Map<String, SysTenant> parentMap = parentTenants.stream()
-                .collect(Collectors.toMap(SysTenant::getTenantCode, t -> t));
-
         int totalAffected = 0;
 
         for (SysTenant subTenant : subTenants) {
-            // 取第一个父租户作为新父租户（一个租户只能有一个直接父租户）
-            SysTenant newParent = parentTenants.get(0);
-
             // 不能将自己设为父租户
             if (newParent.getId().equals(subTenant.getId())) {
                 throw new BusinessException(400, "不能将租户设为自身的父租户: " + subTenant.getTenantCode());
@@ -1245,12 +1218,35 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
      * 用于 Service 层对 List 中元素的逐一校验。
      * </p>
      *
+     * @param code 租户编码
+     * @param fieldName 字段名称（用于异常提示）
+     * @author shy
+     * @since 2026-05-04
+     */
+    private void validateTenantCode(String code, String fieldName) {
+        if (StringUtils.isBlank(code)) {
+            throw new BusinessException(400, fieldName + "不能为空");
+        }
+        if (!code.matches("^[a-zA-Z0-9]+$")) {
+            throw new BusinessException(400, fieldName + "格式不正确: " + code);
+        }
+    }
+
+    /**
+     * <p>
+     * 校验租户编码格式
+     * </p>
+     * <p>
+     * 校验编码仅包含字母和数字，与 RegexConstant.Character.ALPHANUMERIC 一致。
+     * 用于 Service 层对 List 中元素的逐一校验。
+     * </p>
+     *
      * @param codes 租户编码集合
      * @param fieldName 字段名称（用于异常提示）
      * @author shy
      * @since 2026-05-04
      */
-    private void validateTenantCodes(List<String> codes, String fieldName) {
+    private void validateTenantCode(List<String> codes, String fieldName) {
         if (codes == null || codes.isEmpty()) {
             throw new BusinessException(400, fieldName + "不能为空");
         }
