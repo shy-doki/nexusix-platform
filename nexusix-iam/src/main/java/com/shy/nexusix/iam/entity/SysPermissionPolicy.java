@@ -50,7 +50,7 @@ public class SysPermissionPolicy implements Serializable {
     @TableField(value = "permission_id")
     private Long permissionId;
 
-    @Schema(description = "关联权限姓名", example = "用户管理")
+    @Schema(description = "关联权限名称", example = "用户管理")
     @TableField(value = "perm_name")
     private String permName;
 
