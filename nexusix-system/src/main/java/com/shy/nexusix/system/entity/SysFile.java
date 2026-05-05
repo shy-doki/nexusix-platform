@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 
 /**
  * <p>
- * 文件资源表 - 存储上传的文件信息
+ * 文件资源表 - 存储上传的文件信息，支持多租户隔离
  * </p>
  *
  * @author shy
@@ -36,39 +36,39 @@ public class SysFile implements Serializable {
     @TableField(value = "tenant_id")
     private Long tenantId;
 
-    @Schema(description = "租户名称", example = "华东公司")
+    @Schema(description = "租户名称(新增、更新、删除操作需要同步该字段)", example = "华东公司")
     @TableField(value = "tenant_name")
     private String tenantName;
 
-    @Schema(description = "存储文件名（UUID 重命名）", example = "a1b2c3d4e5f6.pdf")
+    @Schema(description = "存储文件名（UUID 重命名，用于唯一标识和防冲突）", example = "a1b2c3d4e5f6.pdf")
     @TableField(value = "file_name")
     private String fileName;
 
-    @Schema(description = "原始文件名", example = "企业营业执照.pdf")
+    @Schema(description = "原始文件名（用户上传时的文件名）", example = "企业营业执照.pdf")
     @TableField(value = "original_name")
     private String originalName;
 
-    @Schema(description = "文件存储路径", example = "/uploads/2026/04/report.pdf")
+    @Schema(description = "文件存储相对路径（租户名称/业务类型/日期）", example = "华东公司/license/2026-04-07")
     @TableField(value = "file_path")
     private String filePath;
 
-    @Schema(description = "文件访问 URL", example = "https://oss.example.com/uploads/report.pdf")
+    @Schema(description = "文件访问 URL（完整访问地址）", example = "https://oss.example.com/uploads/report.pdf")
     @TableField(value = "file_url")
     private String fileUrl;
 
-    @Schema(description = "文件大小 (字节)", example = "102400")
+    @Schema(description = "文件大小（单位：字节）", example = "102400")
     @TableField(value = "file_size")
     private Long fileSize;
 
-    @Schema(description = "文件类型", example = "application/pdf")
+    @Schema(description = "文件类型（小写扩展名，如 .pdf、.jpg）", example = ".pdf")
     @TableField(value = "file_type")
     private String fileType;
 
-    @Schema(description = "MIME 类型", example = "application/pdf")
+    @Schema(description = "MIME 类型（如 application/pdf、image/jpeg）", example = "application/pdf")
     @TableField(value = "mime_type")
     private String mimeType;
 
-    @Schema(description = "业务类型分类", example = "license")
+    @Schema(description = "业务类型分类（如 logo、avatar、contract、license、attachment、export）", example = "license")
     @TableField(value = "biz_type")
     private String bizType;
 
@@ -76,7 +76,7 @@ public class SysFile implements Serializable {
     @TableField(value = "upload_by")
     private Long uploadBy;
 
-    @Schema(description = "上传人名称", example = "张三")
+    @Schema(description = "上传人名称(新增、更新、删除操作需要同步该字段)", example = "张三")
     @TableField(value = "upload_name")
     private String uploadName;
 

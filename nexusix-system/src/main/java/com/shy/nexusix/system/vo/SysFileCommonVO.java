@@ -8,11 +8,14 @@ import java.time.LocalDateTime;
 
 /**
  * <p>
- * 文件信息视图对象 - 用于返回给前端的文件元数据
+ * 文件信息公共视图对象 - 用于返回给前端的文件元数据
  * </p>
+ *
+ * @author shy
+ * @since 2026-04-07
  */
 @Data
-@Schema(description = "文件信息 VO")
+@Schema(description = "文件信息公共视图对象")
 public class SysFileCommonVO {
 
     /**
@@ -36,7 +39,7 @@ public class SysFileCommonVO {
     /**
      * 文件格式（小写扩展名，如：pdf、jpg、png）
      */
-    @Schema(description = "文件格式（小写扩展名）", example = "pdf")
+    @Schema(description = "文件格式（小写扩展名）", example = ".pdf")
     private String fileType;
 
     /**
@@ -52,7 +55,7 @@ public class SysFileCommonVO {
     private String uploadName;
 
     /**
-     * 上传时间（格式化为字符串）
+     * 上传时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @Schema(description = "上传时间", example = "2026-04-29 10:30:00")
@@ -60,6 +63,7 @@ public class SysFileCommonVO {
 
     /**
      * 逻辑删除标记（0-正常，1-已删除）
+     * 超级管理员可见
      */
     @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
     private String isDeleted;
