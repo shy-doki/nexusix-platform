@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
+import com.shy.nexusix.iam.converter.SysPermissionConverter;
 import com.shy.nexusix.iam.converter.SysPermissionPolicyConverter;
 import com.shy.nexusix.iam.entity.SysPermission;
 import com.shy.nexusix.iam.entity.SysPermissionPolicy;
 import com.shy.nexusix.iam.entity.SysRole;
+import com.shy.nexusix.iam.entity.SysUserRoleRel;
 import com.shy.nexusix.iam.mapper.SysPermissionPolicyMapper;
 import com.shy.nexusix.iam.rto.SysPermissionPolicyAddRTO;
 import com.shy.nexusix.iam.rto.SysPermissionPolicyQueryRTO;
@@ -19,6 +21,7 @@ import com.shy.nexusix.iam.service.ISysPermissionPolicyService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shy.nexusix.iam.service.ISysPermissionService;
 import com.shy.nexusix.iam.service.ISysRoleService;
+import com.shy.nexusix.iam.service.ISysUserRoleRelService;
 import com.shy.nexusix.iam.vo.SysPermissionPolicyCommonVO;
 import com.shy.nexusix.iam.vo.SysPermissionPolicyDetailVO;
 import com.shy.nexusix.iam.vo.SysPermissionTreeVO;
@@ -30,6 +33,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * <p>
+ * 权限策略控制表 - 服务实现类
+ * </p>
+ * <p>
+ * 实现四层权限模型（系统→租户→角色→用户）的策略管理、角色权限分配、
+ * 用户权限聚合查询与权限校验等核心业务逻辑。
+ * DENY策略优先级高于ALLOW，支持权限继承控制。
+ * </p>
+ *
+ * @author shy
+ * @since 2026-05-05
+ */
 @Service
 public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPolicyMapper, SysPermissionPolicy> implements ISysPermissionPolicyService {
 
@@ -42,6 +58,12 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
     @Autowired
     private ISysRoleService iSysRoleService;
 
+    /**
+     * 查询权限策略列表
+     * <p>
+     * 按优先级降序排列，自动填充关联权限名称和标识
+     * </p>
+     */
     @Override
     public List<SysPermissionPolicyCommonVO> queryPolicyList() {
 
@@ -59,6 +81,7 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return voList;
     }
 
+    /** 分页查询权限策略 */
     @Override
     public IPage<SysPermissionPolicyCommonVO> queryPolicyPage(PageCommonRTO page) {
 
@@ -78,6 +101,7 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return voPage;
     }
 
+    /** 条件查询权限策略，支持按目标类型、目标ID、权限ID、动作筛选 */
     @Override
     public IPage<SysPermissionPolicyCommonVO> queryPolicy(SysPermissionPolicyQueryRTO queryParam) {
 
@@ -113,6 +137,7 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return voPage;
     }
 
+    /** 查询权限策略详情，自动填充关联权限名称和标识 */
     @Override
     public SysPermissionPolicyDetailVO queryPolicyDetail(String id) {
 
@@ -141,6 +166,7 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return detailVO;
     }
 
+    /** 新增权限策略，校验目标角色和关联权限的有效性 */
     @Override
     public Integer addPolicy(SysPermissionPolicyAddRTO addParam) {
 
@@ -165,6 +191,7 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return 1;
     }
 
+    /** 修改权限策略，校验策略存在性和关联数据有效性 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer updatePolicy(SysPermissionPolicyUpdateRTO updateParam) {
@@ -199,6 +226,7 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return 1;
     }
 
+    /** 删除权限策略（逻辑删除） */
     @Override
     public Integer deletePolicy(String id) {
 
@@ -224,6 +252,7 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return 1;
     }
 
+    /** 批量新增权限策略，单次上限100条 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer batchAddPolicy(List<SysPermissionPolicyAddRTO> addParamList) {
@@ -247,6 +276,7 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return addParamList.size();
     }
 
+    /** 批量删除权限策略，单次上限100条，逻辑删除 */
     @Override
     public Integer batchDeletePolicy(List<String> ids) {
 
@@ -288,6 +318,13 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return ids.size();
     }
 
+    /**
+     * 分配角色权限
+     * <p>
+     * 采用先清后写模式：先逻辑删除该角色的所有已有策略，再批量新增新策略。
+     * 所有策略动作默认为允许(ALLOW)，优先级从100递增，默认开启继承。
+     * </p>
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer assignRolePermission(SysRolePermissionAssignRTO assignParam) {
@@ -358,6 +395,12 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 校验策略目标有效性
+     * <p>
+     * 当前仅校验角色类型目标是否存在，租户/用户/系统类型暂不校验
+     * </p>
+     */
     private void validatePolicyTarget(GlobalEnum.TargetType targetType, Long targetId) {
 
         if (targetType == null || targetId == null) {
@@ -382,6 +425,12 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         }
     }
 
+    /**
+     * 填充权限名称和标识
+     * <p>
+     * 根据策略中的permissionId批量查询权限信息，填充到VO的permName和permCode字段
+     * </p>
+     */
     private void fillPermissionInfo(List<SysPermissionPolicyCommonVO> voList, List<SysPermissionPolicy> policyList) {
 
         if (voList == null || voList.isEmpty()) {

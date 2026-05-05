@@ -8,15 +8,29 @@ import lombok.Data;
 @Schema(description = "权限条件查询请求对象")
 public class SysPermissionQueryRTO extends PageCommonRTO {
 
+    /**
+     * 权限名称（模糊匹配）
+     */
     @Schema(description = "权限名称", example = "用户管理")
     private String permName;
 
+    /**
+     * 权限标识（模糊匹配）
+     */
     @Schema(description = "权限标识", example = "system:user")
     private String permCode;
 
+    /**
+     * 权限类型
+     * 1-菜单 2-按钮 3-接口 4-数据字段
+     */
     @Schema(description = "权限类型 (1-菜单 2-按钮 3-接口 4-数据字段)", example = "1")
     private Integer permType;
 
+    /**
+     * 状态
+     * 1-正常 0-禁用
+     */
     @Schema(description = "状态 (1-正常 0-禁用)", example = "1")
     private Integer status;
 

@@ -11,10 +11,17 @@ import java.util.List;
 @Schema(description = "角色权限分配请求对象")
 public class SysRolePermissionAssignRTO {
 
+    /**
+     * 角色ID
+     */
     @NotNull(message = "角色ID不能为空")
     @Schema(description = "角色 ID", example = "1987654321098765432")
     private Long roleId;
 
+    /**
+     * 权限ID列表
+     * 传入空列表表示清除该角色的所有权限
+     */
     @NotEmpty(message = "权限ID列表不能为空")
     @Schema(description = "权限 ID 列表")
     private List<Long> permissionIds;

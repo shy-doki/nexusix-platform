@@ -11,6 +11,10 @@ import java.util.List;
 @Schema(description = "权限树形视图对象")
 public class SysPermissionTreeVO extends SysPermissionCommonVO {
 
+    /**
+     * 子权限列表
+     * 用于构建树形结构
+     */
     @Schema(description = "子权限列表")
     private List<SysPermissionTreeVO> childPermission;
 

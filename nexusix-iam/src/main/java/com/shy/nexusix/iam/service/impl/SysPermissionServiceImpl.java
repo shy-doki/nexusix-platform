@@ -25,12 +25,30 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * <p>
+ * 权限资源表 - 服务实现类
+ * </p>
+ * <p>
+ * 提供权限资源的CRUD、树形结构构建、批量操作、状态切换等业务逻辑实现。
+ * 所有删除操作均为逻辑删除，新增/修改操作会校验权限标识唯一性。
+ * </p>
+ *
+ * @author shy
+ * @since 2026-05-05
+ */
 @Service
 public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, SysPermission> implements ISysPermissionService {
 
     @Autowired
     private SysPermissionConverter sysPermissionConverter;
 
+    /**
+     * 查询权限列表
+     * <p>
+     * 返回所有未删除的权限，按权限类型和ID升序排列
+     * </p>
+     */
     @Override
     public List<SysPermissionCommonVO> queryPermissionList() {
 
@@ -44,6 +62,9 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return sysPermissionConverter.toVoList(permissionList);
     }
 
+    /**
+     * 分页查询权限
+     */
     @Override
     public IPage<SysPermissionCommonVO> queryPermissionPage(PageCommonRTO page) {
 
@@ -59,6 +80,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return sysPermissionConverter.toVOPage(permissionPage);
     }
 
+    /**
+     * 查询权限树形列表
+     * <p>
+     * 查询所有未删除权限后，按parentId构建父子层级关系
+     * </p>
+     */
     @Override
     public List<SysPermissionTreeVO> queryPermissionTreeList() {
 
@@ -74,6 +101,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return buildPermissionTree(treeVOList);
     }
 
+    /**
+     * 条件查询权限
+     * <p>
+     * 支持按权限名称、标识模糊匹配，按类型和状态精确筛选
+     * </p>
+     */
     @Override
     public IPage<SysPermissionCommonVO> queryPermission(SysPermissionQueryRTO queryParam) {
 
@@ -103,6 +136,9 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return sysPermissionConverter.toVOPage(permissionPage);
     }
 
+    /**
+     * 查询权限详情
+     */
     @Override
     public SysPermissionDetailVO queryPermissionDetail(String id) {
 
@@ -123,6 +159,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return sysPermissionConverter.toDetailVO(permission);
     }
 
+    /**
+     * 新增权限
+     * <p>
+     * 校验权限标识唯一性，parentId为空时默认设为0（顶级权限）
+     * </p>
+     */
     @Override
     public Integer addPermission(SysPermissionAddRTO addParam) {
 
@@ -150,6 +192,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return 1;
     }
 
+    /**
+     * 修改权限
+     * <p>
+     * 校验权限存在性和标识唯一性（排除自身），parentId为空时默认设为0
+     * </p>
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer updatePermission(SysPermissionUpdateRTO updateParam) {
@@ -188,6 +236,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return 1;
     }
 
+    /**
+     * 更新权限状态
+     * <p>
+     * 支持数字编码(1/0)和枚举名称(ENABLE/DISABLE)两种格式
+     * </p>
+     */
     @Override
     public Integer updatePermissionStatus(String id, String status) {
 
@@ -236,6 +290,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return 1;
     }
 
+    /**
+     * 删除权限
+     * <p>
+     * 逻辑删除，删除前校验是否存在子权限
+     * </p>
+     */
     @Override
     public Integer deletePermission(String id) {
 
@@ -269,6 +329,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return 1;
     }
 
+    /**
+     * 批量新增权限
+     * <p>
+     * 单次上限100条，校验批量内部去重和数据库唯一性
+     * </p>
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer batchAddPermission(List<SysPermissionAddRTO> addParamList) {
@@ -309,6 +375,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return addParamList.size();
     }
 
+    /**
+     * 批量修改权限
+     * <p>
+     * 单次上限100条，校验ID存在性和标识唯一性（含批量内部去重）
+     * </p>
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer batchUpdatePermission(List<SysPermissionUpdateRTO> updateParamList) {
@@ -360,6 +432,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return updateParamList.size();
     }
 
+    /**
+     * 批量删除权限
+     * <p>
+     * 单次上限100条，逻辑删除，删除前校验是否存在子权限
+     * </p>
+     */
     @Override
     public Integer batchDeletePermission(List<String> ids) {
 
@@ -409,6 +487,16 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         return ids.size();
     }
 
+    /**
+     * 构建权限树形结构
+     * <p>
+     * 根据parentId将平铺列表组装为父子层级结构，
+     * parentId为0或null的节点作为根节点
+     * </p>
+     *
+     * @param treeVOList 平铺的权限树形VO列表
+     * @return 根节点列表（含子节点）
+     */
     private List<SysPermissionTreeVO> buildPermissionTree(List<SysPermissionTreeVO> treeVOList) {
 
         Map<Long, List<SysPermissionTreeVO>> parentMap = treeVOList.stream()
