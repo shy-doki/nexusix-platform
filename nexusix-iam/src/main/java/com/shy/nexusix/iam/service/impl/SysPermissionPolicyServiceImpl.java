@@ -53,10 +53,16 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
     private SysPermissionPolicyConverter sysPermissionPolicyConverter;
 
     @Autowired
+    private SysPermissionConverter sysPermissionConverter;
+
+    @Autowired
     private ISysPermissionService iSysPermissionService;
 
     @Autowired
     private ISysRoleService iSysRoleService;
+
+    @Autowired
+    private ISysUserRoleRelService iSysUserRoleRelService;
 
     /**
      * 查询权限策略列表
@@ -379,6 +385,177 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         return newPolicies.size();
     }
 
+    /**
+     * 查询用户权限标识列表
+     * <p>
+     * 聚合四层权限策略（系统→租户→角色→用户），DENY优先级高于ALLOW，
+     * 最终返回该用户在指定租户下拥有的所有权限标识编码。
+     * </p>
+     */
+    @Override
+    public List<String> queryPermissionCodesByUserId(Long userId, Long tenantId) {
+
+        Set<Long> roleIds = new HashSet<>();
+
+        LambdaQueryWrapper<SysUserRoleRel> userRoleWrapper = new LambdaQueryWrapper<SysUserRoleRel>()
+                .eq(SysUserRoleRel::getUserId, userId);
+        if (tenantId != null) {
+            userRoleWrapper.eq(SysUserRoleRel::getTenantId, tenantId);
+        }
+        List<SysUserRoleRel> userRoleRels = iSysUserRoleRelService.list(userRoleWrapper);
+        for (SysUserRoleRel rel : userRoleRels) {
+            roleIds.add(rel.getRoleId());
+        }
+
+        Set<Long> allowedPermissionIds = new HashSet<>();
+        Set<Long> deniedPermissionIds = new HashSet<>();
+
+        LambdaQueryWrapper<SysPermissionPolicy> systemWrapper = new LambdaQueryWrapper<SysPermissionPolicy>()
+                .eq(SysPermissionPolicy::getTargetType, GlobalEnum.TargetType.SYSTEM.getCode())
+                .eq(SysPermissionPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .eq(SysPermissionPolicy::getAction, GlobalEnum.Action.ALLOW.getCode());
+        List<SysPermissionPolicy> systemPolicies = this.list(systemWrapper);
+        for (SysPermissionPolicy policy : systemPolicies) {
+            allowedPermissionIds.add(policy.getPermissionId());
+        }
+
+        if (tenantId != null) {
+            LambdaQueryWrapper<SysPermissionPolicy> tenantWrapper = new LambdaQueryWrapper<SysPermissionPolicy>()
+                    .eq(SysPermissionPolicy::getTargetType, GlobalEnum.TargetType.TENANT.getCode())
+                    .eq(SysPermissionPolicy::getTargetId, tenantId)
+                    .eq(SysPermissionPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+            List<SysPermissionPolicy> tenantPolicies = this.list(tenantWrapper);
+            for (SysPermissionPolicy policy : tenantPolicies) {
+                if (GlobalEnum.Action.ALLOW.getCode().equals(policy.getAction())) {
+                    allowedPermissionIds.add(policy.getPermissionId());
+                } else if (GlobalEnum.Action.DENY.getCode().equals(policy.getAction())) {
+                    deniedPermissionIds.add(policy.getPermissionId());
+                }
+            }
+        }
+
+        if (!roleIds.isEmpty()) {
+            LambdaQueryWrapper<SysPermissionPolicy> roleWrapper = new LambdaQueryWrapper<SysPermissionPolicy>()
+                    .eq(SysPermissionPolicy::getTargetType, GlobalEnum.TargetType.ROLE.getCode())
+                    .in(SysPermissionPolicy::getTargetId, roleIds)
+                    .eq(SysPermissionPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                    .orderByDesc(SysPermissionPolicy::getPriority);
+            List<SysPermissionPolicy> rolePolicies = this.list(roleWrapper);
+            for (SysPermissionPolicy policy : rolePolicies) {
+                if (GlobalEnum.Action.ALLOW.getCode().equals(policy.getAction())) {
+                    allowedPermissionIds.add(policy.getPermissionId());
+                } else if (GlobalEnum.Action.DENY.getCode().equals(policy.getAction())) {
+                    deniedPermissionIds.add(policy.getPermissionId());
+                }
+            }
+        }
+
+        LambdaQueryWrapper<SysPermissionPolicy> userWrapper = new LambdaQueryWrapper<SysPermissionPolicy>()
+                .eq(SysPermissionPolicy::getTargetType, GlobalEnum.TargetType.USER.getCode())
+                .eq(SysPermissionPolicy::getTargetId, userId)
+                .eq(SysPermissionPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .orderByDesc(SysPermissionPolicy::getPriority);
+        List<SysPermissionPolicy> userPolicies = this.list(userWrapper);
+        for (SysPermissionPolicy policy : userPolicies) {
+            if (GlobalEnum.Action.ALLOW.getCode().equals(policy.getAction())) {
+                allowedPermissionIds.add(policy.getPermissionId());
+            } else if (GlobalEnum.Action.DENY.getCode().equals(policy.getAction())) {
+                deniedPermissionIds.add(policy.getPermissionId());
+            }
+        }
+
+        allowedPermissionIds.removeAll(deniedPermissionIds);
+
+        if (allowedPermissionIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        LambdaQueryWrapper<SysPermission> permWrapper = new LambdaQueryWrapper<SysPermission>()
+                .in(SysPermission::getId, allowedPermissionIds)
+                .eq(SysPermission::getStatus, GlobalEnum.Status.ENABLE.getCode())
+                .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysPermission> permissions = iSysPermissionService.list(permWrapper);
+
+        return permissions.stream()
+                .map(SysPermission::getPermCode)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 校验用户是否拥有指定权限
+     * <p>
+     * 支持前缀匹配：若用户拥有 system:user 权限，则 system:user:add 也视为通过
+     * </p>
+     */
+    @Override
+    public boolean checkPermission(Long userId, Long tenantId, String permCode) {
+
+        if (userId == null || StringUtils.isBlank(permCode)) {
+            return false;
+        }
+
+        List<String> permissionCodes = queryPermissionCodesByUserId(userId, tenantId);
+
+        if (permissionCodes.contains(permCode)) {
+            return true;
+        }
+
+        for (String code : permissionCodes) {
+            if (permCode.startsWith(code)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 查询角色已分配的权限树形列表
+     * <p>
+     * 查询角色关联的ALLOW策略，获取权限ID列表后构建树形结构
+     * </p>
+     */
+    @Override
+    public List<SysPermissionTreeVO> queryPermissionsByRoleId(Long roleId) {
+
+        if (roleId == null) {
+            throw new BusinessException(400, "角色ID不能为空");
+        }
+
+        LambdaQueryWrapper<SysPermissionPolicy> policyWrapper = new LambdaQueryWrapper<SysPermissionPolicy>()
+                .eq(SysPermissionPolicy::getTargetType, GlobalEnum.TargetType.ROLE.getCode())
+                .eq(SysPermissionPolicy::getTargetId, roleId)
+                .eq(SysPermissionPolicy::getAction, GlobalEnum.Action.ALLOW.getCode())
+                .eq(SysPermissionPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysPermissionPolicy> policies = this.list(policyWrapper);
+
+        if (policies.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Long> permissionIds = policies.stream()
+                .map(SysPermissionPolicy::getPermissionId)
+                .collect(Collectors.toSet());
+
+        LambdaQueryWrapper<SysPermission> permWrapper = new LambdaQueryWrapper<SysPermission>()
+                .in(SysPermission::getId, permissionIds)
+                .eq(SysPermission::getStatus, GlobalEnum.Status.ENABLE.getCode())
+                .eq(SysPermission::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .orderByAsc(SysPermission::getPermType)
+                .orderByAsc(SysPermission::getId);
+        List<SysPermission> permissions = iSysPermissionService.list(permWrapper);
+
+        List<SysPermissionTreeVO> treeVOList = sysPermissionConverter.toTreeVOList(permissions);
+
+        return buildPermissionTree(treeVOList);
+    }
+
+    /**
+     * 构建权限树形结构
+     * <p>
+     * 根据parentId将平铺列表组装为父子层级结构
+     * </p>
+     */
     private List<SysPermissionTreeVO> buildPermissionTree(List<SysPermissionTreeVO> treeVOList) {
 
         Map<Long, List<SysPermissionTreeVO>> parentMap = treeVOList.stream()
