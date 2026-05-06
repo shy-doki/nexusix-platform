@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.shy.nexusix.iam.rto.SysRoleAddRTO;
 import com.shy.nexusix.iam.rto.SysRoleQueryRTO;
 import com.shy.nexusix.iam.rto.SysRoleUpdateRTO;
-import com.shy.nexusix.iam.rto.SysRoleUserAssignRTO;
 import com.shy.nexusix.iam.vo.SysRoleCommonVO;
 import com.shy.nexusix.iam.vo.SysRoleDetailVO;
 

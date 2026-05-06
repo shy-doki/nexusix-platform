@@ -6,10 +6,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.shy.nexusix.iam.rto.SysPermissionPolicyAddRTO;
 import com.shy.nexusix.iam.rto.SysPermissionPolicyQueryRTO;
 import com.shy.nexusix.iam.rto.SysPermissionPolicyUpdateRTO;
-import com.shy.nexusix.iam.rto.SysRolePermissionAssignRTO;
 import com.shy.nexusix.iam.vo.SysPermissionPolicyCommonVO;
 import com.shy.nexusix.iam.vo.SysPermissionPolicyDetailVO;
-import com.shy.nexusix.iam.vo.SysPermissionTreeVO;
 
 import java.util.List;
 
