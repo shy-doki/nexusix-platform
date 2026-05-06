@@ -42,9 +42,17 @@ public class SysPermissionPolicy implements Serializable {
     @TableField(value = "target_id")
     private Long targetId;
 
+    @Schema(description = "目标名称(对应租户/角色/用户名称)", example = "某科技公司")
+    @TableField(value = "target_name")
+    private String targetName;
+
     @Schema(description = "关联权限 ID", example = "1001")
     @TableField(value = "permission_id")
     private Long permissionId;
+
+    @Schema(description = "关联权限名称", example = "用户管理")
+    @TableField(value = "perm_name")
+    private String permName;
 
     @Schema(description = "动作 (1-允许 2-拒绝)", example = "1")
     @TableField(value = "action")
@@ -62,10 +70,27 @@ public class SysPermissionPolicy implements Serializable {
     @TableField(value = "create_by")
     private Long createBy;
 
+    @Schema(description = "创建人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "create_by_name")
+    private String createByName;
+
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
+
+    @Schema(description = "更新人 ID", example = "100")
+    @TableField(value = "update_by")
+    private Long updateBy;
+
+    @Schema(description = "更新人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "update_by_name")
+    private String updateByName;
+
+    @Schema(description = "更新时间", format = "date-time", example = "2026-04-07 15:45:30")
+    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime updateTime;
 
     @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
     @TableField(value = "is_deleted")

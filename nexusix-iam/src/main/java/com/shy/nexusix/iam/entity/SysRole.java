@@ -50,6 +50,10 @@ public class SysRole implements Serializable {
     @TableField(value = "tenant_id")
     private Long tenantId;
 
+    @Schema(description = "所属租户名称", example = "某科技公司")
+    @TableField(value = "tenant_name")
+    private String tenantName;
+
     @Schema(description = "数据范围 (1-全部 2-本部门 3-本人 4-自定义)", example = "1")
     @TableField(value = "data_scope")
     private Integer dataScope;
@@ -58,18 +62,26 @@ public class SysRole implements Serializable {
     @TableField(value = "status")
     private Integer status;
 
-    @Schema(description = "排序", example = "1")
-    @TableField(value = "sort_order")
-    private Integer sortOrder;
-
     @Schema(description = "创建人 ID", example = "100")
     @TableField(value = "create_by")
     private Long createBy;
+
+    @Schema(description = "创建人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "create_by_name")
+    private String createByName;
 
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
+
+    @Schema(description = "更新人 ID", example = "100")
+    @TableField(value = "update_by")
+    private Long updateBy;
+
+    @Schema(description = "更新人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "update_by_name")
+    private String updateByName;
 
     @Schema(description = "更新时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)

@@ -75,10 +75,22 @@ public class SysUser implements Serializable {
     @TableField(value = "create_by")
     private Long createBy;
 
+    @Schema(description = "创建人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "create_by_name")
+    private String createByName;
+
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
+
+    @Schema(description = "更新人 ID", example = "100")
+    @TableField(value = "update_by")
+    private Long updateBy;
+
+    @Schema(description = "更新人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "update_by_name")
+    private String updateByName;
 
     @Schema(description = "更新时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
