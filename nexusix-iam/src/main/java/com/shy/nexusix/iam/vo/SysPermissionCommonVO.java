@@ -37,10 +37,10 @@ public class SysPermissionCommonVO {
     private String permCode;
 
     /**
-     * 类型 (1-菜单 2-按钮 3-接口 4-数据字段)
+     * 类型
      */
-    @Schema(description = "类型 (1-菜单 2-按钮 3-接口 4-数据字段)", example = "1")
-    private Integer permType;
+    @Schema(description = "类型", example = "菜单")
+    private String permType;
 
     /**
      * 父权限ID

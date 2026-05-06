@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum;
+import com.shy.nexusix.common.enums.GlobalEnum.Status;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
@@ -143,9 +144,34 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         // 状态条件查询
         if (StringUtils.isNotBlank(queryParam.getStatus())) {
-            GlobalEnum.Status userStatus = GlobalEnum.Status.getByCode(Integer.parseInt(queryParam.getStatus()));
+            Status userStatus = Status.parse(queryParam.getStatus());
             if (userStatus != null) {
                 wrapper.eq(SysUser::getStatus, userStatus.getCode());
+            }
+        }
+
+        // 最后登录IP模糊查询
+        wrapper.like(StringUtils.isNotBlank(queryParam.getLastLoginIp()),
+                SysUser::getLoginIp, queryParam.getLastLoginIp());
+
+        // 最后登录时间范围查询
+        TimeRangeCommonRTO lastLoginTime = queryParam.getLastLoginTime();
+        if (lastLoginTime != null) {
+            LocalDateTime loginStartTime = lastLoginTime.getStartTime();
+            LocalDateTime loginEndTime = lastLoginTime.getEndTime();
+
+            // 校验时间范围合法性
+            if (loginStartTime != null && loginEndTime != null && loginStartTime.isAfter(loginEndTime)) {
+                throw new BusinessException(400, "最后登录开始时间不能晚于结束时间");
+            }
+
+            // 根据时间范围构建查询条件
+            if (loginStartTime != null && loginEndTime != null) {
+                wrapper.between(SysUser::getLoginDate, loginStartTime, loginEndTime);
+            } else if (loginStartTime != null) {
+                wrapper.ge(SysUser::getLoginDate, loginStartTime);
+            } else if (loginEndTime != null) {
+                wrapper.le(SysUser::getLoginDate, loginEndTime);
             }
         }
 

@@ -114,6 +114,76 @@ public final class GlobalEnum {
         public static boolean isValidCode(Integer code) {
             return getByCode(code) != null;
         }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static Status getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (Status e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static Status getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 Status 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 0 → ENABLE, DISABLE</li>
+         *   <li>字符串数字: "1", "0" → ENABLE, DISABLE</li>
+         *   <li>中文描述: "启用", "禁用" → ENABLE, DISABLE</li>
+         *   <li>枚举名称: "ENABLE", "DISABLE" → 对应枚举</li>
+         *   <li>枚举对象: Status.ENABLE → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static Status parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof Status) {
+                return (Status) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            Status byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
+        }
     }
 
     /**
@@ -714,6 +784,173 @@ public final class GlobalEnum {
                 if (e.getCode().equals(code)) return e;
             }
             return null;
+        }
+
+        /**
+         * 判断编码是否有效
+         *
+         * @param code 枚举编码
+         * @return true-有效，false-无效
+         */
+        public static boolean isValidCode(Integer code) {
+            return getByCode(code) != null;
+        }
+    }
+
+    /**
+     * <p>
+     * 权限类型枚举
+     * </p>
+     * <p>
+     * 用于表示权限/资源的类型，包括菜单、按钮、接口、数据字段四种类型
+     * </p>
+     */
+    public enum PermType implements BaseEnum {
+        /**
+         * 菜单类型
+         */
+        MENU(1, "菜单"),
+
+        /**
+         * 按钮类型
+         */
+        BUTTON(2, "按钮"),
+
+        /**
+         * 接口类型
+         */
+        API(3, "接口"),
+
+        /**
+         * 数据字段类型
+         */
+        DATA_FIELD(4, "数据字段");
+
+        /**
+         * 枚举编码
+         */
+        @EnumValue
+        @JSONField(value = true)
+        private final Integer code;
+
+        /**
+         * 枚举描述
+         */
+        private final String desc;
+
+        /**
+         * 构造函数
+         *
+         * @param code 枚举编码
+         * @param desc 枚举描述
+         */
+        PermType(Integer code, String desc) {
+            this.code = code;
+            this.desc = desc;
+        }
+
+        /**
+         * 获取枚举编码
+         *
+         * @return 枚举编码
+         */
+        @Override
+        public Integer getCode() {
+            return code;
+        }
+
+        /**
+         * 获取枚举描述
+         *
+         * @return 枚举描述
+         */
+        @Override
+        public String getDesc() {
+            return desc;
+        }
+
+        /**
+         * 根据编码获取枚举
+         *
+         * @param code 枚举编码
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static PermType getByCode(Integer code) {
+            if (code == null) return null;
+            for (PermType e : values()) {
+                if (e.getCode().equals(code)) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static PermType getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (PermType e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static PermType getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 PermType 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 2, 3, 4 → MENU, BUTTON, API, DATA_FIELD</li>
+         *   <li>字符串数字: "1", "2", "3", "4" → 对应枚举</li>
+         *   <li>中文描述: "菜单", "按钮", "接口", "数据字段" → 对应枚举</li>
+         *   <li>枚举名称: "MENU", "BUTTON", "API", "DATA_FIELD" → 对应枚举</li>
+         *   <li>枚举对象: PermType.MENU → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static PermType parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof PermType) {
+                return (PermType) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            PermType byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
         }
 
         /**
@@ -1993,6 +2230,76 @@ public final class GlobalEnum {
         public static boolean isValidCode(Integer code) {
             return getByCode(code) != null;
         }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static TargetType getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (TargetType e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static TargetType getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 TargetType 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 2, 3, 4, 5 → SYSTEM, TENANT, ROLE, USER, ALL</li>
+         *   <li>字符串数字: "1", "2" → 对应枚举</li>
+         *   <li>中文描述: "系统", "租户" → 对应枚举</li>
+         *   <li>枚举名称: "SYSTEM", "TENANT" → 对应枚举</li>
+         *   <li>枚举对象: TargetType.SYSTEM → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static TargetType parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof TargetType) {
+                return (TargetType) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            TargetType byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
+        }
     }
 
     /**
@@ -2079,6 +2386,76 @@ public final class GlobalEnum {
          */
         public static boolean isValidCode(Integer code) {
             return getByCode(code) != null;
+        }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static Action getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (Action e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static Action getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 Action 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 2 → ALLOW, DENY</li>
+         *   <li>字符串数字: "1", "2" → ALLOW, DENY</li>
+         *   <li>中文描述: "允许", "拒绝" → ALLOW, DENY</li>
+         *   <li>枚举名称: "ALLOW", "DENY" → 对应枚举</li>
+         *   <li>枚举对象: Action.ALLOW → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static Action parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof Action) {
+                return (Action) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            Action byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
         }
     }
 
@@ -2171,6 +2548,76 @@ public final class GlobalEnum {
          */
         public static boolean isValidCode(Integer code) {
             return getByCode(code) != null;
+        }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static RoleLevel getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (RoleLevel e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static RoleLevel getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 RoleLevel 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 2, 3 → SYSTEM, TENANT, USER</li>
+         *   <li>字符串数字: "1", "2" → 对应枚举</li>
+         *   <li>中文描述: "系统级", "租户级" → 对应枚举</li>
+         *   <li>枚举名称: "SYSTEM", "TENANT" → 对应枚举</li>
+         *   <li>枚举对象: RoleLevel.SYSTEM → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static RoleLevel parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof RoleLevel) {
+                return (RoleLevel) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            RoleLevel byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
         }
     }
 
@@ -2268,6 +2715,76 @@ public final class GlobalEnum {
          */
         public static boolean isValidCode(Integer code) {
             return getByCode(code) != null;
+        }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static DataScope getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (DataScope e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static DataScope getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 DataScope 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 2, 3, 4 → ALL, DEPT, SELF, CUSTOM</li>
+         *   <li>字符串数字: "1", "2" → 对应枚举</li>
+         *   <li>中文描述: "全部", "本部门" → 对应枚举</li>
+         *   <li>枚举名称: "ALL", "DEPT" → 对应枚举</li>
+         *   <li>枚举对象: DataScope.ALL → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static DataScope parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof DataScope) {
+                return (DataScope) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            DataScope byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
         }
     }
 

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum;
+import com.shy.nexusix.common.enums.GlobalEnum.Action;
+import com.shy.nexusix.common.enums.GlobalEnum.TargetType;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
@@ -128,8 +130,12 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         LambdaQueryWrapper<SysPermissionPolicy> wrapper = new LambdaQueryWrapper<>();
 
         // 目标类型条件查询
-        wrapper.eq(queryParam.getTargetType() != null,
-                SysPermissionPolicy::getTargetType, queryParam.getTargetType());
+        if (StringUtils.isNotBlank(queryParam.getTargetType())) {
+            TargetType targetType = TargetType.parse(queryParam.getTargetType());
+            if (targetType != null) {
+                wrapper.eq(SysPermissionPolicy::getTargetType, targetType.getCode());
+            }
+        }
 
         // 目标ID条件查询
         wrapper.eq(StringUtils.isNotBlank(queryParam.getTargetId()),
@@ -148,8 +154,12 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
                 SysPermissionPolicy::getPermName, queryParam.getPermName());
 
         // 动作条件查询
-        wrapper.eq(queryParam.getAction() != null,
-                SysPermissionPolicy::getAction, queryParam.getAction());
+        if (StringUtils.isNotBlank(queryParam.getAction())) {
+            Action action = Action.parse(queryParam.getAction());
+            if (action != null) {
+                wrapper.eq(SysPermissionPolicy::getAction, action.getCode());
+            }
+        }
 
         // 是否向下继承条件查询
         wrapper.eq(queryParam.getInheritanceEnabled() != null,

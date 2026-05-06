@@ -31,9 +31,10 @@ public class SysRoleQueryRTO extends PageCommonRTO {
 
     /**
      * 角色层级 (1-系统 2-租户 3-用户)
+     * 支持数字编码、中文描述或枚举名称查询
      */
-    @Schema(description = "角色层级 (1-系统 2-租户 3-用户)", example = "2")
-    private Integer roleLevel;
+    @Schema(description = "角色层级 (1-系统 2-租户 3-用户)，支持数字编码、中文描述或枚举名称", example = "租户级")
+    private String roleLevel;
 
     /**
      * 所属租户ID
@@ -49,14 +50,16 @@ public class SysRoleQueryRTO extends PageCommonRTO {
 
     /**
      * 数据范围 (1-全部 2-本部门 3-本人 4-自定义)
+     * 支持数字编码、中文描述或枚举名称查询
      */
-    @Schema(description = "数据范围 (1-全部 2-本部门 3-本人 4-自定义)", example = "1")
-    private Integer dataScope;
+    @Schema(description = "数据范围 (1-全部 2-本部门 3-本人 4-自定义)，支持数字编码、中文描述或枚举名称", example = "全部")
+    private String dataScope;
 
     /**
      * 状态 (1-启用 0-禁用)
+     * 支持数字编码、中文描述或枚举名称查询
      */
-    @Schema(description = "状态 (1-启用 0-禁用)", example = "1")
+    @Schema(description = "状态 (1-启用 0-禁用)，支持数字编码、中文描述或枚举名称", example = "启用")
     private String status;
 
     /**

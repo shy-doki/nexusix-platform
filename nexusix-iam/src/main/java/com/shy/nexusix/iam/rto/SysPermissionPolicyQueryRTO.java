@@ -19,9 +19,10 @@ public class SysPermissionPolicyQueryRTO extends PageCommonRTO {
 
     /**
      * 目标类型 (1-系统 2-租户 3-角色 4-用户)
+     * 支持数字编码、中文描述或枚举名称查询
      */
-    @Schema(description = "目标类型 (1-系统 2-租户 3-角色 4-用户)", example = "2")
-    private Integer targetType;
+    @Schema(description = "目标类型 (1-系统 2-租户 3-角色 4-用户)，支持数字编码、中文描述或枚举名称", example = "租户")
+    private String targetType;
 
     /**
      * 目标ID
@@ -49,9 +50,10 @@ public class SysPermissionPolicyQueryRTO extends PageCommonRTO {
 
     /**
      * 动作 (1-允许 2-拒绝)
+     * 支持数字编码、中文描述或枚举名称查询
      */
-    @Schema(description = "动作 (1-允许 2-拒绝)", example = "1")
-    private Integer action;
+    @Schema(description = "动作 (1-允许 2-拒绝)，支持数字编码、中文描述或枚举名称", example = "允许")
+    private String action;
 
     /**
      * 是否向下继承

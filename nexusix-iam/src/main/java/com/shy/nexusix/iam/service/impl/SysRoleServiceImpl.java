@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum;
+import com.shy.nexusix.common.enums.GlobalEnum.DataScope;
+import com.shy.nexusix.common.enums.GlobalEnum.RoleLevel;
+import com.shy.nexusix.common.enums.GlobalEnum.Status;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
@@ -134,8 +137,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                 SysRole::getRoleCode, queryParam.getRoleCode());
 
         // 角色层级条件查询
-        wrapper.eq(queryParam.getRoleLevel() != null,
-                SysRole::getRoleLevel, queryParam.getRoleLevel());
+        if (StringUtils.isNotBlank(queryParam.getRoleLevel())) {
+            RoleLevel roleLevel = RoleLevel.parse(queryParam.getRoleLevel());
+            if (roleLevel != null) {
+                wrapper.eq(SysRole::getRoleLevel, roleLevel.getCode());
+            }
+        }
 
         // 所属租户ID条件查询
         wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantId()),
@@ -146,12 +153,16 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
                 SysRole::getTenantName, queryParam.getTenantName());
 
         // 数据范围条件查询
-        wrapper.eq(queryParam.getDataScope() != null,
-                SysRole::getDataScope, queryParam.getDataScope());
+        if (StringUtils.isNotBlank(queryParam.getDataScope())) {
+            DataScope dataScope = DataScope.parse(queryParam.getDataScope());
+            if (dataScope != null) {
+                wrapper.eq(SysRole::getDataScope, dataScope.getCode());
+            }
+        }
 
         // 状态条件查询
         if (StringUtils.isNotBlank(queryParam.getStatus())) {
-            GlobalEnum.Status roleStatus = GlobalEnum.Status.getByCode(Integer.parseInt(queryParam.getStatus()));
+            Status roleStatus = Status.parse(queryParam.getStatus());
             if (roleStatus != null) {
                 wrapper.eq(SysRole::getStatus, roleStatus.getCode());
             }

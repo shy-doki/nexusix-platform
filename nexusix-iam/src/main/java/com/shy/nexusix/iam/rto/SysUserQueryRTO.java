@@ -43,9 +43,22 @@ public class SysUserQueryRTO extends PageCommonRTO {
 
     /**
      * 状态 (1-正常 0-禁用)
+     * 支持数字编码、中文描述或枚举名称查询
      */
-    @Schema(description = "状态 (1-正常 0-禁用)", example = "1")
+    @Schema(description = "状态 (1-正常 0-禁用)，支持数字编码、中文描述或枚举名称", example = "启用")
     private String status;
+
+    /**
+     * 最后登录IP
+     */
+    @Schema(description = "最后登录IP", example = "192.168.1.100")
+    private String lastLoginIp;
+
+    /**
+     * 最后登录时间范围
+     */
+    @Schema(description = "最后登录时间范围(一个/多个)[第一个参数为开始时间;第二个参数为结束时间]", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
+    private TimeRangeCommonRTO lastLoginTime;
 
     /**
      * 创建人姓名

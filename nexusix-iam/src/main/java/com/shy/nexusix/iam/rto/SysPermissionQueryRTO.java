@@ -31,9 +31,10 @@ public class SysPermissionQueryRTO extends PageCommonRTO {
 
     /**
      * 类型 (1-菜单 2-按钮 3-接口 4-数据字段)
+     * 支持数字编码、中文描述或枚举名称查询
      */
-    @Schema(description = "类型 (1-菜单 2-按钮 3-接口 4-数据字段)", example = "1")
-    private Integer permType;
+    @Schema(description = "类型 (1-菜单 2-按钮 3-接口 4-数据字段)，支持数字编码、中文描述或枚举名称", example = "菜单")
+    private String permType;
 
     /**
      * 父权限ID
@@ -42,9 +43,16 @@ public class SysPermissionQueryRTO extends PageCommonRTO {
     private String parentId;
 
     /**
-     * 状态 (1-启用 0-禁用)
+     * 父权限名称
      */
-    @Schema(description = "状态 (1-启用 0-禁用)", example = "1")
+    @Schema(description = "父权限名称", example = "用户管理")
+    private String parentName;
+
+    /**
+     * 状态 (1-启用 0-禁用)
+     * 支持数字编码、中文描述或枚举名称查询
+     */
+    @Schema(description = "状态 (1-启用 0-禁用)，支持数字编码、中文描述或枚举名称", example = "启用")
     private String status;
 
     /**

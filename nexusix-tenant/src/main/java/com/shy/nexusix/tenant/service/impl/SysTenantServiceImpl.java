@@ -310,13 +310,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         wrapper.eq(StringUtils.isNotBlank(queryParam.getContactName()),
                 SysTenant::getContactName, queryParam.getContactName());
 
-        // 状态条件查询
+        // 联系人电话条件查询
         wrapper.eq(StringUtils.isNotBlank(queryParam.getContactPhone()),
                 SysTenant::getContactPhone, queryParam.getContactPhone());
 
         // 状态条件查询
-        if (queryParam.getStatus() != null) {
-            wrapper.eq(SysTenant::getStatus, GlobalEnum.TenantStatus.getByDesc(queryParam.getStatus()).getCode());
+        if (StringUtils.isNotBlank(queryParam.getStatus())) {
+            wrapper.eq(SysTenant::getStatus, GlobalEnum.TenantStatus.parse(queryParam.getStatus()).getCode());
         }
 
         // 父租户条件查询

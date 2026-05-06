@@ -3,6 +3,7 @@ package com.shy.nexusix.iam.converter;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum.Deleted;
+import com.shy.nexusix.common.enums.GlobalEnum.PermType;
 import com.shy.nexusix.common.enums.GlobalEnum.Status;
 import com.shy.nexusix.iam.entity.SysPermission;
 import com.shy.nexusix.iam.rto.SysPermissionAddRTO;
@@ -35,6 +36,7 @@ public interface SysPermissionConverter {
      * @since 2026-05-06
      */
     @Named("toCommonVO")
+    @Mapping(target = "permType", source = "permType", qualifiedByName = "intPermTypeToDesc")
     @Mapping(target = "status", source = "status", qualifiedByName = "intStatusToDesc")
     @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "intDeletedToDesc")
     SysPermissionCommonVO toCommonVO(SysPermission permission);
@@ -49,6 +51,7 @@ public interface SysPermissionConverter {
      * @author shy
      * @since 2026-05-06
      */
+    @Mapping(target = "permType", source = "permType", qualifiedByName = "intPermTypeToDesc")
     @Mapping(target = "status", source = "status", qualifiedByName = "intStatusToDesc")
     @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "intDeletedToDesc")
     SysPermissionDetailVO toDetailVO(SysPermission permission);
@@ -64,6 +67,7 @@ public interface SysPermissionConverter {
      * @since 2026-05-06
      */
     @Named("toEntityAdd")
+    @Mapping(target = "permType", qualifiedByName = "permTypeToCode")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
     @Mapping(target = "parentId", source = "parentId", qualifiedByName = "stringToLong")
@@ -80,6 +84,7 @@ public interface SysPermissionConverter {
      * @since 2026-05-06
      */
     @Named("toEntityUpdate")
+    @Mapping(target = "permType", qualifiedByName = "permTypeToCode")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
     @Mapping(target = "parentId", source = "parentId", qualifiedByName = "stringToLong")
@@ -147,6 +152,53 @@ public interface SysPermissionConverter {
         voPage.setRecords(voList);
 
         return voPage;
+    }
+
+    /**
+     * <p>
+     * 将权限类型枚举转换为描述字符串
+     * </p>
+     *
+     * @param permType 权限类型枚举
+     * @return 权限类型描述字符串
+     * @author shy
+     * @since 2026-05-06
+     */
+    @Named("permTypeToDesc")
+    default String permTypeToDesc(PermType permType) {
+        return permType != null ? permType.getDesc() : null;
+    }
+
+    /**
+     * <p>
+     * 将权限类型枚举转换为编码
+     * </p>
+     *
+     * @param permType 权限类型枚举
+     * @return 权限类型编码
+     * @author shy
+     * @since 2026-05-06
+     */
+    @Named("permTypeToCode")
+    default Integer permTypeToCode(PermType permType) {
+        return permType != null ? permType.getCode() : null;
+    }
+
+    /**
+     * <p>
+     * 将整数权限类型编码转换为描述字符串
+     * </p>
+     *
+     * @param code 权限类型编码
+     * @return 权限类型描述字符串
+     * @author shy
+     * @since 2026-05-06
+     */
+    @Named("intPermTypeToDesc")
+    default String intPermTypeToDesc(Integer code) {
+        if (code == null) return null;
+        PermType permType = PermType.getByCode(code);
+        return permType != null ? permType.getDesc() : null;
     }
 
     /**

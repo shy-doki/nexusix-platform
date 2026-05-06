@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum;
+import com.shy.nexusix.common.enums.GlobalEnum.PermType;
+import com.shy.nexusix.common.enums.GlobalEnum.Status;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
@@ -134,16 +136,24 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
                 SysPermission::getPermCode, queryParam.getPermCode());
 
         // 权限类型条件查询
-        wrapper.eq(queryParam.getPermType() != null,
-                SysPermission::getPermType, queryParam.getPermType());
+        if (StringUtils.isNotBlank(queryParam.getPermType())) {
+            PermType permType = PermType.parse(queryParam.getPermType());
+            if (permType != null) {
+                wrapper.eq(SysPermission::getPermType, permType.getCode());
+            }
+        }
 
         // 父权限ID条件查询
         wrapper.eq(StringUtils.isNotBlank(queryParam.getParentId()),
                 SysPermission::getParentId, Long.parseLong(queryParam.getParentId()));
 
+        // 父权限名称模糊查询
+        wrapper.like(StringUtils.isNotBlank(queryParam.getParentName()),
+                SysPermission::getParentName, queryParam.getParentName());
+
         // 状态条件查询
         if (StringUtils.isNotBlank(queryParam.getStatus())) {
-            GlobalEnum.Status permStatus = GlobalEnum.Status.getByCode(Integer.parseInt(queryParam.getStatus()));
+            Status permStatus = Status.parse(queryParam.getStatus());
             if (permStatus != null) {
                 wrapper.eq(SysPermission::getStatus, permStatus.getCode());
             }

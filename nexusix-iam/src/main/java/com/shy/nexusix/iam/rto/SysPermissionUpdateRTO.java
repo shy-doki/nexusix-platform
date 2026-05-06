@@ -3,6 +3,7 @@ package com.shy.nexusix.iam.rto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.annotation.EnumField;
 import com.shy.nexusix.common.enums.GlobalEnum;
+import com.shy.nexusix.common.enums.GlobalEnum.PermType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -47,13 +48,12 @@ public class SysPermissionUpdateRTO {
     private String permCode;
 
     /**
-     * 类型 (1-菜单 2-按钮 3-接口 4-数据字段)
+     * 类型(通过枚举转换)
      */
     @NotNull(message = "权限类型不能为空")
-    @Min(value = 1, message = "权限类型最小为1")
-    @Max(value = 4, message = "权限类型最大为4")
-    @Schema(description = "类型 (1-菜单 2-按钮 3-接口 4-数据字段)", example = "1")
-    private Integer permType;
+    @EnumField
+    @Schema(description = "类型(通过枚举转换)", example = "菜单")
+    private PermType permType;
 
     /**
      * 父权限ID
