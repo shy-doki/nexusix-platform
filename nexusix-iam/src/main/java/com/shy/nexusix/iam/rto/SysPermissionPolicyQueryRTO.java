@@ -1,0 +1,74 @@
+package com.shy.nexusix.iam.rto;
+
+import com.shy.nexusix.common.rto.PageCommonRTO;
+import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+/**
+ * <p>
+ * 权限策略条件查询请求对象
+ * </p>
+ *
+ * @author shy
+ * @since 2026-05-06
+ */
+@Data
+@Schema(description = "权限策略条件查询请求对象")
+public class SysPermissionPolicyQueryRTO extends PageCommonRTO {
+
+    /**
+     * 目标类型 (1-系统 2-租户 3-角色 4-用户)
+     */
+    @Schema(description = "目标类型 (1-系统 2-租户 3-角色 4-用户)", example = "2")
+    private Integer targetType;
+
+    /**
+     * 目标ID
+     */
+    @Schema(description = "目标ID", example = "1987654321098765432")
+    private String targetId;
+
+    /**
+     * 目标名称
+     */
+    @Schema(description = "目标名称", example = "某科技公司")
+    private String targetName;
+
+    /**
+     * 关联权限ID
+     */
+    @Schema(description = "关联权限ID", example = "1987654321098765432")
+    private String permissionId;
+
+    /**
+     * 关联权限名称
+     */
+    @Schema(description = "关联权限名称", example = "用户管理")
+    private String permName;
+
+    /**
+     * 动作 (1-允许 2-拒绝)
+     */
+    @Schema(description = "动作 (1-允许 2-拒绝)", example = "1")
+    private Integer action;
+
+    /**
+     * 是否向下继承
+     */
+    @Schema(description = "是否向下继承", example = "true")
+    private Boolean inheritanceEnabled;
+
+    /**
+     * 创建人姓名
+     */
+    @Schema(description = "创建人姓名", example = "张三")
+    private String createByName;
+
+    /**
+     * 创建时间范围
+     */
+    @Schema(description = "创建时间范围(一个/多个)[第一个参数为开始时间;第二个参数为结束时间]", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
+    private TimeRangeCommonRTO createTime;
+
+}
