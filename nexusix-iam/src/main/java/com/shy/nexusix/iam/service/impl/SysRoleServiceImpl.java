@@ -14,7 +14,6 @@ import com.shy.nexusix.iam.mapper.SysRoleMapper;
 import com.shy.nexusix.iam.rto.SysRoleAddRTO;
 import com.shy.nexusix.iam.rto.SysRoleQueryRTO;
 import com.shy.nexusix.iam.rto.SysRoleUpdateRTO;
-import com.shy.nexusix.iam.rto.SysRoleUserAssignRTO;
 import com.shy.nexusix.iam.service.ISysRoleService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shy.nexusix.iam.service.ISysUserRoleRelService;
@@ -27,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -593,55 +591,6 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         }
 
         return ids.size();
-    }
-
-    /**
-     * 分配角色用户
-     * <p>
-     * 采用先清后写模式：先删除该角色在指定租户下的所有用户关联，再批量新增新关联。
-     * </p>
-     */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Integer assignRoleUsers(SysRoleUserAssignRTO assignParam) {
-
-        // 校验角色是否存在
-        LambdaQueryWrapper<SysRole> roleWrapper = new LambdaQueryWrapper<SysRole>()
-                .eq(SysRole::getId, assignParam.getRoleId())
-                .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
-        long roleCount = this.count(roleWrapper);
-        if (roleCount == 0) {
-            throw new BusinessException(400, "角色不存在");
-        }
-
-        // 先清：删除该角色在指定租户下的所有用户关联
-        LambdaQueryWrapper<SysUserRoleRel> deleteWrapper = new LambdaQueryWrapper<SysUserRoleRel>()
-                .eq(SysUserRoleRel::getRoleId, assignParam.getRoleId())
-                .eq(SysUserRoleRel::getTenantId, assignParam.getTenantId());
-        iSysUserRoleRelService.remove(deleteWrapper);
-
-        // 若用户ID列表为空，仅清除关联后返回
-        if (assignParam.getUserIds().isEmpty()) {
-            return 0;
-        }
-
-        // 后写：批量新增角色用户关联
-        List<SysUserRoleRel> newRels = new ArrayList<>();
-        for (Long userId : assignParam.getUserIds()) {
-            SysUserRoleRel rel = new SysUserRoleRel();
-            rel.setUserId(userId);
-            rel.setRoleId(assignParam.getRoleId());
-            rel.setTenantId(assignParam.getTenantId());
-            newRels.add(rel);
-        }
-
-        boolean batch = iSysUserRoleRelService.saveBatch(newRels);
-
-        if (!batch) {
-            throw new BusinessException(500, "分配角色用户失败");
-        }
-
-        return newRels.size();
     }
 
 }

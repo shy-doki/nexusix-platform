@@ -144,16 +144,4 @@ public interface ISysRoleService extends IService<SysRole> {
      */
     Integer batchDeleteRole(List<String> ids);
 
-    /**
-     * 分配角色用户
-     * <p>
-     * 采用先清后写模式：先删除该角色在指定租户下的所有用户关联，再批量新增新关联。
-     * </p>
-     *
-     * @param assignParam 角色用户分配参数（角色ID + 租户ID + 用户ID列表）
-     * @return 新增关联数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 当角色不存在时抛出
-     */
-    Integer assignRoleUsers(SysRoleUserAssignRTO assignParam);
-
 }

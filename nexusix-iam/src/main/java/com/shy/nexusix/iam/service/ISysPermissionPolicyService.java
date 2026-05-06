@@ -114,46 +114,4 @@ public interface ISysPermissionPolicyService extends IService<SysPermissionPolic
      */
     Integer batchDeletePolicy(List<String> ids);
 
-    /**
-     * 分配角色权限
-     * <p>
-     * 采用先清后写模式：先逻辑删除该角色的所有已有策略，再批量新增新策略。
-     * </p>
-     *
-     * @param assignParam 角色权限分配参数
-     * @return 新增策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 当角色不存在时抛出
-     */
-    Integer assignRolePermission(SysRolePermissionAssignRTO assignParam);
-
-    /**
-     * 查询角色已分配的权限树形列表
-     *
-     * @param roleId 角色ID
-     * @return 权限树形视图对象列表
-     */
-    List<SysPermissionTreeVO> queryPermissionsByRoleId(Long roleId);
-
-    /**
-     * 查询用户权限标识列表
-     * <p>
-     * 聚合四层权限策略（系统→租户→角色→用户），DENY优先级高于ALLOW
-     * </p>
-     *
-     * @param userId   用户ID
-     * @param tenantId 租户ID（可为null）
-     * @return 权限标识编码列表
-     */
-    List<String> queryPermissionCodesByUserId(Long userId, Long tenantId);
-
-    /**
-     * 校验用户是否拥有指定权限
-     *
-     * @param userId   用户ID
-     * @param tenantId 租户ID
-     * @param permCode 权限标识编码
-     * @return true-拥有权限，false-无权限
-     */
-    boolean checkPermission(Long userId, Long tenantId, String permCode);
-
 }
