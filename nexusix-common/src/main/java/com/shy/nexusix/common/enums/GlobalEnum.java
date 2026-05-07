@@ -966,6 +966,450 @@ public final class GlobalEnum {
 
     /**
      * <p>
+     * 权限状态枚举
+     * </p>
+     * <p>
+     * 用于表示权限/资源的状态，启用状态的权限可正常授权，禁用状态的权限无法被分配和使用
+     * </p>
+     */
+    public enum PermStatus implements BaseEnum {
+        /**
+         * 启用状态
+         */
+        ENABLE(1, "启用"),
+
+        /**
+         * 禁用状态
+         */
+        DISABLE(0, "禁用");
+
+        @EnumValue
+        @JSONField(value = true)
+        private final Integer code;
+
+        private final String desc;
+
+        PermStatus(Integer code, String desc) {
+            this.code = code;
+            this.desc = desc;
+        }
+
+        @Override
+        public Integer getCode() {
+            return code;
+        }
+
+        @Override
+        public String getDesc() {
+            return desc;
+        }
+
+        public static PermStatus getByCode(Integer code) {
+            if (code == null) return null;
+            for (PermStatus e : values()) {
+                if (e.getCode().equals(code)) return e;
+            }
+            return null;
+        }
+
+        public static PermStatus getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (PermStatus e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        public static PermStatus getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 PermStatus 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 0 → ENABLE, DISABLE</li>
+         *   <li>字符串数字: "1", "0" → ENABLE, DISABLE</li>
+         *   <li>中文描述: "启用", "禁用" → ENABLE, DISABLE</li>
+         *   <li>枚举名称: "ENABLE", "DISABLE" → 对应枚举</li>
+         *   <li>枚举对象: PermStatus.ENABLE → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static PermStatus parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof PermStatus) {
+                return (PermStatus) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            PermStatus byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
+        }
+
+        public static boolean isValidCode(Integer code) {
+            return getByCode(code) != null;
+        }
+    }
+
+    /**
+     * <p>
+     * 权限策略动作枚举
+     * </p>
+     * <p>
+     * 用于表示权限策略的执行动作，允许动作授予访问权限，拒绝动作阻止访问权限
+     * </p>
+     */
+    public enum PolicyAction implements BaseEnum {
+        /**
+         * 允许动作
+         */
+        ALLOW(1, "允许"),
+
+        /**
+         * 拒绝动作
+         */
+        DENY(2, "拒绝");
+
+        @EnumValue
+        @JSONField(value = true)
+        private final Integer code;
+
+        private final String desc;
+
+        PolicyAction(Integer code, String desc) {
+            this.code = code;
+            this.desc = desc;
+        }
+
+        @Override
+        public Integer getCode() {
+            return code;
+        }
+
+        @Override
+        public String getDesc() {
+            return desc;
+        }
+
+        public static PolicyAction getByCode(Integer code) {
+            if (code == null) return null;
+            for (PolicyAction e : values()) {
+                if (e.getCode().equals(code)) return e;
+            }
+            return null;
+        }
+
+        public static PolicyAction getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (PolicyAction e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        public static PolicyAction getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 PolicyAction 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 2 → ALLOW, DENY</li>
+         *   <li>字符串数字: "1", "2" → ALLOW, DENY</li>
+         *   <li>中文描述: "允许", "拒绝" → ALLOW, DENY</li>
+         *   <li>枚举名称: "ALLOW", "DENY" → 对应枚举</li>
+         *   <li>枚举对象: PolicyAction.ALLOW → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static PolicyAction parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof PolicyAction) {
+                return (PolicyAction) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            PolicyAction byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
+        }
+
+        public static boolean isValidCode(Integer code) {
+            return getByCode(code) != null;
+        }
+    }
+
+    /**
+     * <p>
+     * 角色状态枚举
+     * </p>
+     * <p>
+     * 用于表示角色的状态，启用状态的角色可正常分配给用户，禁用状态的角色无法被分配
+     * </p>
+     */
+    public enum RoleStatus implements BaseEnum {
+        /**
+         * 启用状态
+         */
+        ENABLE(1, "启用"),
+
+        /**
+         * 禁用状态
+         */
+        DISABLE(0, "禁用");
+
+        @EnumValue
+        @JSONField(value = true)
+        private final Integer code;
+
+        private final String desc;
+
+        RoleStatus(Integer code, String desc) {
+            this.code = code;
+            this.desc = desc;
+        }
+
+        @Override
+        public Integer getCode() {
+            return code;
+        }
+
+        @Override
+        public String getDesc() {
+            return desc;
+        }
+
+        public static RoleStatus getByCode(Integer code) {
+            if (code == null) return null;
+            for (RoleStatus e : values()) {
+                if (e.getCode().equals(code)) return e;
+            }
+            return null;
+        }
+
+        public static RoleStatus getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (RoleStatus e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        public static RoleStatus getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 RoleStatus 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 0 → ENABLE, DISABLE</li>
+         *   <li>字符串数字: "1", "0" → ENABLE, DISABLE</li>
+         *   <li>中文描述: "启用", "禁用" → ENABLE, DISABLE</li>
+         *   <li>枚举名称: "ENABLE", "DISABLE" → 对应枚举</li>
+         *   <li>枚举对象: RoleStatus.ENABLE → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static RoleStatus parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof RoleStatus) {
+                return (RoleStatus) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            RoleStatus byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
+        }
+
+        public static boolean isValidCode(Integer code) {
+            return getByCode(code) != null;
+        }
+    }
+
+    /**
+     * <p>
+     * 用户状态枚举
+     * </p>
+     * <p>
+     * 用于表示用户的状态，正常状态的用户可以正常登录和使用系统，禁用状态的用户无法登录
+     * </p>
+     */
+    public enum UserStatus implements BaseEnum {
+        /**
+         * 正常状态
+         */
+        NORMAL(1, "正常"),
+
+        /**
+         * 禁用状态
+         */
+        DISABLE(0, "禁用");
+
+        @EnumValue
+        @JSONField(value = true)
+        private final Integer code;
+
+        private final String desc;
+
+        UserStatus(Integer code, String desc) {
+            this.code = code;
+            this.desc = desc;
+        }
+
+        @Override
+        public Integer getCode() {
+            return code;
+        }
+
+        @Override
+        public String getDesc() {
+            return desc;
+        }
+
+        public static UserStatus getByCode(Integer code) {
+            if (code == null) return null;
+            for (UserStatus e : values()) {
+                if (e.getCode().equals(code)) return e;
+            }
+            return null;
+        }
+
+        public static UserStatus getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (UserStatus e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        public static UserStatus getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 UserStatus 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 0 → NORMAL, DISABLE</li>
+         *   <li>字符串数字: "1", "0" → NORMAL, DISABLE</li>
+         *   <li>中文描述: "正常", "禁用" → NORMAL, DISABLE</li>
+         *   <li>枚举名称: "NORMAL", "DISABLE" → 对应枚举</li>
+         *   <li>枚举对象: UserStatus.NORMAL → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static UserStatus parse(Object value) {
+            if (value == null) return null;
+
+            if (value instanceof UserStatus) {
+                return (UserStatus) value;
+            }
+
+            if (value instanceof Number) {
+                return getByCode(((Number) value).intValue());
+            }
+
+            String strValue = value.toString().trim();
+
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+
+            }
+
+            UserStatus byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+
+            return getByName(strValue);
+        }
+
+        public static boolean isValidCode(Integer code) {
+            return getByCode(code) != null;
+        }
+    }
+
+    /**
+     * <p>
      * 菜单类型枚举
      * </p>
      * <p>

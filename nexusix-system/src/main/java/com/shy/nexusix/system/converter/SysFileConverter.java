@@ -46,7 +46,7 @@ public interface SysFileConverter {
         return voPage;
     }
 
-    @IterableMapping(qualifiedByName = "intDeleteToDesc")
+    @Named("intDeleteToDesc")
     default String intDeleteToDesc(Integer code) {
         if (code == null) return null;
         Deleted deleted = GlobalEnum.Deleted.getByCode(code);

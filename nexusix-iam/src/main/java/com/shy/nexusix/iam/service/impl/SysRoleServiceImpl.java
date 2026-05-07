@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.enums.GlobalEnum.DataScope;
 import com.shy.nexusix.common.enums.GlobalEnum.RoleLevel;
-import com.shy.nexusix.common.enums.GlobalEnum.Status;
+import com.shy.nexusix.common.enums.GlobalEnum.RoleStatus;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
@@ -162,7 +162,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
         // 状态条件查询
         if (StringUtils.isNotBlank(queryParam.getStatus())) {
-            Status roleStatus = Status.parse(queryParam.getStatus());
+            RoleStatus roleStatus = RoleStatus.parse(queryParam.getStatus());
             if (roleStatus != null) {
                 wrapper.eq(SysRole::getStatus, roleStatus.getCode());
             }
@@ -366,16 +366,9 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         }
 
         // 校验状态值是否合法
-        GlobalEnum.Status roleStatus = GlobalEnum.Status.getByCode(Integer.parseInt(status));
+        GlobalEnum.RoleStatus roleStatus = GlobalEnum.RoleStatus.parse(status);
         if (roleStatus == null) {
-            // 尝试通过描述解析状态
-            if ("启用".equals(status)) {
-                roleStatus = GlobalEnum.Status.ENABLE;
-            } else if ("禁用".equals(status)) {
-                roleStatus = GlobalEnum.Status.DISABLE;
-            } else {
-                throw new BusinessException(400, "状态值不合法，仅支持：启用、禁用");
-            }
+            throw new BusinessException(400, "状态值不合法，仅支持：启用、禁用");
         }
 
         // 查询待更新状态的角色是否存在
@@ -604,16 +597,9 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         }
 
         // 校验状态值是否合法
-        GlobalEnum.Status roleStatus = GlobalEnum.Status.getByCode(Integer.parseInt(status));
+        GlobalEnum.RoleStatus roleStatus = GlobalEnum.RoleStatus.parse(status);
         if (roleStatus == null) {
-            // 尝试通过描述解析状态
-            if ("启用".equals(status)) {
-                roleStatus = GlobalEnum.Status.ENABLE;
-            } else if ("禁用".equals(status)) {
-                roleStatus = GlobalEnum.Status.DISABLE;
-            } else {
-                throw new BusinessException(400, "状态值不合法");
-            }
+            throw new BusinessException(400, "状态值不合法");
         }
 
         // 校验ID格式并转换为Long类型

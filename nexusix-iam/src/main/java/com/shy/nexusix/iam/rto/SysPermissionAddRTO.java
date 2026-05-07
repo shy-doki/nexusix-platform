@@ -3,8 +3,8 @@ package com.shy.nexusix.iam.rto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.annotation.EnumField;
 import com.shy.nexusix.common.enums.GlobalEnum;
+import com.shy.nexusix.common.enums.GlobalEnum.PermStatus;
 import com.shy.nexusix.common.enums.GlobalEnum.PermType;
-import com.shy.nexusix.common.enums.GlobalEnum.Status;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -77,7 +77,7 @@ public class SysPermissionAddRTO {
     @NotNull(message = "状态不能为空")
     @EnumField
     @Schema(description = "状态(通过枚举转换)", example = "启用")
-    private Status status;
+    private PermStatus status;
 
     /**
      * 创建人ID

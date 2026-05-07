@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum;
-import com.shy.nexusix.common.enums.GlobalEnum.Status;
+import com.shy.nexusix.common.enums.GlobalEnum.UserStatus;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
@@ -144,7 +144,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         // 状态条件查询
         if (StringUtils.isNotBlank(queryParam.getStatus())) {
-            Status userStatus = Status.parse(queryParam.getStatus());
+            UserStatus userStatus = UserStatus.parse(queryParam.getStatus());
             if (userStatus != null) {
                 wrapper.eq(SysUser::getStatus, userStatus.getCode());
             }
@@ -424,16 +424,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
 
         // 校验状态值是否合法
-        GlobalEnum.Status userStatus = GlobalEnum.Status.getByCode(Integer.parseInt(status));
+        GlobalEnum.UserStatus userStatus = GlobalEnum.UserStatus.parse(status);
         if (userStatus == null) {
-            // 尝试通过描述解析状态
-            if ("启用".equals(status)) {
-                userStatus = GlobalEnum.Status.ENABLE;
-            } else if ("禁用".equals(status)) {
-                userStatus = GlobalEnum.Status.DISABLE;
-            } else {
-                throw new BusinessException(400, "状态值不合法，仅支持：启用、禁用");
-            }
+            throw new BusinessException(400, "状态值不合法，仅支持：正常、禁用");
         }
 
         // 查询待更新状态的用户是否存在
@@ -700,16 +693,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
 
         // 校验状态值是否合法
-        GlobalEnum.Status userStatus = GlobalEnum.Status.getByCode(Integer.parseInt(status));
+        GlobalEnum.UserStatus userStatus = GlobalEnum.UserStatus.parse(status);
         if (userStatus == null) {
-            // 尝试通过描述解析状态
-            if ("启用".equals(status)) {
-                userStatus = GlobalEnum.Status.ENABLE;
-            } else if ("禁用".equals(status)) {
-                userStatus = GlobalEnum.Status.DISABLE;
-            } else {
-                throw new BusinessException(400, "状态值不合法");
-            }
+            throw new BusinessException(400, "状态值不合法");
         }
 
         // 校验ID格式并转换为Long类型

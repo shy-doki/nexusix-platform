@@ -3,7 +3,7 @@ package com.shy.nexusix.iam.rto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.annotation.EnumField;
 import com.shy.nexusix.common.enums.GlobalEnum;
-import com.shy.nexusix.common.enums.GlobalEnum.Action;
+import com.shy.nexusix.common.enums.GlobalEnum.PolicyAction;
 import com.shy.nexusix.common.enums.GlobalEnum.TargetType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
@@ -79,7 +79,7 @@ public class SysPermissionPolicyUpdateRTO {
     @NotNull(message = "动作不能为空")
     @EnumField
     @Schema(description = "动作(通过枚举转换)", example = "允许")
-    private Action action;
+    private PolicyAction action;
 
     /**
      * 优先级 (数字越大优先级越高)

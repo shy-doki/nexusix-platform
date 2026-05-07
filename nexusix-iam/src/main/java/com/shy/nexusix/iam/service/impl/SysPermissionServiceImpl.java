@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum;
+import com.shy.nexusix.common.enums.GlobalEnum.PermStatus;
 import com.shy.nexusix.common.enums.GlobalEnum.PermType;
-import com.shy.nexusix.common.enums.GlobalEnum.Status;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
@@ -153,7 +153,7 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
 
         // 状态条件查询
         if (StringUtils.isNotBlank(queryParam.getStatus())) {
-            Status permStatus = Status.parse(queryParam.getStatus());
+            PermStatus permStatus = PermStatus.parse(queryParam.getStatus());
             if (permStatus != null) {
                 wrapper.eq(SysPermission::getStatus, permStatus.getCode());
             }
@@ -360,16 +360,9 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         }
 
         // 校验状态值是否合法
-        GlobalEnum.Status permStatus = GlobalEnum.Status.getByCode(Integer.parseInt(status));
+        GlobalEnum.PermStatus permStatus = GlobalEnum.PermStatus.parse(status);
         if (permStatus == null) {
-            // 尝试通过描述解析状态
-            if ("启用".equals(status)) {
-                permStatus = GlobalEnum.Status.ENABLE;
-            } else if ("禁用".equals(status)) {
-                permStatus = GlobalEnum.Status.DISABLE;
-            } else {
-                throw new BusinessException(400, "状态值不合法，仅支持：启用、禁用");
-            }
+            throw new BusinessException(400, "状态值不合法，仅支持：启用、禁用");
         }
 
         // 查询待更新状态的权限是否存在
@@ -598,16 +591,9 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         }
 
         // 校验状态值是否合法
-        GlobalEnum.Status permStatus = GlobalEnum.Status.getByCode(Integer.parseInt(status));
+        GlobalEnum.PermStatus permStatus = GlobalEnum.PermStatus.parse(status);
         if (permStatus == null) {
-            // 尝试通过描述解析状态
-            if ("启用".equals(status)) {
-                permStatus = GlobalEnum.Status.ENABLE;
-            } else if ("禁用".equals(status)) {
-                permStatus = GlobalEnum.Status.DISABLE;
-            } else {
-                throw new BusinessException(400, "状态值不合法");
-            }
+            throw new BusinessException(400, "状态值不合法");
         }
 
         // 校验ID格式并转换为Long类型

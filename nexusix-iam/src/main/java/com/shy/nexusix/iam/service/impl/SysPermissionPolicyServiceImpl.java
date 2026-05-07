@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.shy.nexusix.common.enums.GlobalEnum;
-import com.shy.nexusix.common.enums.GlobalEnum.Action;
+import com.shy.nexusix.common.enums.GlobalEnum.PolicyAction;
 import com.shy.nexusix.common.enums.GlobalEnum.TargetType;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
@@ -155,7 +155,7 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
 
         // 动作条件查询
         if (StringUtils.isNotBlank(queryParam.getAction())) {
-            Action action = Action.parse(queryParam.getAction());
+            PolicyAction action = PolicyAction.parse(queryParam.getAction());
             if (action != null) {
                 wrapper.eq(SysPermissionPolicy::getAction, action.getCode());
             }
@@ -374,16 +374,9 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         }
 
         // 校验动作值是否合法
-        GlobalEnum.Action policyAction = GlobalEnum.Action.getByCode(Integer.parseInt(action));
+        GlobalEnum.PolicyAction policyAction = GlobalEnum.PolicyAction.parse(action);
         if (policyAction == null) {
-            // 尝试通过描述解析动作
-            if ("允许".equals(action)) {
-                policyAction = GlobalEnum.Action.ALLOW;
-            } else if ("拒绝".equals(action)) {
-                policyAction = GlobalEnum.Action.DENY;
-            } else {
-                throw new BusinessException(400, "动作值不合法，仅支持：允许、拒绝");
-            }
+            throw new BusinessException(400, "动作值不合法，仅支持：允许、拒绝");
         }
 
         // 查询待更新动作的策略是否存在
@@ -587,16 +580,9 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         }
 
         // 校验动作值是否合法
-        GlobalEnum.Action policyAction = GlobalEnum.Action.getByCode(Integer.parseInt(action));
+        GlobalEnum.PolicyAction policyAction = GlobalEnum.PolicyAction.parse(action);
         if (policyAction == null) {
-            // 尝试通过描述解析动作
-            if ("允许".equals(action)) {
-                policyAction = GlobalEnum.Action.ALLOW;
-            } else if ("拒绝".equals(action)) {
-                policyAction = GlobalEnum.Action.DENY;
-            } else {
-                throw new BusinessException(400, "动作值不合法，仅支持：允许、拒绝");
-            }
+            throw new BusinessException(400, "动作值不合法，仅支持：允许、拒绝");
         }
 
         // 校验ID格式并转换为Long类型

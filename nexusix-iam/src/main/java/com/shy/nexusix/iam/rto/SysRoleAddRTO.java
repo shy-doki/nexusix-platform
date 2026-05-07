@@ -5,7 +5,7 @@ import com.shy.nexusix.common.annotation.EnumField;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.enums.GlobalEnum.DataScope;
 import com.shy.nexusix.common.enums.GlobalEnum.RoleLevel;
-import com.shy.nexusix.common.enums.GlobalEnum.Status;
+import com.shy.nexusix.common.enums.GlobalEnum.RoleStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -80,7 +80,7 @@ public class SysRoleAddRTO {
     @NotNull(message = "状态不能为空")
     @EnumField
     @Schema(description = "状态(通过枚举转换)", example = "启用")
-    private Status status;
+    private RoleStatus status;
 
     /**
      * 创建人ID
