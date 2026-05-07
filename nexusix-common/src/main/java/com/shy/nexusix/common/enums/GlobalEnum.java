@@ -2273,6 +2273,65 @@ public final class GlobalEnum {
         public static boolean isValidCode(Integer code) {
             return getByCode(code) != null;
         }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static TokenStatus getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (TokenStatus e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static TokenStatus getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 TokenStatus 枚举:
+         * <ul>
+         *   <li>数字类型: 0, 1 → INVALID, VALID</li>
+         *   <li>字符串数字: "0", "1" → INVALID, VALID</li>
+         *   <li>中文描述: "无效", "有效" → INVALID, VALID</li>
+         *   <li>枚举名称: "INVALID", "VALID" → 对应枚举</li>
+         *   <li>枚举对象: TokenStatus.VALID → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static TokenStatus parse(Object value) {
+            if (value == null) return null;
+            if (value instanceof TokenStatus) return (TokenStatus) value;
+            if (value instanceof Number) return getByCode(((Number) value).intValue());
+            String strValue = value.toString().trim();
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+            }
+            TokenStatus byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+            return getByName(strValue);
+        }
     }
 
     /**
