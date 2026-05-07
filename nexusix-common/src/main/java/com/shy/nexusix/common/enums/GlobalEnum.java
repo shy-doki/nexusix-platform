@@ -698,6 +698,65 @@ public final class GlobalEnum {
         public static boolean isValidCode(Integer code) {
             return getByCode(code) != null;
         }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static SubscriptionStatus getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (SubscriptionStatus e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static SubscriptionStatus getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 SubscriptionStatus 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 0 → ACTIVE, EXPIRED</li>
+         *   <li>字符串数字: "1", "0" → ACTIVE, EXPIRED</li>
+         *   <li>中文描述: "生效", "过期" → ACTIVE, EXPIRED</li>
+         *   <li>枚举名称: "ACTIVE", "EXPIRED" → 对应枚举</li>
+         *   <li>枚举对象: SubscriptionStatus.ACTIVE → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static SubscriptionStatus parse(Object value) {
+            if (value == null) return null;
+            if (value instanceof SubscriptionStatus) return (SubscriptionStatus) value;
+            if (value instanceof Number) return getByCode(((Number) value).intValue());
+            String strValue = value.toString().trim();
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+            }
+            SubscriptionStatus byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+            return getByName(strValue);
+        }
     }
 
     /**
@@ -2392,6 +2451,65 @@ public final class GlobalEnum {
          */
         public static boolean isValidCode(Integer code) {
             return getByCode(code) != null;
+        }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 枚举描述
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static SubscriptionType getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) return null;
+            for (SubscriptionType e : values()) {
+                if (e.getDesc().equals(desc.trim())) return e;
+            }
+            return null;
+        }
+
+        /**
+         * 根据名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举对象，如果不存在则返回null
+         */
+        public static SubscriptionType getByName(String name) {
+            if (name == null || name.trim().isEmpty()) return null;
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * <p>
+         * 智能解析枚举值
+         * </p>
+         * <p>
+         * 支持多种输入格式自动转换为 SubscriptionType 枚举:
+         * <ul>
+         *   <li>数字类型: 1, 2 → SELF_PURCHASE, PARENT_GRANT</li>
+         *   <li>字符串数字: "1", "2" → SELF_PURCHASE, PARENT_GRANT</li>
+         *   <li>中文描述: "自购", "父租户分配" → SELF_PURCHASE, PARENT_GRANT</li>
+         *   <li>枚举名称: "SELF_PURCHASE", "PARENT_GRANT" → 对应枚举</li>
+         *   <li>枚举对象: SubscriptionType.SELF_PURCHASE → 直接返回</li>
+         * </ul>
+         * </p>
+         */
+        public static SubscriptionType parse(Object value) {
+            if (value == null) return null;
+            if (value instanceof SubscriptionType) return (SubscriptionType) value;
+            if (value instanceof Number) return getByCode(((Number) value).intValue());
+            String strValue = value.toString().trim();
+            try {
+                int code = Integer.parseInt(strValue);
+                return getByCode(code);
+            } catch (NumberFormatException ignored) {
+            }
+            SubscriptionType byDesc = getByDesc(strValue);
+            if (byDesc != null) return byDesc;
+            return getByName(strValue);
         }
     }
 
