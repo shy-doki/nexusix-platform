@@ -39,9 +39,17 @@ public class SysTenantSubscription implements Serializable {
     @TableField(value = "tenant_id")
     private Long tenantId;
 
+    @Schema(description = "租户名称", example = "某科技公司")
+    @TableField(value = "tenant_name")
+    private String tenantName;
+
     @Schema(description = "套餐产品 ID", example = "1001")
     @TableField(value = "package_id")
     private Long packageId;
+
+    @Schema(description = "套餐产品名称", example = "高级套餐")
+    @TableField(value = "package_name")
+    private String packageName;
 
     @Schema(description = "订阅类型 (1-自购 2-父租户分配)", example = "1")
     @TableField(value = "subscription_type")
@@ -73,18 +81,30 @@ public class SysTenantSubscription implements Serializable {
     @TableField(value = "parent_grant_id")
     private Long parentGrantId;
 
+    @Schema(description = "父租户名称", example = "某科技集团")
+    @TableField(value = "parent_tenant_name")
+    private Long parentTenantName;
+
     @Schema(description = "创建人 ID", example = "100")
     @TableField(value = "create_by")
     private Long createBy;
 
-    @Schema(description = "更新人 ID", example = "100")
-    @TableField(value = "update_by")
-    private Long updateBy;
+    @Schema(description = "创建人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "create_by_name")
+    private String createByName;
 
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
+
+    @Schema(description = "更新人 ID", example = "100")
+    @TableField(value = "update_by")
+    private Long updateBy;
+
+    @Schema(description = "更新人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @TableField(value = "update_by_name")
+    private String updateByName;
 
     @Schema(description = "更新时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
