@@ -3,6 +3,7 @@ package com.shy.nexusix.iam.controller;
 import com.shy.nexusix.common.annotation.RateLimit;
 import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.iam.rto.LoginRTO;
+import com.shy.nexusix.iam.rto.RegisterRTO;
 import com.shy.nexusix.iam.service.IAuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,8 +38,21 @@ public class AuthController {
     private IAuthService authService;
 
     /**
-     * 用户登录
+     * 用户注册
      * Controller层职责：接收请求、参数校验、调用Service、封装响应
+     */
+    @PostMapping("/register")
+    @Operation(summary = "用户注册")
+    @RateLimit(key = "auth:register", limit = 5, period = 60,
+            limitType = RateLimit.LimitType.IP,
+            message = "注册尝试过于频繁，请60秒后再试")
+    public ApiResponse register(@Valid @RequestBody RegisterRTO registerRTO) {
+        Map<String, Object> result = authService.register(registerRTO);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 用户登录
      */
     @PostMapping("/login")
     @Operation(summary = "用户登录")
@@ -46,7 +60,6 @@ public class AuthController {
             limitType = RateLimit.LimitType.IP,
             message = "登录尝试过于频繁，请60秒后再试")
     public ApiResponse login(@Valid @RequestBody LoginRTO loginRTO, HttpServletRequest request) {
-        // 直接调用Service层，业务逻辑完全封装在Service中
         Map<String, Object> result = authService.login(loginRTO, request);
         return ApiResponse.success(result);
     }

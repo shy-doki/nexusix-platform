@@ -2,6 +2,7 @@ package com.shy.nexusix.iam.service;
 
 import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.iam.rto.LoginRTO;
+import com.shy.nexusix.iam.rto.RegisterRTO;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
@@ -13,6 +14,7 @@ import java.util.Map;
  * <p>
  * 本接口封装所有认证相关的业务逻辑，包括：
  * - 用户登录（含密码校验、租户绑定、Session初始化）
+ * - 用户注册（含数据校验、密码加密、重复检查）
  * - 用户登出（含缓存清理、Token失效）
  * - 租户切换（会话更新、权限缓存刷新）
  * - 二级认证（密码二次验证）
@@ -105,5 +107,28 @@ public interface IAuthService {
      * @since 2026-05-08
      */
     Map<String, Object> getCurrentUser();
+
+    /**
+     * <p>
+     * 用户注册
+     * </p>
+     * <p>
+     * 执行完整的用户注册流程：
+     * 1. 校验两次密码输入是否一致
+     * 2. 校验用户名是否已存在
+     * 3. 校验邮箱是否已被注册
+     * 4. 校验手机号是否已被注册
+     * 5. BCrypt加密密码
+     * 6. 构建用户实体并保存
+     * 7. 返回注册结果（不含敏感数据）
+     * </p>
+     *
+     * @param registerRTO 注册请求参数（用户名、密码、确认密码、昵称、邮箱、手机号）
+     * @return 注册结果，包含用户ID、用户名、昵称、邮箱、手机号
+     * @throws com.shy.nexusix.common.exception.BusinessException 注册失败时抛出（密码不一致、用户名已存在、邮箱已注册、手机号已注册等）
+     * @author shy
+     * @since 2026-05-08
+     */
+    Map<String, Object> register(RegisterRTO registerRTO);
 
 }
