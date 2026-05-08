@@ -1,12 +1,8 @@
 package com.shy.nexusix.iam.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import cn.dev33.satoken.secure.BCrypt;
-import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.result.ApiResponse;
-import com.shy.nexusix.iam.entity.SysUser;
-import com.shy.nexusix.iam.service.ISysUserService;
-import cn.dev33.satoken.stp.StpUtil;
+import com.shy.nexusix.iam.service.ISafeAuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,15 +10,18 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * <p>
- * 二级认证控制器 - 高风险操作前的密码二次验证
+ * 二级认证控制器 - 仅负责HTTP请求接收与响应处理
  * </p>
  * <p>
- * 验证成功后StpUtil.openSafe()将二级认证标记写入Redis，
- * 后续@SaCheckSafe校验时从Redis读取该标记。
+ * 本控制器不包含任何业务逻辑，所有业务逻辑委托给IAuthService处理。
+ * 职责：
+ * 1. 接收HTTP请求，校验参数
+ * 2. 调用Service层方法
+ * 3. 封装响应返回给前端
  * </p>
  *
  * @author shy
- * @since 2026-05-07
+ * @since 2026-05-08
  */
 @RestController
 @RequestMapping("/auth/safe")
@@ -30,33 +29,18 @@ import org.springframework.web.bind.annotation.*;
 public class SafeAuthController {
 
     @Autowired
-    private ISysUserService userService;
+    private ISafeAuthService iSafeAuthService;
 
     /**
      * 二级认证验证密码
-     * 验证成功后开启二级认证，有效期120秒，标记自动写入Redis
+     * Controller层职责：接收请求、参数校验、调用Service、封装响应
      */
     @PostMapping("/verify")
     @SaCheckLogin
     @Operation(summary = "二级认证验证")
     public ApiResponse verifySafePassword(@RequestBody String password) {
-        if (password == null || password.isBlank()) {
-            throw new BusinessException(400, "密码不能为空");
-        }
-
-        Long userId = StpUtil.getLoginIdAsLong();
-        SysUser user = userService.getById(userId);
-        if (user == null) {
-            throw new BusinessException(401, "用户不存在");
-        }
-
-        if (!BCrypt.checkpw(password, user.getPassword())) {
-            throw new BusinessException(401, "密码验证失败");
-        }
-
-        // 开启二级认证，有效期120秒 → 自动写入Redis
-        StpUtil.openSafe(120);
-
-        return ApiResponse.success("二级认证成功，有效期120秒");
+        // 直接调用Service层，业务逻辑完全封装在Service中
+        String result = iSafeAuthService.verifySafePassword(password);
+        return ApiResponse.success(result);
     }
 }
