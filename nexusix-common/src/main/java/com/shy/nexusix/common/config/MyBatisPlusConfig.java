@@ -1,5 +1,8 @@
 package com.shy.nexusix.common.config;
 
+import cn.dev33.satoken.exception.SaTokenException;
+import cn.dev33.satoken.session.SaSession;
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
@@ -75,10 +78,29 @@ public class MyBatisPlusConfig {
 
             @Override
             public Expression getTenantId() {
-                // TODO 暂时返回默认租户ID 1 后续结合Sa-Token实现获取租户ID
-                long tenantId = 1L;
-                logger.debug("当前租户ID: {}", tenantId);
-                // 将租户ID包装为JSqlParser的LongValue表达式对象并返回
+                // 未登录 直接返回默认租户ID（系统内部调用或白名单接口）
+                if (!StpUtil.isLogin()) {
+                    logger.debug("未登录状态，使用默认租户ID: 1");
+                    return new LongValue(1L);
+                }
+
+                // 获取会话（不创建新会话）
+                SaSession session = StpUtil.getSession(false);
+                if (session == null) {
+                    logger.warn("已登录但会话不存在，使用默认租户ID: 1");
+                    return new LongValue(1L);
+                }
+
+                // 获取租户ID
+                Object tenantIdObj = session.get("tenantId");
+                if (tenantIdObj == null) {
+                    logger.warn("用户已登录但未绑定租户，使用默认租户ID: 1");
+                    return new LongValue(1L);
+                }
+
+                // 转换为Long类型并返回
+                long tenantId = parseLongSafely(tenantIdObj);
+                logger.debug("当前租户ID: {}（来自Redis会话）", tenantId);
                 return new LongValue(tenantId);
             }
         });
@@ -113,6 +135,22 @@ public class MyBatisPlusConfig {
         logger.info("MyBatis-Plus拦截器配置完成");
         // 返回配置好的拦截器实例，由Spring容器管理
         return interceptor;
+    }
+
+    /**
+     * 安全解析Long值
+     * 解析失败时返回默认值1
+     */
+    private long parseLongSafely(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            logger.warn("租户ID解析失败，使用默认值: 1, value={}", value);
+            return 1L;
+        }
     }
 
 }

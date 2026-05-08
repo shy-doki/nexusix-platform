@@ -39,10 +39,16 @@ spring:
       timeout: 3000ms
       lettuce:
         pool:
-          max-active: 8
-          max-wait: -1ms
-          max-idle: 8
-          min-idle: 0
+          # 最大活跃连接数（适配高并发场景）
+          max-active: 20
+          # 获取连接最大等待时间（防止无限等待）
+          max-wait: 3000ms
+          # 最大空闲连接
+          max-idle: 10
+          # 最小空闲连接（预热连接池）
+          min-idle: 5
+          # Lettuce关闭超时
+          shutdown-timeout: 200ms
 
   servlet:
     multipart:
@@ -79,3 +85,49 @@ file:
 
   # 存储模式：local(本地磁盘) / oss(阿里云OSS) / minio(MinIO)
   storage-mode: local
+
+# application.yml 新增 sa-token 配置段
+sa-token:
+  # Token名称 (同时也是Cookie名称, 前后端分离项目建议使用Header传递)
+  token-name: Authorization
+  # Token有效期 (秒), 默认30天
+  timeout: 2592000
+  # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
+  active-timeout: 7200
+  # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
+  is-concurrent: false
+  # 多人登录同一账号时是否共用一个Token
+  is-share: false
+  # Token风格
+  token-style: uuid
+  # 是否输出操作日志
+  is-log: true
+  # JWT秘钥 (必须通过环境变量注入, 禁止硬编码)
+  jwt-secret-key: ${JWT_SECRET_KEY:nexusix-platform-secret-key-2026}
+  # 是否从Cookie中读取Token
+  is-read-cookie: true
+  # 是否从Header中读取Token
+  is-read-header: false
+  # Token前缀 (前端需携带 NexusIX <token>)
+  token-prefix: NexusIX
+  # 是否在登录后将Token写入到响应头
+  is-write-header: true
+  # Same-Token的有效期 (秒), 用于内部服务间调用
+  same-token-timeout: 3600
+  # Sa-Token使用独立Redis数据库（database:1），与业务缓存（database:0）隔离
+  alone-redis:
+    database: 1
+    host: ${spring.data.redis.host}
+    port: ${spring.data.redis.port}
+    password: ${spring.data.redis.password}
+    timeout: ${spring.data.redis.timeout}
+    # Sa-Token独立连接池配置（避免与业务RedisTemplate争抢连接）
+    pool:
+      # 最大活跃连接数（适配高并发场景）
+      max-active: 10
+      # 获取连接最大等待时间（防止无限等待）
+      max-wait: 3000ms
+      # 最大空闲连接
+      max-idle: 8
+      # 最小空闲连接（预热连接池）
+      min-idle: 3
