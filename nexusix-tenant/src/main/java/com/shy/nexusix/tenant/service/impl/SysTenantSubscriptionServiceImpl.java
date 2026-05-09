@@ -72,12 +72,13 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         LambdaQueryWrapper<SysTenantSubscription> wrapper = new LambdaQueryWrapper<>();
 
         // 租户ID精确查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantId()),
-                SysTenantSubscription::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        if (StringUtils.isNotBlank(queryParam.getTenantId())) {
+            wrapper.eq(SysTenantSubscription::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        }
 
-        // 套餐产品ID精确查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getPackageId()),
-                SysTenantSubscription::getPackageId, Long.parseLong(queryParam.getPackageId()));
+        if (StringUtils.isNotBlank(queryParam.getPackageId())) {
+            wrapper.eq(SysTenantSubscription::getPackageId, Long.parseLong(queryParam.getPackageId()));
+        }
 
         // 订阅类型条件查询：通过parse方法支持多种输入格式
         if (StringUtils.isNotBlank(queryParam.getSubscriptionType())) {

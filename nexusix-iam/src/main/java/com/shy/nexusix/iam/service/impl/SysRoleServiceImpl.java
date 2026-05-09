@@ -145,8 +145,9 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         }
 
         // 所属租户ID条件查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantId()),
-                SysRole::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        if (StringUtils.isNotBlank(queryParam.getTenantId())) {
+            wrapper.eq(SysRole::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        }
 
         // 所属租户名称模糊查询
         wrapper.like(StringUtils.isNotBlank(queryParam.getTenantName()),

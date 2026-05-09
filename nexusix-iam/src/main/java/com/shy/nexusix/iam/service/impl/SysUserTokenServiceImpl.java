@@ -71,16 +71,18 @@ public class SysUserTokenServiceImpl extends ServiceImpl<SysUserTokenMapper, Sys
         LambdaQueryWrapper<SysUserToken> wrapper = new LambdaQueryWrapper<>();
 
         // 用户ID精确查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getUserId()),
-                SysUserToken::getUserId, Long.parseLong(queryParam.getUserId()));
+        if (StringUtils.isNotBlank(queryParam.getUserId())) {
+            wrapper.eq(SysUserToken::getUserId, Long.parseLong(queryParam.getUserId()));
+        }
 
         // 用户名称模糊查询
         wrapper.like(StringUtils.isNotBlank(queryParam.getUserName()),
                 SysUserToken::getUserName, queryParam.getUserName());
 
         // 租户ID精确查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantId()),
-                SysUserToken::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        if (StringUtils.isNotBlank(queryParam.getTenantId())) {
+            wrapper.eq(SysUserToken::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        }
 
         // 状态条件查询：通过parse方法支持多种输入格式
         if (StringUtils.isNotBlank(queryParam.getStatus())) {

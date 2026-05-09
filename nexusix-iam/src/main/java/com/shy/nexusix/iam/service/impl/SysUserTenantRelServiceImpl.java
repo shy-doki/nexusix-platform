@@ -70,12 +70,13 @@ public class SysUserTenantRelServiceImpl extends ServiceImpl<SysUserTenantRelMap
         LambdaQueryWrapper<SysUserTenantRel> wrapper = new LambdaQueryWrapper<>();
 
         // 用户ID精确查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getUserId()),
-                SysUserTenantRel::getUserId, Long.parseLong(queryParam.getUserId()));
+        if (StringUtils.isNotBlank(queryParam.getUserId())) {
+            wrapper.eq(SysUserTenantRel::getUserId, Long.parseLong(queryParam.getUserId()));
+        }
 
-        // 租户ID精确查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantId()),
-                SysUserTenantRel::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        if (StringUtils.isNotBlank(queryParam.getTenantId())) {
+            wrapper.eq(SysUserTenantRel::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        }
 
         // 是否租户管理员条件查询
         wrapper.eq(queryParam.getIsAdmin() != null,

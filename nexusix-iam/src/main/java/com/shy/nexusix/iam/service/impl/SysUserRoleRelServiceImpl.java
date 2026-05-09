@@ -70,16 +70,17 @@ public class SysUserRoleRelServiceImpl extends ServiceImpl<SysUserRoleRelMapper,
         LambdaQueryWrapper<SysUserRoleRel> wrapper = new LambdaQueryWrapper<>();
 
         // 用户ID精确查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getUserId()),
-                SysUserRoleRel::getUserId, Long.parseLong(queryParam.getUserId()));
+        if (StringUtils.isNotBlank(queryParam.getUserId())) {
+            wrapper.eq(SysUserRoleRel::getUserId, Long.parseLong(queryParam.getUserId()));
+        }
 
-        // 角色ID精确查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getRoleId()),
-                SysUserRoleRel::getRoleId, Long.parseLong(queryParam.getRoleId()));
+        if (StringUtils.isNotBlank(queryParam.getRoleId())) {
+            wrapper.eq(SysUserRoleRel::getRoleId, Long.parseLong(queryParam.getRoleId()));
+        }
 
-        // 租户ID精确查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantId()),
-                SysUserRoleRel::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        if (StringUtils.isNotBlank(queryParam.getTenantId())) {
+            wrapper.eq(SysUserRoleRel::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        }
 
         // 创建时间范围查询
         TimeRangeCommonRTO createTime = queryParam.getCreateTime();

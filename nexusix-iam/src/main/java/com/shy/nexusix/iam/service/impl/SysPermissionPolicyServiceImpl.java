@@ -138,16 +138,18 @@ public class SysPermissionPolicyServiceImpl extends ServiceImpl<SysPermissionPol
         }
 
         // 目标ID条件查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getTargetId()),
-                SysPermissionPolicy::getTargetId, Long.parseLong(queryParam.getTargetId()));
+        if (StringUtils.isNotBlank(queryParam.getTargetId())) {
+            wrapper.eq(SysPermissionPolicy::getTargetId, Long.parseLong(queryParam.getTargetId()));
+        }
 
         // 目标名称模糊查询
         wrapper.like(StringUtils.isNotBlank(queryParam.getTargetName()),
                 SysPermissionPolicy::getTargetName, queryParam.getTargetName());
 
         // 关联权限ID条件查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getPermissionId()),
-                SysPermissionPolicy::getPermissionId, Long.parseLong(queryParam.getPermissionId()));
+        if (StringUtils.isNotBlank(queryParam.getPermissionId())) {
+            wrapper.eq(SysPermissionPolicy::getPermissionId, Long.parseLong(queryParam.getPermissionId()));
+        }
 
         // 关联权限名称模糊查询
         wrapper.like(StringUtils.isNotBlank(queryParam.getPermName()),

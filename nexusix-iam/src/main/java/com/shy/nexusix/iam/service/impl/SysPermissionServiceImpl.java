@@ -144,8 +144,9 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
         }
 
         // 父权限ID条件查询
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getParentId()),
-                SysPermission::getParentId, Long.parseLong(queryParam.getParentId()));
+        if (StringUtils.isNotBlank(queryParam.getParentId())) {
+            wrapper.eq(SysPermission::getParentId, Long.parseLong(queryParam.getParentId()));
+        }
 
         // 父权限名称模糊查询
         wrapper.like(StringUtils.isNotBlank(queryParam.getParentName()),
