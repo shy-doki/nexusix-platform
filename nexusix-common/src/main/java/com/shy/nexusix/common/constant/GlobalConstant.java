@@ -1018,6 +1018,13 @@ public class GlobalConstant {
          */
         public static final String TENANT_CONTEXT_PREFIX = "nexusix:tenant:context:";
 
+        /**
+         * Redis键前缀：Sa-Token会话
+         * <p>完整格式：nexusix:satoken:{saTokenOriginalKey}</p>
+         * <p>使用场景：Sa-Token认证框架所有会话数据的Redis键前缀，与业务数据隔离</p>
+         */
+        public static final String SA_TOKEN_PREFIX = "nexusix:satoken:";
+
     }
 
     /**

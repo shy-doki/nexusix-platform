@@ -82,7 +82,7 @@ public class SysUserTenantRel implements Serializable {
     private LocalDateTime updateTime;
 
     @Schema(description = "默认租户 (0-默认 1-非默认)", example = "0")
-    @TableField(value = "is_default", exist = false)
+    @TableField(value = "is_default")
     private Integer isDefault;
 
     @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
