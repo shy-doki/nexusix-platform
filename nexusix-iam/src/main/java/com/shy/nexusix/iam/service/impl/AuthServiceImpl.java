@@ -113,13 +113,11 @@ public class AuthServiceImpl implements IAuthService {
             throw new BusinessException(401, "用户名或密码错误");
         }
 
-        // 查询用户租户关联（取默认/第一个有效租户）
+        // 查询用户租户关联（取默认）
         LambdaQueryWrapper<SysUserTenantRel> tenantRelWrapper = new LambdaQueryWrapper<SysUserTenantRel>()
                 .eq(SysUserTenantRel::getUserId, user.getId())
                 .eq(SysUserTenantRel::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
-                .eq(SysUserTenantRel::getIsDefault, GlobalEnum.Boolean.YES.getCode())
-                .orderByDesc(SysUserTenantRel::getCreateTime)
-                .last("LIMIT 1");
+                .eq(SysUserTenantRel::getIsDefault, GlobalEnum.Default.DEFAULT.getCode());
         SysUserTenantRel userTenantRel = userTenantRelMapper.selectOne(tenantRelWrapper);
 
         if (userTenantRel == null) {
