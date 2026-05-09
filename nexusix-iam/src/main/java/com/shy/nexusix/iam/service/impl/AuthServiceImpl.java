@@ -14,17 +14,17 @@ import com.shy.nexusix.core.user.UserContext;
 import com.shy.nexusix.iam.entity.SysUser;
 import com.shy.nexusix.iam.entity.SysUserTenantRel;
 import com.shy.nexusix.iam.entity.SysUserToken;
-import com.shy.nexusix.iam.mapper.SysUserMapper;
-import com.shy.nexusix.iam.mapper.SysUserTenantRelMapper;
-import com.shy.nexusix.iam.mapper.SysUserTokenMapper;
 import com.shy.nexusix.iam.rto.LoginRTO;
 import com.shy.nexusix.iam.rto.RegisterRTO;
 import com.shy.nexusix.iam.service.IAuthService;
+import com.shy.nexusix.iam.service.ISysUserService;
+import com.shy.nexusix.iam.service.ISysUserTenantRelService;
+import com.shy.nexusix.iam.service.ISysUserTokenService;
 import com.shy.nexusix.iam.vo.CurrentUserVO;
 import com.shy.nexusix.iam.vo.LoginVO;
 import com.shy.nexusix.iam.vo.RegisterVO;
 import com.shy.nexusix.tenant.entity.SysTenant;
-import com.shy.nexusix.tenant.mapper.SysTenantMapper;
+import com.shy.nexusix.tenant.service.ISysTenantService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,16 +51,16 @@ import java.util.List;
 public class AuthServiceImpl implements IAuthService {
 
     @Autowired
-    private SysUserMapper userMapper;
+    private ISysUserService iSysUserService;
 
     @Autowired
-    private SysUserTenantRelMapper userTenantRelMapper;
+    private ISysUserTenantRelService iSysUserTenantRelService;
 
     @Autowired
-    private SysTenantMapper tenantMapper;
+    private ISysTenantService iSysTenantService;
 
     @Autowired
-    private SysUserTokenMapper userTokenMapper;
+    private ISysUserTokenService iSysUserTokenService;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -85,6 +85,9 @@ public class AuthServiceImpl implements IAuthService {
      * @param loginRTO 登录请求参数
      * @param request  HTTP请求对象
      * @return 登录结果VO
+     * @throws com.shy.nexusix.common.exception.BusinessException 登录失败时抛出（用户名密码错误、用户禁用、租户冻结等）
+     * @author shy
+     * @since 2026-05-08
      */
     @Override
     public LoginVO login(LoginRTO loginRTO, HttpServletRequest request) {
@@ -94,7 +97,7 @@ public class AuthServiceImpl implements IAuthService {
         LambdaQueryWrapper<SysUser> userWrapper = new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUsername, loginRTO.getUsername())
                 .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
-        SysUser user = userMapper.selectOne(userWrapper);
+        SysUser user = iSysUserService.getOne(userWrapper);
 
         if (user == null) {
             log.warn("登录失败 - 用户不存在: {}", loginRTO.getUsername());
@@ -118,7 +121,7 @@ public class AuthServiceImpl implements IAuthService {
                 .eq(SysUserTenantRel::getUserId, user.getId())
                 .eq(SysUserTenantRel::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .eq(SysUserTenantRel::getIsDefault, GlobalEnum.Default.DEFAULT.getCode());
-        SysUserTenantRel userTenantRel = userTenantRelMapper.selectOne(tenantRelWrapper);
+        SysUserTenantRel userTenantRel = iSysUserTenantRelService.getOne(tenantRelWrapper);
 
         if (userTenantRel == null) {
             log.warn("登录失败 - 用户未绑定租户: {}", loginRTO.getUsername());
@@ -126,7 +129,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 校验租户状态
-        SysTenant tenant = tenantMapper.selectById(userTenantRel.getTenantId());
+        SysTenant tenant = iSysTenantService.getById(userTenantRel.getTenantId());
         if (tenant == null || !tenant.getStatus().equals(GlobalEnum.TenantStatus.NORMAL.getCode())) {
             log.warn("登录失败 - 租户已冻结或不存在: tenantId={}", userTenantRel.getTenantId());
             throw new BusinessException(403, "所属租户已被冻结或不存在");
@@ -151,7 +154,7 @@ public class AuthServiceImpl implements IAuthService {
         LocalDateTime now = LocalDateTime.now();
         user.setLoginIp(clientIp);
         user.setLoginDate(now);
-        userMapper.updateById(user);
+        iSysUserService.updateById(user);
 
         // 创建Token记录
         SysUserToken tokenRecord = new SysUserToken();
@@ -164,7 +167,7 @@ public class AuthServiceImpl implements IAuthService {
         tokenRecord.setLoginIp(clientIp);
         tokenRecord.setLoginTime(now);
         tokenRecord.setExpireTime(now.plusSeconds(StpUtil.getTokenTimeout()));
-        userTokenMapper.insert(tokenRecord);
+        iSysUserTokenService.save(tokenRecord);
 
         // 构建返回结果
         LoginVO loginVO = new LoginVO();
@@ -192,6 +195,8 @@ public class AuthServiceImpl implements IAuthService {
      * </p>
      *
      * @return 登出结果
+     * @author shy
+     * @since 2026-05-08
      */
     @Override
     public String logout() {
@@ -213,7 +218,7 @@ public class AuthServiceImpl implements IAuthService {
                 .eq(SysUserToken::getToken, tokenValue)
                 .eq(SysUserToken::getUserId, userId)
                 .set(SysUserToken::getStatus, GlobalEnum.TokenStatus.INVALID.getCode());
-        userTokenMapper.update(null, updateWrapper);
+        iSysUserTokenService.update(updateWrapper);
 
         // 注销会话 → Sa-Token自动清除Redis数据
         StpUtil.logout();
@@ -235,6 +240,9 @@ public class AuthServiceImpl implements IAuthService {
      *
      * @param tenantId 目标租户ID
      * @return 切换结果
+     * @throws com.shy.nexusix.common.exception.BusinessException 切换失败时抛出（用户不属于该租户、租户冻结等）
+     * @author shy
+     * @since 2026-05-08
      */
     @Override
     public String switchTenant(Long tenantId) {
@@ -246,7 +254,7 @@ public class AuthServiceImpl implements IAuthService {
                 .eq(SysUserTenantRel::getUserId, userId)
                 .eq(SysUserTenantRel::getTenantId, tenantId)
                 .eq(SysUserTenantRel::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
-        long count = userTenantRelMapper.selectCount(countWrapper);
+        long count = iSysUserTenantRelService.count(countWrapper);
 
         if (count == 0) {
             log.warn("租户切换失败 - 用户不属于该租户: userId={}, tenantId={}", userId, tenantId);
@@ -254,7 +262,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 校验目标租户状态
-        SysTenant tenant = tenantMapper.selectById(tenantId);
+        SysTenant tenant = iSysTenantService.getById(tenantId);
         if (tenant == null || !tenant.getStatus().equals(GlobalEnum.TenantStatus.NORMAL.getCode())) {
             log.warn("租户切换失败 - 租户已冻结或不存在: tenantId={}", tenantId);
             throw new BusinessException(403, "目标租户已被冻结或不存在");
@@ -286,6 +294,8 @@ public class AuthServiceImpl implements IAuthService {
      * </p>
      *
      * @return 当前用户信息VO
+     * @author shy
+     * @since 2026-05-08
      */
     @Override
     public CurrentUserVO getCurrentUser() {
@@ -316,45 +326,48 @@ public class AuthServiceImpl implements IAuthService {
      *
      * @param registerRTO 注册请求参数
      * @return 注册结果VO
+     * @throws com.shy.nexusix.common.exception.BusinessException 注册失败时抛出（密码不一致、用户名已存在、邮箱已注册、手机号已注册等）
+     * @author shy
+     * @since 2026-05-08
      */
     @Override
     public RegisterVO register(RegisterRTO registerRTO) {
         log.info("用户注册请求 - 用户名: {}", registerRTO.getUsername());
 
-        // 步骤1: 校验两次密码输入是否一致
+        // 校验两次密码输入是否一致
         if (!registerRTO.getPassword().equals(registerRTO.getConfirmPassword())) {
             log.warn("注册失败 - 两次密码输入不一致: {}", registerRTO.getUsername());
             throw new BusinessException(400, "两次密码输入不一致");
         }
 
-        // 步骤2: 校验用户名是否已存在
+        // 校验用户名是否已存在
         LambdaQueryWrapper<SysUser> usernameWrapper = new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUsername, registerRTO.getUsername());
-        long usernameCount = userMapper.selectCount(usernameWrapper);
+        long usernameCount = iSysUserService.count(usernameWrapper);
         if (usernameCount > 0) {
             log.warn("注册失败 - 用户名已存在: {}", registerRTO.getUsername());
             throw new BusinessException(400, "用户名已存在");
         }
 
-        // 步骤3: 校验邮箱是否已被注册
+        // 校验邮箱是否已被注册
         LambdaQueryWrapper<SysUser> emailWrapper = new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getEmail, registerRTO.getEmail());
-        long emailCount = userMapper.selectCount(emailWrapper);
+        long emailCount = iSysUserService.count(emailWrapper);
         if (emailCount > 0) {
             log.warn("注册失败 - 邮箱已被注册: {}", registerRTO.getEmail());
             throw new BusinessException(400, "邮箱已被注册");
         }
 
-        // 步骤4: 校验手机号是否已被注册
+        // 校验手机号是否已被注册
         LambdaQueryWrapper<SysUser> phoneWrapper = new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getPhone, registerRTO.getPhone());
-        long phoneCount = userMapper.selectCount(phoneWrapper);
+        long phoneCount = iSysUserService.count(phoneWrapper);
         if (phoneCount > 0) {
             log.warn("注册失败 - 手机号已被注册: {}", registerRTO.getPhone());
             throw new BusinessException(400, "手机号已被注册");
         }
 
-        // 步骤5: 构建用户实体
+        // 构建用户实体
         SysUser user = new SysUser();
         user.setUsername(registerRTO.getUsername());
         user.setPassword(BCrypt.hashpw(registerRTO.getPassword(), BCrypt.gensalt()));
@@ -368,9 +381,9 @@ public class AuthServiceImpl implements IAuthService {
         user.setUpdateBy(0L);
         user.setUpdateByName(registerRTO.getNickname());
 
-        // 步骤6: 保存用户
-        int insertResult = userMapper.insert(user);
-        if (insertResult <= 0) {
+        // 保存用户
+        boolean saveResult = iSysUserService.save(user);
+        if (!saveResult) {
             log.error("注册失败 - 数据库插入失败: {}", registerRTO.getUsername());
             throw new BusinessException(500, "注册失败，请稍后重试");
         }
@@ -378,11 +391,11 @@ public class AuthServiceImpl implements IAuthService {
         // 回填createBy/updateBy为自身ID
         user.setCreateBy(user.getId());
         user.setUpdateBy(user.getId());
-        userMapper.updateById(user);
+        iSysUserService.updateById(user);
 
         log.info("用户注册成功 - userId={}, username={}", user.getId(), user.getUsername());
 
-        // 步骤7: 构建返回结果（不含密码等敏感数据）
+        // 构建返回结果（不含密码等敏感数据）
         RegisterVO registerVO = new RegisterVO();
         registerVO.setUserId(user.getId());
         registerVO.setUsername(user.getUsername());
