@@ -4,6 +4,9 @@ import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.iam.rto.LoginRTO;
 import com.shy.nexusix.iam.rto.RegisterRTO;
 
+import com.shy.nexusix.iam.vo.CurrentUserVO;
+import com.shy.nexusix.iam.vo.LoginVO;
+import com.shy.nexusix.iam.vo.RegisterVO;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
@@ -50,7 +53,7 @@ public interface IAuthService {
      * @author shy
      * @since 2026-05-08
      */
-    Map<String, Object> login(LoginRTO loginRTO, HttpServletRequest request);
+    LoginVO login(LoginRTO loginRTO, HttpServletRequest request);
 
     /**
      * <p>
@@ -106,7 +109,7 @@ public interface IAuthService {
      * @author shy
      * @since 2026-05-08
      */
-    Map<String, Object> getCurrentUser();
+    CurrentUserVO getCurrentUser();
 
     /**
      * <p>
@@ -129,6 +132,6 @@ public interface IAuthService {
      * @author shy
      * @since 2026-05-08
      */
-    Map<String, Object> register(RegisterRTO registerRTO);
+    RegisterVO register(RegisterRTO registerRTO);
 
 }

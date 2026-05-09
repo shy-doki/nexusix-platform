@@ -81,6 +81,10 @@ public class SysUserTenantRel implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 
+    @Schema(description = "默认租户 (0-默认 1-非默认)", example = "0")
+    @TableField(value = "is_default")
+    private Integer isDefault;
+
     @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
     @TableField(value = "is_deleted")
     private Integer isDeleted;

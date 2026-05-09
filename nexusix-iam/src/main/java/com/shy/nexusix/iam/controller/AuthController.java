@@ -5,6 +5,9 @@ import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.iam.rto.LoginRTO;
 import com.shy.nexusix.iam.rto.RegisterRTO;
 import com.shy.nexusix.iam.service.IAuthService;
+import com.shy.nexusix.iam.vo.CurrentUserVO;
+import com.shy.nexusix.iam.vo.LoginVO;
+import com.shy.nexusix.iam.vo.RegisterVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,7 +50,7 @@ public class AuthController {
             limitType = RateLimit.LimitType.IP,
             message = "注册尝试过于频繁，请60秒后再试")
     public ApiResponse register(@Valid @RequestBody RegisterRTO registerRTO) {
-        Map<String, Object> result = authService.register(registerRTO);
+        RegisterVO result = authService.register(registerRTO);
         return ApiResponse.success(result);
     }
 
@@ -60,7 +63,7 @@ public class AuthController {
             limitType = RateLimit.LimitType.IP,
             message = "登录尝试过于频繁，请60秒后再试")
     public ApiResponse login(@Valid @RequestBody LoginRTO loginRTO, HttpServletRequest request) {
-        Map<String, Object> result = authService.login(loginRTO, request);
+        LoginVO result = authService.login(loginRTO, request);
         return ApiResponse.success(result);
     }
 
@@ -90,7 +93,7 @@ public class AuthController {
     @GetMapping("/current-user")
     @Operation(summary = "获取当前登录用户信息")
     public ApiResponse getCurrentUser() {
-        Map<String, Object> result = authService.getCurrentUser();
+        CurrentUserVO result = authService.getCurrentUser();
         return ApiResponse.success(result);
     }
 }

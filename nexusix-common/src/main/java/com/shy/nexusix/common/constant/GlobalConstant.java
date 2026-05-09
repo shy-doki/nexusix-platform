@@ -953,4 +953,92 @@ public class GlobalConstant {
         public static final int TOKEN_STATUS_INVALID = 0;
 
     }
+
+    /**
+     *  Sa-Token Session键常量
+     */
+    public static final class Session {
+
+        private Session() {
+        }
+
+        /**
+         * Session键：租户ID
+         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户ID</p>
+         */
+        public static final String TENANT_ID = "tenantId";
+
+        /**
+         * Session键：租户名称
+         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户名称</p>
+         */
+        public static final String TENANT_NAME = "tenantName";
+
+        /**
+         * Session键：用户名称
+         * <p>使用场景：Sa-Token Session中存储当前用户的昵称</p>
+         */
+        public static final String USER_NAME = "userName";
+
+    }
+
+    /**
+     *  Redis键常量
+     */
+    public static final class RedisKey {
+
+        private RedisKey() {
+        }
+
+        /**
+         * Redis键前缀：登录会话
+         * <p>完整格式：nexusix:login:session:{userId}</p>
+         * <p>使用场景：存储用户登录会话上下文数据（租户信息、用户信息等）</p>
+         */
+        public static final String LOGIN_SESSION_PREFIX = "nexusix:login:session:";
+
+        /**
+         * Redis键前缀：用户权限
+         * <p>完整格式：nexusix:perm:{userId}</p>
+         * <p>使用场景：缓存用户权限编码列表</p>
+         */
+        public static final String PERM_PREFIX = "nexusix:perm:";
+
+        /**
+         * Redis键前缀：用户角色
+         * <p>完整格式：nexusix:role:{userId}</p>
+         * <p>使用场景：缓存用户角色编码列表</p>
+         */
+        public static final String ROLE_PREFIX = "nexusix:role:";
+
+        /**
+         * Redis键前缀：租户上下文
+         * <p>完整格式：nexusix:tenant:context:{userId}</p>
+         * <p>使用场景：存储用户当前租户上下文信息（租户ID、租户名称等）</p>
+         */
+        public static final String TENANT_CONTEXT_PREFIX = "nexusix:tenant:context:";
+
+    }
+
+    /**
+     *  角色编码常量
+     */
+    public static final class RoleCode {
+
+        private RoleCode() {
+        }
+
+        /**
+         * 系统管理员角色编码
+         * <p>使用场景：判断用户是否为系统级管理员</p>
+         */
+        public static final String SYSTEM_ADMIN = "system_admin";
+
+        /**
+         * 租户管理员角色编码
+         * <p>使用场景：判断用户是否为租户级管理员</p>
+         */
+        public static final String TENANT_ADMIN = "tenant_admin";
+
+    }
 }

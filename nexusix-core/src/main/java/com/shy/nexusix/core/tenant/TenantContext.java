@@ -2,6 +2,7 @@ package com.shy.nexusix.core.tenant;
 
 import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.StpUtil;
+import com.shy.nexusix.common.constant.GlobalConstant;
 import com.shy.nexusix.common.exception.BusinessException;
 
 /**
@@ -18,9 +19,6 @@ import com.shy.nexusix.common.exception.BusinessException;
  */
 public class TenantContext {
 
-    private static final String SESSION_TENANT_ID_KEY = "tenantId";
-    private static final String SESSION_TENANT_NAME_KEY = "tenantName";
-
     /**
      * 获取当前登录用户的租户ID
      * 数据流：StpUtil.getSession() → Redis → 返回tenantId
@@ -34,7 +32,7 @@ public class TenantContext {
             throw new BusinessException(401, "当前会话不存在");
         }
 
-        Object tenantId = session.get(SESSION_TENANT_ID_KEY);
+        Object tenantId = session.get(GlobalConstant.Session.TENANT_ID);
         if (tenantId == null) {
             throw new BusinessException(401, "当前会话未绑定租户");
         }
@@ -53,7 +51,7 @@ public class TenantContext {
             return "未知租户";
         }
 
-        Object tenantName = session.get(SESSION_TENANT_NAME_KEY);
+        Object tenantName = session.get(GlobalConstant.Session.TENANT_NAME);
         return tenantName != null ? tenantName.toString() : "未知租户";
     }
 
@@ -73,7 +71,7 @@ public class TenantContext {
             return 1L;
         }
 
-        Object tenantId = session.get(SESSION_TENANT_ID_KEY);
+        Object tenantId = session.get(GlobalConstant.Session.TENANT_ID);
         if (tenantId == null) {
             return 1L;
         }
@@ -96,7 +94,7 @@ public class TenantContext {
             return false;
         }
 
-        return session.get(SESSION_TENANT_ID_KEY) != null;
+        return session.get(GlobalConstant.Session.TENANT_ID) != null;
     }
 
     /**

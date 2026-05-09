@@ -1,6 +1,7 @@
 package com.shy.nexusix.core.user;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.shy.nexusix.common.constant.GlobalConstant;
 
 import java.util.List;
 
@@ -17,8 +18,6 @@ import java.util.List;
  * @since 2026-05-08
  */
 public class UserContext {
-
-    private static final String SESSION_USER_NAME_KEY = "userName";
 
     /**
      * 获取当前登录用户ID
@@ -37,7 +36,7 @@ public class UserContext {
      * @return 用户名称，未设置时返回"未知用户"
      */
     public static String getCurrentUserName() {
-        Object userName = StpUtil.getSession().get(SESSION_USER_NAME_KEY);
+        Object userName = StpUtil.getSession().get(GlobalConstant.Session.USER_NAME);
         return userName != null ? userName.toString() : "未知用户";
     }
 
@@ -48,7 +47,7 @@ public class UserContext {
      * @return true-是系统管理员
      */
     public static boolean isSystemAdmin() {
-        return StpUtil.getRoleList().contains("system_admin");
+        return StpUtil.getRoleList().contains(GlobalConstant.RoleCode.SYSTEM_ADMIN);
     }
 
     /**
@@ -57,7 +56,7 @@ public class UserContext {
      * @return true-是租户管理员
      */
     public static boolean isTenantAdmin() {
-        return StpUtil.getRoleList().contains("tenant_admin");
+        return StpUtil.getRoleList().contains(GlobalConstant.RoleCode.TENANT_ADMIN);
     }
 
     /**
