@@ -70,38 +70,33 @@ public class StpInterfaceImpl implements StpInterface {
      */
     @Override
     public List<String> getPermissionList(Object loginId, String loginType) {
-        try {
-            Long userId = Long.parseLong(loginId.toString());
-            Long tenantId = TenantContext.getCurrentTenantId();
+        Long userId = Long.parseLong(loginId.toString());
+        Long tenantId = TenantContext.getCurrentTenantId();
 
-            Set<String> permissionCodeSet = new HashSet<>();
+        Set<String> permissionCodeSet = new HashSet<>();
 
-            // 查询系统级权限策略（对所有用户生效）
-            List<String> systemPerms = queryPermissionCodesByTargetType(GlobalConstant.Permission.TARGET_TYPE_SYSTEM, null);
-            permissionCodeSet.addAll(systemPerms);
+        // 查询系统级权限策略（对所有用户生效）
+        List<String> systemPerms = queryPermissionCodesByTargetType(GlobalConstant.Permission.TARGET_TYPE_SYSTEM, null);
+        permissionCodeSet.addAll(systemPerms);
 
-            // 查询租户级权限策略（对当前租户下所有用户生效）
-            if (tenantId != null) {
-                List<String> tenantPerms = queryPermissionCodesByTargetType(GlobalConstant.Permission.TARGET_TYPE_TENANT, tenantId);
-                permissionCodeSet.addAll(tenantPerms);
+        // 查询租户级权限策略（对当前租户下所有用户生效）
+        if (tenantId != null) {
+            List<String> tenantPerms = queryPermissionCodesByTargetType(GlobalConstant.Permission.TARGET_TYPE_TENANT, tenantId);
+            permissionCodeSet.addAll(tenantPerms);
 
-                // 查询用户角色关联，再查询角色级权限策略
-                List<Long> roleIds = getUserRoleIds(userId, tenantId);
-                for (Long roleId : roleIds) {
-                    List<String> rolePerms = queryPermissionCodesByTargetType(GlobalConstant.Permission.TARGET_TYPE_ROLE, roleId);
-                    permissionCodeSet.addAll(rolePerms);
-                }
+            // 查询用户角色关联，再查询角色级权限策略
+            List<Long> roleIds = getUserRoleIds(userId, tenantId);
+            for (Long roleId : roleIds) {
+                List<String> rolePerms = queryPermissionCodesByTargetType(GlobalConstant.Permission.TARGET_TYPE_ROLE, roleId);
+                permissionCodeSet.addAll(rolePerms);
             }
-
-            // 查询用户级权限策略（针对特定用户配置）
-            List<String> userPerms = queryPermissionCodesByTargetType(GlobalConstant.Permission.TARGET_TYPE_USER, userId);
-            permissionCodeSet.addAll(userPerms);
-
-            return new ArrayList<>(permissionCodeSet);
-        } catch (Exception e) {
-            log.error("获取用户权限列表失败, loginId: {}", loginId, e);
-            return Collections.emptyList();
         }
+
+        // 查询用户级权限策略（针对特定用户配置）
+        List<String> userPerms = queryPermissionCodesByTargetType(GlobalConstant.Permission.TARGET_TYPE_USER, userId);
+        permissionCodeSet.addAll(userPerms);
+
+        return new ArrayList<>(permissionCodeSet);
     }
 
     /**
@@ -120,47 +115,42 @@ public class StpInterfaceImpl implements StpInterface {
      */
     @Override
     public List<String> getRoleList(Object loginId, String loginType) {
-        try {
-            Long userId = Long.parseLong(loginId.toString());
-            Long tenantId = TenantContext.getCurrentTenantId();
+        Long userId = Long.parseLong(loginId.toString());
+        Long tenantId = TenantContext.getCurrentTenantId();
 
-            Set<String> roleCodeSet = new HashSet<>();
+        Set<String> roleCodeSet = new HashSet<>();
 
-            // 1. 查询系统级角色（roleLevel=1且状态正常的角色对所有用户生效）
-            List<String> systemRoles = querySystemRoleCodes();
-            roleCodeSet.addAll(systemRoles);
+        // 1. 查询系统级角色（roleLevel=1且状态正常的角色对所有用户生效）
+        List<String> systemRoles = querySystemRoleCodes();
+        roleCodeSet.addAll(systemRoles);
 
-            // 2. 查询用户角色关联的角色编码（租户级角色和用户级角色）
-            if (tenantId != null) {
-                LambdaQueryWrapper<SysUserRoleRel> relWrapper = new LambdaQueryWrapper<SysUserRoleRel>()
-                        .eq(SysUserRoleRel::getUserId, userId)
-                        .eq(SysUserRoleRel::getTenantId, tenantId)
-                        .eq(SysUserRoleRel::getIsDeleted, GlobalConstant.Status.NOT_DELETED);
+        // 2. 查询用户角色关联的角色编码（租户级角色和用户级角色）
+        if (tenantId != null) {
+            LambdaQueryWrapper<SysUserRoleRel> relWrapper = new LambdaQueryWrapper<SysUserRoleRel>()
+                    .eq(SysUserRoleRel::getUserId, userId)
+                    .eq(SysUserRoleRel::getTenantId, tenantId)
+                    .eq(SysUserRoleRel::getIsDeleted, GlobalConstant.Status.NOT_DELETED);
 
-                List<SysUserRoleRel> relList = iSysUserRoleRelService.list(relWrapper);
-                if (!relList.isEmpty()) {
-                    List<Long> roleIds = relList.stream()
-                            .map(SysUserRoleRel::getRoleId)
-                            .collect(Collectors.toList());
+            List<SysUserRoleRel> relList = iSysUserRoleRelService.list(relWrapper);
+            if (!relList.isEmpty()) {
+                List<Long> roleIds = relList.stream()
+                        .map(SysUserRoleRel::getRoleId)
+                        .collect(Collectors.toList());
 
-                    LambdaQueryWrapper<SysRole> roleWrapper = new LambdaQueryWrapper<SysRole>()
-                            .in(SysRole::getId, roleIds)
-                            .eq(SysRole::getStatus, GlobalEnum.UserStatus.NORMAL.getCode())
-                            .eq(SysRole::getIsDeleted, GlobalConstant.Status.NOT_DELETED);
+                LambdaQueryWrapper<SysRole> roleWrapper = new LambdaQueryWrapper<SysRole>()
+                        .in(SysRole::getId, roleIds)
+                        .eq(SysRole::getStatus, GlobalEnum.UserStatus.NORMAL.getCode())
+                        .eq(SysRole::getIsDeleted, GlobalConstant.Status.NOT_DELETED);
 
-                    List<SysRole> roleList = iSysRoleService.list(roleWrapper);
-                    List<String> roleCodes = roleList.stream()
-                            .map(SysRole::getRoleCode)
-                            .collect(Collectors.toList());
-                    roleCodeSet.addAll(roleCodes);
-                }
+                List<SysRole> roleList = iSysRoleService.list(roleWrapper);
+                List<String> roleCodes = roleList.stream()
+                        .map(SysRole::getRoleCode)
+                        .collect(Collectors.toList());
+                roleCodeSet.addAll(roleCodes);
             }
-
-            return new ArrayList<>(roleCodeSet);
-        } catch (Exception e) {
-            log.error("获取用户角色列表失败, loginId: {}", loginId, e);
-            return Collections.emptyList();
         }
+
+        return new ArrayList<>(roleCodeSet);
     }
 
     /**
