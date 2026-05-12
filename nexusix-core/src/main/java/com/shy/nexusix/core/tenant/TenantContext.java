@@ -52,6 +52,7 @@ public class TenantContext {
         }
 
         Object tenantName = session.get(GlobalConstant.Session.TENANT_NAME);
+
         return tenantName != null ? tenantName.toString() : "未知租户";
     }
 
@@ -86,12 +87,12 @@ public class TenantContext {
      */
     public static boolean hasTenant() {
         if (!StpUtil.isLogin()) {
-            return false;
+            throw new BusinessException(10010, "未登录");
         }
 
         SaSession session = StpUtil.getSession(false);
         if (session == null) {
-            return false;
+            throw new BusinessException(401, "当前会话不存在");
         }
 
         return session.get(GlobalConstant.Session.TENANT_ID) != null;

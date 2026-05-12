@@ -34,19 +34,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * <p>
- * 认证服务实现类 - 封装完整的认证业务逻辑
- * </p>
- * <p>
- * 本类实现所有认证相关的业务逻辑，与Controller层解耦，便于单元测试和代码复用。
- * 所有业务异常通过BusinessException抛出，由GlobalExceptionHandler统一处理。
- * </p>
- *
- * @author shy
- * @since 2026-05-08
- */
-@Slf4j
+
 @Service
 public class AuthServiceImpl implements IAuthService {
 
@@ -91,7 +79,6 @@ public class AuthServiceImpl implements IAuthService {
      */
     @Override
     public LoginVO login(LoginRTO loginRTO, HttpServletRequest request) {
-        log.info("用户登录请求 - 用户名: {}", loginRTO.getUsername());
 
         // 查询用户
         LambdaQueryWrapper<SysUser> userWrapper = new LambdaQueryWrapper<SysUser>()
@@ -100,19 +87,16 @@ public class AuthServiceImpl implements IAuthService {
         SysUser user = iSysUserService.getOne(userWrapper);
 
         if (user == null) {
-            log.warn("登录失败 - 用户不存在: {}", loginRTO.getUsername());
             throw new BusinessException(401, "用户名或密码错误");
         }
 
         // 校验用户状态
         if (!user.getStatus().equals(GlobalEnum.UserStatus.NORMAL.getCode())) {
-            log.warn("登录失败 - 用户已被禁用: {}", loginRTO.getUsername());
             throw new BusinessException(403, "用户已被禁用，请联系管理员");
         }
 
         // 校验密码（BCrypt匹配）
         if (!BCrypt.checkpw(loginRTO.getPassword(), user.getPassword())) {
-            log.warn("登录失败 - 密码错误: {}", loginRTO.getUsername());
             throw new BusinessException(401, "用户名或密码错误");
         }
 
@@ -124,20 +108,20 @@ public class AuthServiceImpl implements IAuthService {
         SysUserTenantRel userTenantRel = iSysUserTenantRelService.getOne(tenantRelWrapper);
 
         if (userTenantRel == null) {
-            log.warn("登录失败 - 用户未绑定租户: {}", loginRTO.getUsername());
             throw new BusinessException(403, "用户未绑定任何租户");
         }
 
         // 校验租户状态
         SysTenant tenant = iSysTenantService.getById(userTenantRel.getTenantId());
-        if (tenant == null || !tenant.getStatus().equals(GlobalEnum.TenantStatus.NORMAL.getCode())) {
-            log.warn("登录失败 - 租户已冻结或不存在: tenantId={}", userTenantRel.getTenantId());
-            throw new BusinessException(403, "所属租户已被冻结或不存在");
+        if (tenant == null) {
+            throw new BusinessException(403, "所属租户不存在");
+        }
+        if (!tenant.getStatus().equals(GlobalEnum.TenantStatus.NORMAL.getCode())) {
+            throw new BusinessException(403, "所属租户已被冻结");
         }
 
         // 执行登录 Sa-Token自动将会话写入Redis
         StpUtil.login(user.getId());
-        log.info("用户登录成功 - userId={}, username={}", user.getId(), user.getUsername());
 
         // 将租户上下文写入Sa-Token Session → 自动持久化到Redis
         SaSession session = StpUtil.getSession();
@@ -201,13 +185,11 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public String logout() {
         if (!StpUtil.isLogin()) {
-            log.info("登出请求 - 用户未登录");
             return "未登录状态，无需登出";
         }
 
         String tokenValue = StpUtil.getTokenValue();
         Long userId = StpUtil.getLoginIdAsLong();
-        log.info("用户登出 - userId={}", userId);
 
         // 清除业务缓存
         redisTemplate.delete(GlobalConstant.RedisKey.PERM_PREFIX + userId);
@@ -247,7 +229,6 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public String switchTenant(Long tenantId) {
         Long userId = StpUtil.getLoginIdAsLong();
-        log.info("租户切换请求 - userId={}, targetTenantId={}", userId, tenantId);
 
         // 校验用户是否属于目标租户
         LambdaQueryWrapper<SysUserTenantRel> countWrapper = new LambdaQueryWrapper<SysUserTenantRel>()
@@ -257,14 +238,12 @@ public class AuthServiceImpl implements IAuthService {
         long count = iSysUserTenantRelService.count(countWrapper);
 
         if (count == 0) {
-            log.warn("租户切换失败 - 用户不属于该租户: userId={}, tenantId={}", userId, tenantId);
             throw new BusinessException(403, "您不属于该租户，无法切换");
         }
 
         // 校验目标租户状态
         SysTenant tenant = iSysTenantService.getById(tenantId);
         if (tenant == null || !tenant.getStatus().equals(GlobalEnum.TenantStatus.NORMAL.getCode())) {
-            log.warn("租户切换失败 - 租户已冻结或不存在: tenantId={}", tenantId);
             throw new BusinessException(403, "目标租户已被冻结或不存在");
         }
 
@@ -277,7 +256,6 @@ public class AuthServiceImpl implements IAuthService {
         redisTemplate.delete(GlobalConstant.RedisKey.PERM_PREFIX + userId);
         redisTemplate.delete(GlobalConstant.RedisKey.ROLE_PREFIX + userId);
 
-        log.info("租户切换成功 - userId={}, tenantId={}", userId, tenantId);
         return "租户切换成功";
     }
 
@@ -332,11 +310,9 @@ public class AuthServiceImpl implements IAuthService {
      */
     @Override
     public RegisterVO register(RegisterRTO registerRTO) {
-        log.info("用户注册请求 - 用户名: {}", registerRTO.getUsername());
 
         // 校验两次密码输入是否一致
         if (!registerRTO.getPassword().equals(registerRTO.getConfirmPassword())) {
-            log.warn("注册失败 - 两次密码输入不一致: {}", registerRTO.getUsername());
             throw new BusinessException(400, "两次密码输入不一致");
         }
 
@@ -345,7 +321,6 @@ public class AuthServiceImpl implements IAuthService {
                 .eq(SysUser::getUsername, registerRTO.getUsername());
         long usernameCount = iSysUserService.count(usernameWrapper);
         if (usernameCount > 0) {
-            log.warn("注册失败 - 用户名已存在: {}", registerRTO.getUsername());
             throw new BusinessException(400, "用户名已存在");
         }
 
@@ -354,7 +329,6 @@ public class AuthServiceImpl implements IAuthService {
                 .eq(SysUser::getEmail, registerRTO.getEmail());
         long emailCount = iSysUserService.count(emailWrapper);
         if (emailCount > 0) {
-            log.warn("注册失败 - 邮箱已被注册: {}", registerRTO.getEmail());
             throw new BusinessException(400, "邮箱已被注册");
         }
 
@@ -363,7 +337,6 @@ public class AuthServiceImpl implements IAuthService {
                 .eq(SysUser::getPhone, registerRTO.getPhone());
         long phoneCount = iSysUserService.count(phoneWrapper);
         if (phoneCount > 0) {
-            log.warn("注册失败 - 手机号已被注册: {}", registerRTO.getPhone());
             throw new BusinessException(400, "手机号已被注册");
         }
 
@@ -384,7 +357,6 @@ public class AuthServiceImpl implements IAuthService {
         // 保存用户
         boolean saveResult = iSysUserService.save(user);
         if (!saveResult) {
-            log.error("注册失败 - 数据库插入失败: {}", registerRTO.getUsername());
             throw new BusinessException(500, "注册失败，请稍后重试");
         }
 
@@ -392,8 +364,6 @@ public class AuthServiceImpl implements IAuthService {
         user.setCreateBy(user.getId());
         user.setUpdateBy(user.getId());
         iSysUserService.updateById(user);
-
-        log.info("用户注册成功 - userId={}, username={}", user.getId(), user.getUsername());
 
         // 构建返回结果（不含密码等敏感数据）
         RegisterVO registerVO = new RegisterVO();

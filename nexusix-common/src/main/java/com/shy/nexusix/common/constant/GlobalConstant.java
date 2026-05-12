@@ -975,10 +975,34 @@ public class GlobalConstant {
         public static final String TENANT_NAME = "tenantName";
 
         /**
-         * Session键：用户名称
+         * Session键：用户ID
+         * <p>使用场景：Sa-Token Session中存储当前用户的ID</p>
+         */
+        public static final String USER_ID = "userId";
+
+        /**
+         * Session键：用户昵称
          * <p>使用场景：Sa-Token Session中存储当前用户的昵称</p>
          */
+        public static final String NICK_NAME = "nickName";
+
+        /**
+         * Session键：用户名称
+         * <p>使用场景：Sa-Token Session中存储当前用户的名称</p>
+         */
         public static final String USER_NAME = "userName";
+
+        /**
+         * Session键：用户权限
+         * <p>使用场景：Sa-Token Session中存储当前用户的权限</p>
+         */
+        public static final String USER_PERM = "userPerm";
+
+        /**
+         * Session键：用户角色
+         * <p>使用场景：Sa-Token Session中存储当前用户的角色</p>
+         */
+        public static final String USER_ROLE = "userRole";
 
     }
 
