@@ -963,18 +963,6 @@ public class GlobalConstant {
         }
 
         /**
-         * Session键：租户ID
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户ID</p>
-         */
-        public static final String TENANT_ID = "tenantId";
-
-        /**
-         * Session键：租户名称
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户名称</p>
-         */
-        public static final String TENANT_NAME = "tenantName";
-
-        /**
          * Session键：用户ID
          * <p>使用场景：Sa-Token Session中存储当前用户的ID</p>
          */
@@ -1003,6 +991,18 @@ public class GlobalConstant {
          * <p>使用场景：Sa-Token Session中存储当前用户的角色</p>
          */
         public static final String USER_ROLE = "userRole";
+
+        /**
+         * Session键：租户ID
+         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户ID</p>
+         */
+        public static final String TENANT_ID = "tenantId";
+
+        /**
+         * Session键：租户名称
+         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户名称</p>
+         */
+        public static final String TENANT_NAME = "tenantName";
 
     }
 

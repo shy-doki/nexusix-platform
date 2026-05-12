@@ -11,6 +11,7 @@ import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.util.IpUtil;
 import com.shy.nexusix.core.tenant.TenantContext;
 import com.shy.nexusix.core.user.UserContext;
+import com.shy.nexusix.iam.converter.AuthConverter;
 import com.shy.nexusix.iam.entity.SysUser;
 import com.shy.nexusix.iam.entity.SysUserTenantRel;
 import com.shy.nexusix.iam.entity.SysUserToken;
@@ -52,6 +53,9 @@ public class AuthServiceImpl implements IAuthService {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private AuthConverter authConverter;
 
     /**
      * <p>
@@ -141,30 +145,18 @@ public class AuthServiceImpl implements IAuthService {
         iSysUserService.updateById(user);
 
         // 创建Token记录
-        SysUserToken tokenRecord = new SysUserToken();
-        tokenRecord.setUserId(user.getId());
-        tokenRecord.setUserName(user.getNickname());
-        tokenRecord.setTenantId(tenant.getId());
-        tokenRecord.setTenantName(tenant.getTenantName());
-        tokenRecord.setToken(StpUtil.getTokenValue());
-        tokenRecord.setStatus(GlobalEnum.TokenStatus.VALID.getCode());
-        tokenRecord.setLoginIp(clientIp);
-        tokenRecord.setLoginTime(now);
-        tokenRecord.setExpireTime(now.plusSeconds(StpUtil.getTokenTimeout()));
+        SysUserToken tokenRecord = authConverter.buildTokenRecordComplete(user, tenant, clientIp, now);
         iSysUserTokenService.save(tokenRecord);
 
         // 构建返回结果
-        LoginVO loginVO = new LoginVO();
-        loginVO.setToken(StpUtil.getTokenValue());
-        loginVO.setTokenName(StpUtil.getTokenName());
-        loginVO.setUserId(user.getId());
-        loginVO.setUserName(user.getNickname());
-        loginVO.setTenantId(tenant.getId());
-        loginVO.setTenantName(tenant.getTenantName());
-        loginVO.setPermissions(permissions);
-        loginVO.setRoles(roles);
-
-        return loginVO;
+        return authConverter.toLoginVO(
+                user,
+                tenant,
+                StpUtil.getTokenValue(),
+                StpUtil.getTokenName(),
+                permissions,
+                roles
+        );
     }
 
     /**
@@ -277,14 +269,14 @@ public class AuthServiceImpl implements IAuthService {
      */
     @Override
     public CurrentUserVO getCurrentUser() {
-        CurrentUserVO currentUserVO = new CurrentUserVO();
-        currentUserVO.setUserId(UserContext.getCurrentUserId());
-        currentUserVO.setUserName(UserContext.getCurrentUserName());
-        currentUserVO.setTenantId(TenantContext.getCurrentTenantId());
-        currentUserVO.setTenantName(TenantContext.getCurrentTenantName());
-        currentUserVO.setPermissions(StpUtil.getPermissionList());
-        currentUserVO.setRoles(StpUtil.getRoleList());
-        return currentUserVO;
+        return authConverter.toCurrentUserVO(
+                UserContext.getCurrentUserId(),
+                UserContext.getCurrentUserName(),
+                TenantContext.getCurrentTenantId(),
+                TenantContext.getCurrentTenantName(),
+                StpUtil.getPermissionList(),
+                StpUtil.getRoleList()
+        );
     }
 
     /**
@@ -341,18 +333,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 构建用户实体
-        SysUser user = new SysUser();
-        user.setUsername(registerRTO.getUsername());
-        user.setPassword(BCrypt.hashpw(registerRTO.getPassword(), BCrypt.gensalt()));
-        user.setNickname(registerRTO.getNickname());
-        user.setEmail(registerRTO.getEmail());
-        user.setPhone(registerRTO.getPhone());
-        user.setStatus(GlobalEnum.UserStatus.NORMAL.getCode());
-        user.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
-        user.setCreateBy(0L);
-        user.setCreateByName(registerRTO.getNickname());
-        user.setUpdateBy(0L);
-        user.setUpdateByName(registerRTO.getNickname());
+        SysUser user = authConverter.registerRTOToEntityComplete(registerRTO);
 
         // 保存用户
         boolean saveResult = iSysUserService.save(user);
@@ -366,14 +347,7 @@ public class AuthServiceImpl implements IAuthService {
         iSysUserService.updateById(user);
 
         // 构建返回结果（不含密码等敏感数据）
-        RegisterVO registerVO = new RegisterVO();
-        registerVO.setUserId(user.getId());
-        registerVO.setUsername(user.getUsername());
-        registerVO.setNickname(user.getNickname());
-        registerVO.setEmail(user.getEmail());
-        registerVO.setPhone(user.getPhone());
-
-        return registerVO;
+        return authConverter.toRegisterVO(user);
     }
 
 }
