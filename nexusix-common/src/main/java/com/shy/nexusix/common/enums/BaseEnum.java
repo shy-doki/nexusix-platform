@@ -18,7 +18,7 @@ public interface BaseEnum {
      *
      * @return 枚举编码
      */
-    Integer getCode();
+    String getCode();
 
     /**
      * 获取枚举描述

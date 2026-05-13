@@ -59,46 +59,83 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
     @Autowired
     private SysFileConverter sysFileConverter;
 
+    /**
+     * 查询所有未删除的文件列表
+     * <p>
+     * 按上传时间降序排列，返回通用视图对象列表。
+     * </p>
+     *
+     * @return 文件通用视图对象列表
+     */
     @Override
     public List<SysFileCommonVO> queryFileList() {
 
+        // 构建查询条件：未删除且按上传时间降序
         LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
                 .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByDesc(SysFile::getUploadTime);
 
+        // 执行查询
         List<SysFile> fileList = this.list(wrapper);
 
+        // 转换为视图对象返回
         return sysFileConverter.toVoList(fileList);
 
     }
 
+    /**
+     * 分页查询文件列表
+     * <p>
+     * 查询所有未删除的文件，按上传时间降序排列，返回分页结果。
+     * </p>
+     *
+     * @param page 分页参数对象，包含页码和每页大小
+     * @return 分页后的文件通用视图对象
+     */
     @Override
     public IPage<SysFileCommonVO> queryFilePage(PageCommonRTO page) {
 
+        // 构建分页参数
         Page<SysFile> pageParam = new Page<>(page.getPageNum(), page.getPageSize());
 
+        // 构建查询条件：未删除且按上传时间降序
         LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
                 .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByDesc(SysFile::getUploadTime);
 
+        // 执行分页查询
         IPage<SysFile> filePage = this.page(pageParam, wrapper);
 
+        // 转换为视图对象分页返回
         return sysFileConverter.toVOPage(filePage);
 
     }
 
+    /**
+     * 多条件组合查询文件列表（分页）
+     * <p>
+     * 支持租户名称、原始文件名、文件大小范围、文件类型、业务类型、
+     * 上传人名称、上传时间范围等多个条件的组合查询。
+     * </p>
+     *
+     * @param queryParam 查询条件参数对象
+     * @return 满足条件的分页文件通用视图对象
+     * @throws BusinessException 当文件大小范围或时间范围不合法时抛出
+     */
     @Override
     public IPage<SysFileCommonVO> queryFile(SysFileQueryRTO queryParam) {
 
+        // 构建分页参数
         Page<SysFile> pageParam = new Page<>(queryParam.getPageNum(), queryParam.getPageSize());
 
+        // 构建动态查询条件
         LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<>();
 
-        // 租户名称条件
+        // 租户名称条件（精确匹配）
         wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantName()),
                 SysFile::getTenantName, queryParam.getTenantName());
 
-        // 原始文件名条件
+        // 原始文件名条件（精确匹配）
         wrapper.eq(StringUtils.isNotBlank(queryParam.getOriginalName()),
                 SysFile::getOriginalName, queryParam.getOriginalName());
 
@@ -108,31 +145,35 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             Long startSize = fileSize.getMinValue();
             Long endSize = fileSize.getMaxValue();
 
-            // 校验大小范围
+            // 校验大小范围合法性
             if (startSize != null && endSize != null && startSize > endSize) {
                 throw new BusinessException(400, "文件最小大小不能超过最大大小");
             }
 
+            // 根据起始值和结束值构建不同的查询条件
             if (startSize != null && endSize != null) {
+                // 两者都有： BETWEEN 查询
                 wrapper.between(SysFile::getFileSize, startSize, endSize);
             } else if (startSize != null) {
+                // 只有起始值： >= 查询
                 wrapper.ge(SysFile::getFileSize, startSize);
             } else if (endSize != null) {
+                // 只有结束值： <= 查询
                 wrapper.le(SysFile::getFileSize, endSize);
             }
         }
 
-        // 文件类型条件
+        // 文件类型条件（精确匹配）
         wrapper.eq(StringUtils.isNotBlank(queryParam.getFileType()),
                 SysFile::getFileType, queryParam.getFileType());
 
-        // 业务类型分类条件
+        // 业务类型分类条件（精确匹配）
         wrapper.eq(StringUtils.isNotBlank(queryParam.getBizType()),
                 SysFile::getBizType, queryParam.getBizType());
 
-        // 上传人名称条件
-        wrapper.eq(StringUtils.isNotBlank(queryParam.getUploadName()),
-                SysFile::getUploadName, queryParam.getUploadName());
+        // 上传人名称条件（精确匹配）
+        wrapper.eq(StringUtils.isNotBlank(queryParam.getUploadByName()),
+                SysFile::getUploadByName, queryParam.getUploadByName());
 
         // 上传时间范围条件
         TimeRangeCommonRTO uploadTime = queryParam.getUploadTime();
@@ -140,7 +181,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             LocalDateTime startTime = uploadTime.getStartTime();
             LocalDateTime endTime = uploadTime.getEndTime();
 
-            // 校验时间范围
+            // 校验时间范围合法性
             if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
                 throw new BusinessException(400, "开始时间不能晚于结束时间");
             }
@@ -148,39 +189,59 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
                 throw new BusinessException(400, "结束时间不能早于开始时间");
             }
 
+            // 根据起始时间和结束时间构建不同的查询条件
             if (startTime != null && endTime != null) {
+                // 两者都有： BETWEEN 查询
                 wrapper.between(SysFile::getUploadTime, startTime, endTime);
             } else if (startTime != null) {
+                // 只有起始时间： >= 查询
                 wrapper.ge(SysFile::getUploadTime, startTime);
             } else if (endTime != null) {
+                // 只有结束时间： <= 查询
                 wrapper.le(SysFile::getUploadTime, endTime);
             }
         }
 
-        // 条件分页查询
+        // 执行条件分页查询
         IPage<SysFile> fileQueryPage = this.page(pageParam, wrapper);
 
+        // 转换为视图对象分页返回
         return sysFileConverter.toVOPage(fileQueryPage);
 
     }
 
+    /**
+     * 查询文件详情
+     * <p>
+     * 根据存储文件名查询文件详细信息，验证文件存在性和删除状态。
+     * </p>
+     *
+     * @param fileName 存储文件名（UUID重命名后的文件名）
+     * @return 文件详情视图对象
+     * @throws BusinessException 当文件名为空或文件不存在时抛出
+     */
     @Override
     public SysFileDetailVO queryFileDetail(String fileName) {
 
+        // 验证文件名非空
         if (StringUtils.isBlank(fileName)) {
             throw new BusinessException(400, "文件名称不能为空");
         }
 
+        // 构建查询条件：根据文件名查询且未删除
         LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
                 .eq(SysFile::getFileName, fileName)
                 .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
+        // 执行查询
         SysFile fileDetail = this.getOne(wrapper);
 
+        // 验证文件是否存在
         if (fileDetail == null) {
             throw new BusinessException(404, "文件不存在");
         }
 
+        // 转换为详情视图对象返回
         return sysFileConverter.toDetailVO(fileDetail);
 
     }
@@ -232,7 +293,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
 
         String fileExt = "";
 
-        // 安全检查 防止路径遍历攻击
+        // 安全检查：防止路径遍历攻击
         if (originalFilename.contains("..")) {
             throw new BusinessException("文件名包含非法路径遍历字符");
         }
@@ -296,8 +357,9 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         // 构建文件访问URL
         String fileUrl = FILE_STORAGE_PROPERTIES.getUploadRoot() + "/" + relativePath + "/" + uniqueFileName;
 
+        // 构建文件实体对象
         SysFile sysFile = new SysFile()
-                .setTenantId(1L)
+                .setTenantId("1L")
                 .setTenantName("登录人租户")
                 .setFileName(uniqueFileName)
                 .setOriginalName(file.getOriginalFilename())
@@ -307,8 +369,8 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
                 .setFileType(fileExt)
                 .setMimeType(file.getContentType())
                 .setBizType(param.getBizType())
-                .setUploadBy(1L)
-                .setUploadName("登录人姓名")
+                .setUploadBy("1L")
+                .setUploadByName("登录人姓名")
                 .setUploadTime(LocalDateTime.now())
                 .setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
 
@@ -330,18 +392,38 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         return result;
     }
 
+    /**
+     * 更新文件信息
+     * <p>
+     * 执行流程：
+     * <ul>
+     *   <li>验证文件是否存在且未删除</li>
+     *   <li>校验租户ID变更的合法性</li>
+     *   <li>验证文件名变更的合法性和唯一性</li>
+     *   <li>验证业务类型的合法性</li>
+     *   <li>执行更新操作</li>
+     * </ul>
+     * </p>
+     *
+     * @param updateParam 文件更新参数对象
+     * @return 受影响的行数
+     * @throws BusinessException 当文件不存在、参数不合法或更新失败时抛出
+     */
     @Override
     public Integer updateFile(SysFileUpdateRTO updateParam) {
 
+        // 查询原文件记录，验证文件是否存在且未删除
         LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
                 .eq(SysFile::getId, updateParam.getId())
                 .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysFile existFile = this.getOne(wrapper);
 
+        // 验证文件是否存在
         if (existFile == null) {
             throw new BusinessException(404, "文件不存在");
         }
 
+        // 校验租户ID变更：如果租户ID发生变化，需要验证目标租户下是否有文件记录
         if (!existFile.getTenantId().equals(updateParam.getTenantId())) {
             LambdaQueryWrapper<SysFile> tenantWrapper = new LambdaQueryWrapper<SysFile>()
                     .eq(SysFile::getTenantId, updateParam.getTenantId())
@@ -352,15 +434,19 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             }
         }
 
+        // 校验原始文件名变更：验证合法性、防止路径遍历、检查唯一性
         if (!existFile.getOriginalName().equals(updateParam.getOriginalName())) {
+            // 防止路径遍历攻击
             if (updateParam.getOriginalName().contains("..")) {
                 throw new BusinessException(400, "文件名包含非法路径遍历字符");
             }
 
+            // 验证文件名格式合法性
             if (!RegexUtils.matches(updateParam.getOriginalName(), RegexConstant.File.FILENAME)) {
                 throw new BusinessException(400, "文件名包含非法字符: " + updateParam.getOriginalName());
             }
 
+            // 检查同租户下是否存在同名文件（排除当前文件）
             LambdaQueryWrapper<SysFile> nameWrapper = new LambdaQueryWrapper<SysFile>()
                     .eq(SysFile::getTenantId, updateParam.getTenantId())
                     .eq(SysFile::getOriginalName, updateParam.getOriginalName())
@@ -372,6 +458,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             }
         }
 
+        // 校验业务类型变更：必须在允许的范围内
         if (!existFile.getBizType().equals(updateParam.getBizType())) {
             List<String> allowedBizTypes = List.of(
                     "logo", "avatar", "contract", "license", "attachment", "export"
@@ -381,8 +468,10 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             }
         }
 
+        // 转换更新参数为实体对象
         SysFile updateEntity = sysFileConverter.toEntityUpdate(updateParam);
 
+        // 如果原始文件名发生变化，同步更新文件类型（扩展名）
         if (!existFile.getOriginalName().equals(updateParam.getOriginalName())) {
             String newOriginalName = updateParam.getOriginalName();
             if (newOriginalName != null && newOriginalName.contains(".")) {
@@ -393,8 +482,10 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             }
         }
 
+        // 执行更新操作
         boolean result = this.updateById(updateEntity);
 
+        // 验证更新是否成功
         if (!result) {
             throw new BusinessException(500, "修改文件信息失败");
         }
@@ -403,40 +494,65 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
 
     }
 
+    /**
+     * 删除文件（逻辑删除）
+     * <p>
+     * 执行流程：
+     * <ul>
+     *   <li>验证文件ID非空</li>
+     *   <li>查询文件记录并验证存在性</li>
+     *   <li>验证文件路径合法性，防止路径遍历攻击</li>
+     *   <li>执行逻辑删除（更新is_deleted字段）</li>
+     * </ul>
+     * </p>
+     *
+     * @param id 文件ID
+     * @return 受影响的行数
+     * @throws BusinessException 当文件ID为空、文件不存在或删除失败时抛出
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer deleteFile(String id) {
 
+        // 验证文件ID非空
         if (StringUtils.isBlank(id)) {
             throw new BusinessException(400, "文件ID不能为空");
         }
 
+        // 查询文件记录，验证文件是否存在且未删除
         LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
                 .eq(SysFile::getId, id)
                 .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysFile existFile = this.getOne(wrapper);
 
+        // 验证文件是否存在
         if (existFile == null) {
             throw new BusinessException(404, "文件不存在");
         }
 
         // TODO 租户隔离校验
 
+        // 安全验证：构建基础路径并标准化
         Path basePath = Paths.get(FILE_STORAGE_PROPERTIES.getUploadRoot())
                 .toAbsolutePath().normalize();
+        // 构建文件绝对路径并标准化
         Path filePath = Paths.get(existFile.getFileUrl())
                 .toAbsolutePath().normalize();
 
+        // 验证文件路径是否在允许的根目录下，防止路径遍历攻击
         if (!filePath.startsWith(basePath)) {
             throw new BusinessException(400, "非法文件路径，拒绝删除");
         }
 
+        // 构建逻辑删除实体对象
         SysFile deleteFile = new SysFile();
-        deleteFile.setId(Long.parseLong(id));
+        deleteFile.setId(id);
         deleteFile.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
 
+        // 执行逻辑删除
         boolean result = this.updateById(deleteFile);
 
+        // 验证删除是否成功
         if (!result) {
             throw new BusinessException(500, "删除文件失败");
         }
@@ -455,6 +571,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
      *   <li>根据文件名查询文件记录</li>
      *   <li>验证文件是否存在且未被删除</li>
      *   <li>验证文件路径合法性，防止路径遍历攻击</li>
+     *   <li>验证物理文件是否存在</li>
      *   <li>返回文件元数据信息</li>
      * </ul>
      * </p>
@@ -466,7 +583,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
     @Override
     public SysFile download(String fileName) {
 
-        // 构建查询条件 根据文件名（不是原文件名）查询
+        // 构建查询条件：根据文件名（不是原文件名）查询
         LambdaQueryWrapper<SysFile> wrapper = new LambdaQueryWrapper<SysFile>()
                 .eq(SysFile::getFileName, fileName);
 
@@ -489,7 +606,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         // 构建文件的绝对路径并标准化
         Path filePath = Paths.get(fileInfo.getFileUrl()).toAbsolutePath().normalize();
 
-        // 安全检查 验证文件路径是否在允许的根目录下，防止路径遍历攻击
+        // 安全检查：验证文件路径是否在允许的根目录下，防止路径遍历攻击
         if (!filePath.startsWith(basePath)) {
             throw new BusinessException("非法文件路径");
         }
@@ -502,24 +619,45 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             throw new BusinessException("文件不存在");
         }
 
+        // 返回文件元数据实体对象
         return fileInfo;
 
     }
 
+    /**
+     * 批量删除文件（逻辑删除）
+     * <p>
+     * 执行流程：
+     * <ul>
+     *   <li>验证批量删除数量不超过100条</li>
+     *   <li>解析并验证文件ID列表，检测空值和重复</li>
+     *   <li>查询可删除的文件记录</li>
+     *   <li>验证所有文件路径合法性</li>
+     *   <li>批量执行逻辑删除</li>
+     * </ul>
+     * </p>
+     *
+     * @param ids 文件ID列表，单次不超过100条
+     * @return 受影响的行数
+     * @throws BusinessException 当数量超限、ID为空、存在重复ID或删除失败时抛出
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer batchDeleteFile(List<String> ids) {
 
+        // 验证批量删除数量不超过限制
         if (ids.size() > 100) {
             throw new BusinessException(400, "单次批量删除数量不能超过100条");
         }
 
+        // 解析并验证文件ID列表
         Set<Long> idSet = new HashSet<>();
         for (String id : ids) {
+            // 验证ID非空
             if (StringUtils.isBlank(id)) {
                 throw new BusinessException(400, "批量删除中存在ID为空的记录");
             }
-            // 重复检测
+            // 解析ID并检测重复
             Long parsedId = Long.parseLong(id);
             if (idSet.contains(parsedId)) {
                 throw new BusinessException(400, "批量删除中存在重复的文件ID: " + id);
@@ -527,20 +665,24 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             idSet.add(parsedId);
         }
 
+        // 查询所有可删除的文件记录（存在且未删除）
         LambdaQueryWrapper<SysFile> existWrapper = new LambdaQueryWrapper<SysFile>()
                 .in(SysFile::getId, idSet)
                 .eq(SysFile::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         List<SysFile> existFiles = this.list(existWrapper);
 
+        // 验证是否存在可删除的文件
         if (existFiles.isEmpty()) {
             throw new BusinessException(404, "未找到可删除的文件");
         }
 
+        // 获取基础路径用于安全验证
         Path basePath = Paths.get(FILE_STORAGE_PROPERTIES.getUploadRoot())
                 .toAbsolutePath().normalize();
 
         // TODO 租户隔离校验
 
+        // 验证所有待删除文件的路径合法性
         for (SysFile file : existFiles) {
             Path filePath = Paths.get(file.getFileUrl())
                     .toAbsolutePath().normalize();
@@ -549,6 +691,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             }
         }
 
+        // 构建批量逻辑删除实体列表
         List<SysFile> deleteFileList = new ArrayList<>();
         for (SysFile file : existFiles) {
             SysFile deleteFile = new SysFile();
@@ -557,12 +700,15 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
             deleteFileList.add(deleteFile);
         }
 
+        // 执行批量更新（逻辑删除）
         boolean batch = this.updateBatchById(deleteFileList);
 
+        // 验证批量删除是否成功
         if (!batch) {
             throw new BusinessException(500, "批量删除文件失败");
         }
 
+        // 返回受影响的行数
         return deleteFileList.size();
 
     }

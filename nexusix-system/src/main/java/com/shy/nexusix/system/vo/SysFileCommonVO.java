@@ -10,9 +10,15 @@ import java.time.LocalDateTime;
  * <p>
  * 文件信息视图对象 - 用于返回给前端的文件元数据
  * </p>
+ * <p>
+ * 包含文件的基本信息和上传记录，作为文件详情VO的基类使用
+ * </p>
+ *
+ * @author shy
+ * @since 2026-05-13
  */
 @Data
-@Schema(description = "文件信息 VO")
+@Schema(description = "文件基础信息响应对象")
 public class SysFileCommonVO {
 
     /**
@@ -49,7 +55,7 @@ public class SysFileCommonVO {
      * 上传人名称
      */
     @Schema(description = "上传人名称", example = "张三")
-    private String uploadName;
+    private String uploadByName;
 
     /**
      * 上传时间（格式化为字符串）
