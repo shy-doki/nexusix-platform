@@ -3,7 +3,6 @@ package com.shy.nexusix.tenant.rto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.annotation.EnumField;
 import com.shy.nexusix.common.enums.GlobalEnum;
-import com.shy.nexusix.common.enums.GlobalEnum.TenantStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -78,7 +77,7 @@ public class SysTenantAddRTO {
     @NotNull(message = "状态不能为空")
     @EnumField
     @Schema(description = "状态(通过枚举转换)", example = "正常")
-    private TenantStatus status;
+    private GlobalEnum.TenantStatus status;
 
     /**
      * 服务过期时间
@@ -117,7 +116,7 @@ public class SysTenantAddRTO {
      * 超级管理员可以指定创建人ID
      */
     @Schema(description = "创建人ID", example = "100")
-    private Long createBy;
+    private String createBy;
 
     /**
      * 创建人姓名
@@ -133,7 +132,7 @@ public class SysTenantAddRTO {
      * 超级管理员可以指定更新人ID
      */
     @Schema(description = "更新人ID", example = "100")
-    private Long updateBy;
+    private String updateBy;
 
     /**
      * 更新人姓名

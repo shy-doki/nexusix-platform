@@ -1,6 +1,5 @@
 package com.shy.nexusix.tenant.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -170,16 +169,16 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 仅分页查询根租户（parentId = 0）
         LambdaQueryWrapper<SysTenant> rootWrapper = new LambdaQueryWrapper<SysTenant>()
-                .and(w -> w.eq(SysTenant::getParentId, 0L).or().isNull(SysTenant::getParentId))
+                .and(w -> w.eq(SysTenant::getParentId, "rootTenant").or().isNull(SysTenant::getParentId))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByDesc(SysTenant::getCreateTime);
 
         IPage<SysTenant> rootPage = this.page(pageParam, rootWrapper);
 
         // 收集当前页根租户的所有 ID，用于查询子树
-        List<Long> rootIds = rootPage.getRecords().stream()
+        List<String> rootIds = rootPage.getRecords().stream()
                 .map(SysTenant::getId)
-                .collect(Collectors.toList());
+                .toList();
 
         if (rootIds.isEmpty()) {
             return new Page<>(page.getPageNum(), page.getPageSize(), 0);
@@ -192,7 +191,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             if (Boolean.TRUE.equals(root.getHasChildren())) {
                 List<SysTenant> descendants = findDescendantsByAncestors(
                         root.getTenantCode(),
-                        root.getAncestors() != null ? root.getAncestors() : "0"
+                        root.getAncestors() != null ? root.getAncestors() : "root"
                 );
                 allDescendants.addAll(descendants);
             }
@@ -244,7 +243,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 查询目标租户是否存在
         LambdaQueryWrapper<SysTenant> targetWrapper = new LambdaQueryWrapper<SysTenant>()
-                .eq(SysTenant::getId, Long.parseLong(id))
+                .eq(SysTenant::getId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysTenant targetTenant = this.getOne(targetWrapper);
 
@@ -255,7 +254,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 利用 ancestors 前缀匹配查询所有后代节点（优化点：避免全表扫描）
         List<SysTenant> descendants = findDescendantsByAncestors(
                 targetTenant.getTenantCode(),
-                targetTenant.getAncestors() != null ? targetTenant.getAncestors() : "0"
+                targetTenant.getAncestors() != null ? targetTenant.getAncestors() : "root"
         );
 
         // 合并目标租户和后代租户
@@ -272,12 +271,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 目标租户为根节点，取第一个即为所求
         // 如果目标租户本身是根节点（parentId=0），则直接返回
         // 否则需从树中找到目标租户节点
-        if (targetTenant.getParentId() == null || targetTenant.getParentId() == 0L) {
+        if (targetTenant.getParentId() == null || "rootTenant".equals(targetTenant.getParentId())) {
             return tree.isEmpty() ? null : tree.get(0);
         }
 
         // 目标租户非根节点，需从构建的树中查找
-        return findNodeInTree(tree, targetTenant.getId());
+        return findNodeInTree(tree, Long.parseLong(targetTenant.getId()));
+
     }
 
     /**
@@ -386,6 +386,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 转换为VO分页对象并返回
         return sysTenantConverter.toVOPage(tenantQueryPage);
+
     }
 
     /**
@@ -476,15 +477,25 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             addParam.setAncestors(ancestors);
         }
 
-        // 获取当前用户会话信息
-        long loginId = StpUtil.getLoginIdAsLong();
-
         // 填充审计参数
-        // 超级管理员
-        if (UserContext.isSystemAdmin()) {
-            
-        } else {
+        if (UserContext.isSuperAdmin()) {
+            // 超级管理员
+            addParam.setCreateBy(StringUtils.isNotBlank(addParam.getCreateBy()) ? addParam.getCreateBy() : UserContext.getCurrentUserId());
+            addParam.setCreateByName(StringUtils.isNotBlank(addParam.getCreateByName()) ? addParam.getCreateByName() : UserContext.getCurrentUserName());
+            addParam.setCreateTime(addParam.getCreateTime() != null ? addParam.getCreateTime() : LocalDateTime.now());
 
+            addParam.setUpdateBy(StringUtils.isNotBlank(addParam.getUpdateBy()) ? addParam.getUpdateBy() : UserContext.getCurrentUserId());
+            addParam.setUpdateByName(StringUtils.isNotBlank(addParam.getUpdateByName()) ? addParam.getUpdateByName() : UserContext.getCurrentUserName());
+            addParam.setUpdateTime(addParam.getUpdateTime() != null ? addParam.getUpdateTime() : LocalDateTime.now());
+        } else {
+            // 其余
+            addParam.setCreateBy(UserContext.getCurrentUserId());
+            addParam.setCreateByName(UserContext.getCurrentUserName());
+            addParam.setCreateTime(LocalDateTime.now());
+
+            addParam.setUpdateBy(UserContext.getCurrentUserId());
+            addParam.setUpdateByName(UserContext.getCurrentUserName());
+            addParam.setUpdateTime(LocalDateTime.now());
         }
 
         // 转换并保存租户信息
@@ -617,7 +628,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 查询待更新状态的租户是否存在
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                .eq(SysTenant::getId, Long.parseLong(id))
+                .eq(SysTenant::getId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysTenant existTenant = this.getOne(wrapper);
 
@@ -644,7 +655,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 执行状态更新
         SysTenant updateTenant = new SysTenant();
-        updateTenant.setId(Long.parseLong(id));
+        updateTenant.setId(id);
         updateTenant.setStatus(tenantStatus.getCode());
 
         boolean result = this.updateById(updateTenant);
@@ -685,7 +696,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 检查是否存在子租户，有子租户则不允许删除
         LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
-                .eq(SysTenant::getParentId, Long.parseLong(id))
+                .eq(SysTenant::getParentId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         long childCount = this.count(childWrapper);
         if (childCount > 0) {
@@ -694,7 +705,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 执行逻辑删除：设置is_deleted标志位
         SysTenant tenant = new SysTenant();
-        tenant.setId(Long.parseLong(id));
+        tenant.setId(id);
         tenant.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
 
         boolean result = this.updateById(tenant);
@@ -784,7 +795,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 校验批量数据的合法性：ID不能为空、不能有重复的ID和编码
-        Set<Long> idSet = new HashSet<>();
+        Set<String> idSet = new HashSet<>();
         Set<String> codeSet = new HashSet<>();
         for (SysTenantUpdateRTO item : updateParamList) {
             if (item.getId() == null) {
@@ -800,20 +811,20 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             codeSet.add(item.getTenantCode());
         }
 
-        // 校验租户ID是否存在（注意：此处代码逻辑有误，应该是用idSet查询ID）
-        LambdaQueryWrapper<SysTenant> IdWrapper = new LambdaQueryWrapper<SysTenant>()
-                .in(SysTenant::getTenantCode, codeSet)
+        // 校验租户ID是否存在
+        LambdaQueryWrapper<SysTenant> idWrapper = new LambdaQueryWrapper<SysTenant>()
+                .in(SysTenant::getId, idSet)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
-        long existIdCount = this.count(IdWrapper);
+        long existIdCount = this.count(idWrapper);
 
-        // 校验租户编码是否存在（注意：此处代码逻辑有误，应该是用codeSet查询编码）
+        // 校验租户编码是否存在
         LambdaQueryWrapper<SysTenant> codeWrapper = new LambdaQueryWrapper<SysTenant>()
-                .in(SysTenant::getTenantCode, idSet)
+                .in(SysTenant::getTenantCode, codeSet)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         long existCodeCount = this.count(codeWrapper);
 
-        if (existIdCount > 0) {
-            throw new BusinessException(400, "部分租户ID已存在，请检查后重试");
+        if (existIdCount != idSet.size()) {
+            throw new BusinessException(400, "部分租户ID不存在，请检查后重试");
         }
 
         if (existCodeCount > 0) {
@@ -868,13 +879,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "状态值不合法");
         }
 
-        // 校验ID格式并转换为Long类型
-        Set<Long> idSet = new HashSet<>();
+        // 校验ID格式
+        Set<String> idSet = new HashSet<>();
         for (String id : ids) {
             if (StringUtils.isBlank(id)) {
                 throw new BusinessException(400, "租户ID不能为空");
             }
-            idSet.add(Long.parseLong(id));
+            idSet.add(id);
         }
 
         // 查询待更新状态的租户是否存在且未被删除
@@ -949,13 +960,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "单次批量删除数量不能超过100条");
         }
 
-        // 校验ID格式并转换为Long类型
-        Set<Long> idSet = new HashSet<>();
+        // 校验ID格式
+        Set<String> idSet = new HashSet<>();
         for (String id : ids) {
             if (StringUtils.isBlank(id)) {
                 throw new BusinessException(400, "租户ID不能为空");
             }
-            idSet.add(Long.parseLong(id));
+            idSet.add(id);
         }
 
         // 查询待删除的租户是否存在且未被删除
@@ -1051,7 +1062,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .collect(Collectors.toSet());
             List<String> missingCodes = assignParam.getSubCode().stream()
                     .filter(code -> !foundCodes.contains(code))
-                    .collect(Collectors.toList());
+                    .toList();
             throw new BusinessException(400, "子租户不存在: " + missingCodes);
         }
 
@@ -1074,12 +1085,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         int totalAffected = 0;
         for (SysTenant subTenant : subTenants) {
             // 记录旧的 ancestors 路径用于级联更新
-            String oldAncestors = subTenant.getAncestors() != null ? subTenant.getAncestors() : "0";
+            String oldAncestors = subTenant.getAncestors() != null ? subTenant.getAncestors() : "root";
             String oldPath = oldAncestors + "/" + subTenant.getTenantCode();
 
             // 构建新的 ancestors 路径
             String parentAncestors = parentTenant.getAncestors() != null
-                    ? parentTenant.getAncestors() : "0";
+                    ? parentTenant.getAncestors() : "root";
             String newAncestors = parentAncestors + "/" + parentTenant.getTenantCode();
             String newPath = newAncestors + "/" + subTenant.getTenantCode();
 
@@ -1125,7 +1136,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 如果子租户原来有父租户，检查原父租户是否还有其他子租户
-            if (subTenant.getParentId() != null && subTenant.getParentId() != 0L) {
+            if (subTenant.getParentId() != null && !"rootTenant".equals(subTenant.getParentId())) {
                 LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
                         .eq(SysTenant::getParentId, subTenant.getParentId())
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
@@ -1198,7 +1209,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .collect(Collectors.toSet());
             List<String> missingCodes = assignParam.getSubCode().stream()
                     .filter(code -> !foundCodes.contains(code))
-                    .collect(Collectors.toList());
+                    .toList();
             throw new BusinessException(400, "待分配租户不存在: " + missingCodes);
         }
 
@@ -1226,12 +1237,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 记录旧的 ancestors 路径
-            String oldAncestors = subTenant.getAncestors() != null ? subTenant.getAncestors() : "0";
+            String oldAncestors = subTenant.getAncestors() != null ? subTenant.getAncestors() : "root";
             String oldPath = oldAncestors + "/" + subTenant.getTenantCode();
 
             // 构建新的 ancestors 路径
             String parentAncestors = newParent.getAncestors() != null
-                    ? newParent.getAncestors() : "0";
+                    ? newParent.getAncestors() : "root";
             String newAncestors = parentAncestors + "/" + newParent.getTenantCode();
             String newPath = newAncestors + "/" + subTenant.getTenantCode();
 
@@ -1275,7 +1286,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 检查原父租户是否还有其他子租户，更新 hasChildren 标记
-            if (subTenant.getParentId() != null && subTenant.getParentId() != 0L) {
+            if (subTenant.getParentId() != null && !"rootTenant".equals(subTenant.getParentId())) {
                 LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
                         .eq(SysTenant::getParentId, subTenant.getParentId())
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
@@ -1374,7 +1385,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 查找所有后代节点
         List<SysTenant> descendants = findDescendantsByAncestors(tenantCode,
-                oldAncestorPrefix.isEmpty() ? "0" : oldAncestorPrefix);
+                oldAncestorPrefix.isEmpty() ? "root" : oldAncestorPrefix);
 
         // 批量更新后代的 ancestors 字段
         String oldPath = oldAncestorPrefix + "/" + tenantCode;

@@ -33,11 +33,11 @@ public class SysTenantSubscription implements Serializable {
 
     @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
     @TableId(value = "id", type = IdType.ASSIGN_ID)
-    private Long id;
+    private String id;
 
     @Schema(description = "租户 ID", example = "1987654321098765432")
     @TableField(value = "tenant_id")
-    private Long tenantId;
+    private String tenantId;
 
     @Schema(description = "租户名称", example = "某科技公司")
     @TableField(value = "tenant_name")
@@ -45,7 +45,7 @@ public class SysTenantSubscription implements Serializable {
 
     @Schema(description = "套餐产品 ID", example = "1001")
     @TableField(value = "package_id")
-    private Long packageId;
+    private String packageId;
 
     @Schema(description = "套餐产品名称", example = "高级套餐")
     @TableField(value = "package_name")
@@ -79,15 +79,15 @@ public class SysTenantSubscription implements Serializable {
 
     @Schema(description = "父租户分配记录 ID", example = "1987654321098765432")
     @TableField(value = "parent_grant_id")
-    private Long parentGrantId;
+    private String parentGrantId;
 
     @Schema(description = "父租户名称", example = "某科技集团")
     @TableField(value = "parent_tenant_name")
-    private Long parentTenantName;
+    private String parentTenantName;
 
     @Schema(description = "创建人 ID", example = "100")
     @TableField(value = "create_by")
-    private Long createBy;
+    private String createBy;
 
     @Schema(description = "创建人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
     @TableField(value = "create_by_name")
@@ -100,7 +100,7 @@ public class SysTenantSubscription implements Serializable {
 
     @Schema(description = "更新人 ID", example = "100")
     @TableField(value = "update_by")
-    private Long updateBy;
+    private String updateBy;
 
     @Schema(description = "更新人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
     @TableField(value = "update_by_name")

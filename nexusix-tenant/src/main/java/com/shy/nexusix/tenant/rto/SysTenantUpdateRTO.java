@@ -23,7 +23,7 @@ public class SysTenantUpdateRTO {
      */
     @NotNull(message = "Id不能为空")
     @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
-    private Long id;
+    private String id;
 
     /**
      * 租户名称
@@ -117,7 +117,7 @@ public class SysTenantUpdateRTO {
      * 超级管理员可以指定创建人ID
      */
     @Schema(description = "创建人ID", example = "100")
-    private Long createBy;
+    private String createBy;
 
     /**
      * 创建人姓名
@@ -133,7 +133,7 @@ public class SysTenantUpdateRTO {
      * 超级管理员可以指定更新人ID
      */
     @Schema(description = "更新人ID", example = "100")
-    private Long updateBy;
+    private String updateBy;
 
     /**
      * 更新人姓名

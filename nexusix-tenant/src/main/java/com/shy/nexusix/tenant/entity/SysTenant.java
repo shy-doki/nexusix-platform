@@ -33,7 +33,7 @@ public class SysTenant implements Serializable {
 
     @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
     @TableId(value = "id", type = IdType.ASSIGN_ID)
-    private Long id;
+    private String id;
 
     @Schema(description = "租户名称", example = "某某科技有限公司")
     @TableField(value = "tenant_name")
@@ -57,7 +57,7 @@ public class SysTenant implements Serializable {
 
     @Schema(description = "父租户 ID (0 为根租户)", example = "TENANT_006")
     @TableField(value = "parent_id")
-    private Long parentId;
+    private String parentId;
 
     @Schema(description = "父租户名称(新增、更新、删除操作需要同步该字段)", example = "阿里云")
     @TableField(value = "parent_name")
@@ -86,7 +86,7 @@ public class SysTenant implements Serializable {
 
     @Schema(description = "当前主套餐 ID", example = "1001")
     @TableField(value = "package_id")
-    private Long packageId;
+    private String packageId;
 
     @Schema(description = "当前主套餐名称(新增、更新、删除操作需要同步该字段)", example = "标准版")
     @TableField(value = "package_name")
@@ -102,7 +102,7 @@ public class SysTenant implements Serializable {
 
     @Schema(description = "创建人 ID", example = "100")
     @TableField(value = "create_by")
-    private Long createBy;
+    private String createBy;
 
     @Schema(description = "创建人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
     @TableField(value = "create_by_name")
@@ -110,7 +110,7 @@ public class SysTenant implements Serializable {
 
     @Schema(description = "更新人 ID", example = "100")
     @TableField(value = "update_by")
-    private Long updateBy;
+    private String updateBy;
 
     @Schema(description = "更新人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
     @TableField(value = "update_by_name")

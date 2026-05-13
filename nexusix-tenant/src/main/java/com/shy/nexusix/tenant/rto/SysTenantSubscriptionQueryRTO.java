@@ -65,4 +65,10 @@ public class SysTenantSubscriptionQueryRTO extends PageCommonRTO {
     @Schema(description = "创建时间范围", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
     private TimeRangeCommonRTO createTime;
 
+    /**
+     * 逻辑删除
+     */
+    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    private String isDeleted;
+
 }
