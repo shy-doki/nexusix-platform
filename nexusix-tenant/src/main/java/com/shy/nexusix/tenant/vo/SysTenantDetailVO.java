@@ -12,6 +12,15 @@ import java.time.LocalDateTime;
 @Schema(description = "租户详情视图对象")
 public class SysTenantDetailVO extends SysTenantCommonVO {
 
+    @Schema(description = "租户类型", example = "餐饮、互联网")
+    private String tenantType;
+
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    private String tenantLogoUrl;
+
+    @Schema(description = "租户描述", example = "这是...类型公司")
+    private String tenantDesc;
+
     /**
      * 祖级列表 (物化路径，如 0/100/200)
      */

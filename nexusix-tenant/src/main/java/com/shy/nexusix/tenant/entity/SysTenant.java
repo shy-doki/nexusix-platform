@@ -39,6 +39,18 @@ public class SysTenant implements Serializable {
     @TableField(value = "tenant_name")
     private String tenantName;
 
+    @Schema(description = "租户类型", example = "餐饮、互联网")
+    @TableField(value = "tenant_type")
+    private String tenantType;
+
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    @TableField(value = "tenant_logo_url")
+    private String tenantLogoUrl;
+
+    @Schema(description = "租户描述", example = "这是...类型公司")
+    @TableField(value = "tenant_desc")
+    private String tenantDesc;
+
     @Schema(description = "租户唯一编码", example = "TENANT_001")
     @TableField(value = "tenant_code")
     private String tenantCode;
@@ -63,9 +75,9 @@ public class SysTenant implements Serializable {
     @TableField(value = "contact_phone")
     private String contactPhone;
 
-    @Schema(description = "状态 (1-正常 0-冻结)", example = "1")
+    @Schema(description = "状态 (ENABLED-正常 DISABLED-冻结 EXPIRED-过期)", example = "ENABLED")
     @TableField(value = "status")
-    private Integer status;
+    private String status;
 
     @Schema(description = "服务过期时间", example = "2026-12-31T23:59:59")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
@@ -114,9 +126,9 @@ public class SysTenant implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除 (ACTIVE-正常 DELETED-删除)", example = "ACTIVE")
     @TableField(value = "is_deleted")
-    private Integer isDeleted;
+    private String isDeleted;
 
 
 }

@@ -631,10 +631,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 冻结租户时，校验该租户下是否存在正常状态的子租户
-        if (GlobalEnum.TenantStatus.FROZEN.equals(tenantStatus)) {
+        if (GlobalEnum.TenantStatus.DISABLED.equals(tenantStatus)) {
             LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getParentId, existTenant.getId())
-                    .eq(SysTenant::getStatus, GlobalEnum.TenantStatus.NORMAL.getCode())
+                    .eq(SysTenant::getStatus, GlobalEnum.TenantStatus.ENABLED.getCode())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
             long childCount = this.count(childWrapper);
             if (childCount > 0) {
@@ -888,10 +888,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 冻结租户时，校验这些租户下是否存在正常状态的子租户
-        if (GlobalEnum.TenantStatus.FROZEN.equals(tenantStatus)) {
+        if (GlobalEnum.TenantStatus.DISABLED.equals(tenantStatus)) {
             LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
                     .in(SysTenant::getParentId, idSet)
-                    .eq(SysTenant::getStatus, GlobalEnum.TenantStatus.NORMAL.getCode())
+                    .eq(SysTenant::getStatus, GlobalEnum.TenantStatus.ENABLED.getCode())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
             long childCount = this.count(childWrapper);
             if (childCount > 0) {
@@ -1221,7 +1221,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 校验新父租户状态（冻结的租户不能作为父租户）
-            if (GlobalEnum.TenantStatus.FROZEN.getCode().equals(newParent.getStatus())) {
+            if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(newParent.getStatus())) {
                 throw new BusinessException(400, "新父租户已冻结，不能作为父租户: " + newParent.getTenantCode());
             }
 

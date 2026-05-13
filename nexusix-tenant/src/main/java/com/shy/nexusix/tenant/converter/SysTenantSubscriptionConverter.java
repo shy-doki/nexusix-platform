@@ -140,7 +140,7 @@ public interface SysTenantSubscriptionConverter {
      * 订阅类型枚举转编码
      */
     @Named("subscriptionTypeToCode")
-    default Integer subscriptionTypeToCode(SubscriptionType subscriptionType) {
+    default String subscriptionTypeToCode(SubscriptionType subscriptionType) {
         if (subscriptionType == null) return null;
         return subscriptionType.getCode();
     }
@@ -149,7 +149,7 @@ public interface SysTenantSubscriptionConverter {
      * 订阅状态枚举转编码
      */
     @Named("subscriptionStatusToCode")
-    default Integer subscriptionStatusToCode(SubscriptionStatus subscriptionStatus) {
+    default String subscriptionStatusToCode(SubscriptionStatus subscriptionStatus) {
         if (subscriptionStatus == null) return null;
         return subscriptionStatus.getCode();
     }
@@ -158,7 +158,7 @@ public interface SysTenantSubscriptionConverter {
      * 删除标记枚举转编码
      */
     @Named("deletedToCode")
-    default Integer deletedToCode(GlobalEnum.Deleted deleted) {
+    default String deletedToCode(GlobalEnum.Deleted deleted) {
         if (deleted == null) return null;
         return deleted.getCode();
     }
@@ -167,7 +167,7 @@ public interface SysTenantSubscriptionConverter {
      * 订阅类型编码转中文描述
      */
     @Named("intSubscriptionTypeToDesc")
-    default String intSubscriptionTypeToDesc(Integer code) {
+    default String intSubscriptionTypeToDesc(String code) {
         if (code == null) return null;
         SubscriptionType subscriptionType = SubscriptionType.getByCode(code);
         return subscriptionType != null ? subscriptionType.getDesc() : null;
@@ -177,7 +177,7 @@ public interface SysTenantSubscriptionConverter {
      * 订阅状态编码转中文描述
      */
     @Named("intSubscriptionStatusToDesc")
-    default String intSubscriptionStatusToDesc(Integer code) {
+    default String intSubscriptionStatusToDesc(String code) {
         if (code == null) return null;
         SubscriptionStatus subscriptionStatus = SubscriptionStatus.getByCode(code);
         return subscriptionStatus != null ? subscriptionStatus.getDesc() : null;
@@ -187,7 +187,7 @@ public interface SysTenantSubscriptionConverter {
      * 删除标记编码转中文描述
      */
     @Named("intDeletedToDesc")
-    default String intDeletedToDesc(Integer code) {
+    default String intDeletedToDesc(String code) {
         if (code == null) return null;
         GlobalEnum.Deleted deleted = GlobalEnum.Deleted.getByCode(code);
         return deleted != null ? deleted.getDesc() : null;

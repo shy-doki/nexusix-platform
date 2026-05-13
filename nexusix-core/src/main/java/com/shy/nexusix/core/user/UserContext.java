@@ -47,7 +47,7 @@ public class UserContext {
      * @return true-是系统管理员
      */
     public static boolean isSystemAdmin() {
-        return StpUtil.getRoleList().contains(GlobalConstant.RoleCode.SYSTEM_ADMIN);
+        return StpUtil.getRoleList().contains(1);
     }
 
     /**
@@ -56,7 +56,7 @@ public class UserContext {
      * @return true-是租户管理员
      */
     public static boolean isTenantAdmin() {
-        return StpUtil.getRoleList().contains(GlobalConstant.RoleCode.TENANT_ADMIN);
+        return StpUtil.getRoleList().contains(1);
     }
 
     /**

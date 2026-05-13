@@ -51,9 +51,9 @@ public class SysTenantSubscription implements Serializable {
     @TableField(value = "package_name")
     private String packageName;
 
-    @Schema(description = "订阅类型 (1-自购 2-父租户分配)", example = "1")
+    @Schema(description = "订阅类型 (NEW-自购 RENEWAL-续费 UPGRADE-升级 DOWNGRADE-降级)", example = "NEW")
     @TableField(value = "subscription_type")
-    private Integer subscriptionType;
+    private String subscriptionType;
 
     @Schema(description = "订阅开始时间", format = "date-time", accessMode = Schema.AccessMode.READ_ONLY, example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
@@ -65,17 +65,17 @@ public class SysTenantSubscription implements Serializable {
     @TableField(value = "end_time")
     private LocalDateTime endTime;
 
-    @Schema(description = "状态 (1-生效 0-过期)", example = "1")
+    @Schema(description = "状态 (ACTIVE-生效 EXPIRED-过期 CANCELLED-取消 PENDING-待生效)", example = "ACTIVE")
     @TableField(value = "status")
-    private Integer status;
+    private String status;
 
     @Schema(description = "是否自动续费", example = "false")
     @TableField(value = "is_auto_renew")
     private Boolean isAutoRenew;
 
-    @Schema(description = "来源类型", example = "1")
+    @Schema(description = "来源类型 (DIRECT-直接 INHERITED-继承)", example = "DIRECT")
     @TableField(value = "source_type")
-    private Integer sourceType;
+    private String sourceType;
 
     @Schema(description = "父租户分配记录 ID", example = "1987654321098765432")
     @TableField(value = "parent_grant_id")
@@ -111,9 +111,9 @@ public class SysTenantSubscription implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除 (ACTIVE-正常 DELETED-删除)", example = "ACTIVE")
     @TableField(value = "is_deleted")
-    private Integer isDeleted;
+    private String isDeleted;
 
 
 }

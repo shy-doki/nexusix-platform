@@ -231,7 +231,7 @@ public interface SysTenantConverter {
      * @since 2026-04-27
      */
     @Named("statusToCode")
-    default Integer statusToCode(TenantStatus status) {
+    default String statusToCode(TenantStatus status) {
         return status != null ? status.getCode() : null;
     }
 
@@ -246,7 +246,7 @@ public interface SysTenantConverter {
      * @since 2026-04-27
      */
     @Named("intStatusToDesc")
-    default String intStatusToDesc(Integer code) {
+    default String intStatusToDesc(String code) {
         if (code == null) return null;
         TenantStatus status = TenantStatus.getByCode(code);
         return status != null ? status.getDesc() : null;
@@ -278,13 +278,13 @@ public interface SysTenantConverter {
      * @since 2026-04-27
      */
     @Named("isDeletedToCode")
-    default Integer isDeletedToCode(Deleted del) {
+    default String isDeletedToCode(Deleted del) {
         return del != null ? del.getCode() : null;
     }
 
     /**
      * <p>
-     * 将整数删除标记码转换为删除标记描述字符串
+     * 将删除标记码转换为删除标记描述字符串
      * </p>
      *
      * @param code 删除标记码
@@ -293,7 +293,7 @@ public interface SysTenantConverter {
      * @since 2026-04-27
      */
     @Named("intDeletedToDesc")
-    default String intDeletedToDesc(Integer code) {
+    default String intDeletedToDesc(String code) {
         if (code == null) return null;
         Deleted deleted = Deleted.getByCode(code);
         return deleted != null ? deleted.getDesc() : null;

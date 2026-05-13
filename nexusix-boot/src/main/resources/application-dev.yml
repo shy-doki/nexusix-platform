@@ -1,3 +1,4 @@
+# 后续需要把敏感信息替换为实际密文 ENC(加密后的数据库密码)
 server:
   # 服务端口
   port: 8081
@@ -131,3 +132,17 @@ sa-token:
       max-idle: 8
       # 最小空闲连接（预热连接池）
       min-idle: 3
+
+jasypt:
+  encryptor:
+    # 加密算法
+    algorithm: PBEWITHHMACSHA512ANDAES_256
+    # 密钥获取方式（通过环境变量或启动参数）
+    # password: ${JASYPT_ENCRYPTOR_PASSWORD}  # 不需要显式配置，默认行为
+    password: 0f7b0a5d-46bc-40fd-b8ed-3181d21d644f
+    # 字符串加密器类名
+    stringEncryptorClassName: org.jasypt.encryption.pbe.StandardPBEStringEncryptor
+    # 输出格式（使用ENC()包裹）
+    property:
+      prefix: "ENC("
+      suffix: ")"

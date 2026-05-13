@@ -41,7 +41,7 @@ public class BaseEnumSerializer implements ObjectWriter<Object> {
         BaseEnum baseEnum = (BaseEnum) object;
 
         // 获取枚举的 code 值并写入 JSON
-        jsonWriter.writeInt32(baseEnum.getCode());
+        jsonWriter.writeString(baseEnum.getCode());
 
     }
 
