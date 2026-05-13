@@ -41,6 +41,13 @@ public class GlobalConstant {
         public static final int DEFAULT_PAGE_SIZE = 10;
 
         /**
+         * 最小每页大小
+         * <p>取值范围：正整数，用于防止一次查询过多数据</p>
+         * <p>使用场景：限制分页查询时每页最大记录数，防止内存溢出</p>
+         */
+        public static final int MIN_PAGE_SIZE = 1;
+
+        /**
          * 最大每页大小
          * <p>取值范围：正整数，用于防止一次查询过多数据</p>
          * <p>使用场景：限制分页查询时每页最大记录数，防止内存溢出</p>
@@ -209,114 +216,6 @@ public class GlobalConstant {
          * <p>使用场景：Sa-Token Session中存储当前用户被禁用的用户级角色</p>
          */
         public static final String INVALID_ROLE_USER = "invalidRoleUser";
-
-    }
-
-    /**
-     *  Redis键常量
-     */
-    public static final class RedisKey {
-
-        private RedisKey() {
-        }
-
-        /**
-         * Redis键前缀：登录会话
-         * <p>完整格式：nexusix:login:session:{userId}</p>
-         * <p>使用场景：存储用户登录会话上下文数据（租户信息、用户信息等）</p>
-         */
-        public static final String LOGIN_SESSION_PREFIX = "NexusIX:login:session:";
-
-        /**
-         * Redis键前缀：用户权限
-         * <p>完整格式：nexusix:perm:{userId}</p>
-         * <p>使用场景：缓存用户权限编码列表</p>
-         */
-        public static final String PERM_PREFIX = "NexusIX:perm:";
-
-        /**
-         * Redis键前缀：用户角色
-         * <p>完整格式：nexusix:role:{userId}</p>
-         * <p>使用场景：缓存用户角色编码列表</p>
-         */
-        public static final String ROLE_PREFIX = "NexusIX:role:";
-
-        /**
-         * Redis键前缀：租户上下文
-         * <p>完整格式：nexusix:tenant:context:{userId}</p>
-         * <p>使用场景：存储用户当前租户上下文信息（租户ID、租户名称等）</p>
-         */
-        public static final String TENANT_CONTEXT_PREFIX = "NexusIX:tenant:context:";
-
-        /**
-         * Redis键前缀：系统级有效权限
-         * <p>完整格式：nexusix:perm:system:valid</p>
-         * <p>使用场景：缓存系统级有效权限编码列表</p>
-         */
-        public static final String PERM_SYSTEM_VALID = "perm:system:valid";
-
-        /**
-         * Redis键前缀：系统级无效权限
-         * <p>完整格式：nexusix:perm:system:invalid</p>
-         * <p>使用场景：缓存系统级已禁用或已删除的权限编码列表</p>
-         */
-        public static final String PERM_SYSTEM_INVALID = "NexusIX:perm:system:invalid";
-
-        /**
-         * Redis键前缀：租户级权限
-         * <p>完整格式：nexusix:perm:tenant:{tenantId}:valid</p>
-         * <p>使用场景：缓存指定租户下有效权限编码列表</p>
-         */
-        public static final String PERM_TENANT_VALID_PREFIX = "NexusIX:perm:tenant:";
-
-        /**
-         * Redis键前缀：租户级无效权限
-         * <p>完整格式：nexusix:perm:tenant:{tenantId}:invalid</p>
-         * <p>使用场景：缓存指定租户下已禁用或已删除的权限编码列表</p>
-         */
-        public static final String PERM_TENANT_INVALID_PREFIX = "NexusIX:perm:tenant:";
-
-        /**
-         * Redis键前缀：角色级权限
-         * <p>完整格式：nexusix:perm:role:{roleId}:valid</p>
-         * <p>使用场景：缓存指定角色关联的有效权限编码列表</p>
-         */
-        public static final String PERM_ROLE_VALID_PREFIX = "NexusIX:perm:role:";
-
-        /**
-         * Redis键前缀：角色级无效权限
-         * <p>完整格式：nexusix:perm:role:{roleId}:invalid</p>
-         * <p>使用场景：缓存指定角色关联的已禁用或已删除的权限编码列表</p>
-         */
-        public static final String PERM_ROLE_INVALID_PREFIX = "NexusIX:perm:role:";
-
-        /**
-         * Redis键前缀：用户级权限
-         * <p>完整格式：nexusix:perm:user:{userId}:valid</p>
-         * <p>使用场景：缓存指定用户单独配置的有效权限编码列表</p>
-         */
-        public static final String PERM_USER_VALID_PREFIX = "NexusIX:perm:user:";
-
-        /**
-         * Redis键前缀：用户级无效权限
-         * <p>完整格式：nexusix:perm:user:{userId}:invalid</p>
-         * <p>使用场景：缓存指定用户被拒绝或已删除的权限编码列表</p>
-         */
-        public static final String PERM_USER_INVALID_PREFIX = "NexusIX:perm:user:";
-
-        /**
-         * Redis键前缀：系统级角色
-         * <p>完整格式：nexusix:role:system:valid</p>
-         * <p>使用场景：缓存系统级有效角色编码列表</p>
-         */
-        public static final String ROLE_SYSTEM_VALID = "NexusIX:role:system:valid";
-
-        /**
-         * Redis键前缀：系统级无效角色
-         * <p>完整格式：nexusix:role:system:invalid</p>
-         * <p>使用场景：缓存系统级已禁用或已删除的角色编码列表</p>
-         */
-        public static final String ROLE_SYSTEM_INVALID = "NexusIX:role:system:invalid";
 
     }
 
