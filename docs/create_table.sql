@@ -2,25 +2,30 @@
 -- 1. 核心租户域 (Tenant Core)
 -- =============================================================================
 
--- 租户信息表
+-- 租户信息表 已改
 CREATE TABLE sys_tenant (
-                            id                  BIGINT          NOT NULL,
-                            tenant_name         VARCHAR(100)    NOT NULL,
-                            tenant_code         VARCHAR(50)     NOT NULL,
-                            parent_id           BIGINT          DEFAULT 0,
-                            ancestors           VARCHAR(500)    DEFAULT '',
-                            contact_name        VARCHAR(50)     DEFAULT '',
-                            contact_phone       VARCHAR(20)     DEFAULT '',
-                            status              SMALLINT        DEFAULT 1,
-                            expire_time         TIMESTAMP       DEFAULT NULL,
-                            package_id          BIGINT          DEFAULT 0,
-                            ext_attributes      JSONB           DEFAULT '{}'::jsonb,
-                            create_by           BIGINT          DEFAULT 0,
-                            update_by           BIGINT          DEFAULT 0,
-                            create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                            update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                            is_deleted          SMALLINT        DEFAULT 0,
-                            PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_name         VARCHAR(100)    NOT NULL,
+    tenant_code         VARCHAR(50)     NOT NULL,
+    parent_id           BIGINT          DEFAULT 0,
+	parent_name			VARCHAR(100)    DEFAULT NULL,
+    ancestors           VARCHAR(500)    DEFAULT '',
+    contact_name        VARCHAR(50)     DEFAULT '',
+    contact_phone       VARCHAR(20)     DEFAULT '',
+    status              SMALLINT        DEFAULT 1,
+    expire_time         TIMESTAMP       DEFAULT NULL,
+    package_id          BIGINT          DEFAULT 0,
+	package_name		VARCHAR(100)    DEFAULT NULL,
+    ext_attributes      JSONB           DEFAULT '{}'::jsonb,
+    has_children        BOOLEAN         DEFAULT false,
+    create_by           BIGINT          DEFAULT 0,
+	create_by_name		VARCHAR(100)    DEFAULT NULL,
+    update_by           BIGINT          DEFAULT 0,
+	update_by_name		VARCHAR(100)    DEFAULT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_tenant IS '租户信息表 - 存储租户基础信息，支持无限层级';
 COMMENT ON COLUMN sys_tenant.id IS '主键 ID (雪花算法)';
@@ -39,30 +44,42 @@ COMMENT ON COLUMN sys_tenant.update_by IS '更新人 ID';
 COMMENT ON COLUMN sys_tenant.create_time IS '创建时间';
 COMMENT ON COLUMN sys_tenant.update_time IS '更新时间';
 COMMENT ON COLUMN sys_tenant.is_deleted IS '逻辑删除 (0-正常 1-删除)';
+COMMENT ON COLUMN sys_tenant.parent_name IS '父租户名称(冗余字段,用于查询优化,新增、更新、删除操作需要同步该字段)';
+COMMENT ON COLUMN sys_tenant.package_name IS '套餐名称(冗余字段,用于查询优化,新增、更新、删除操作需要同步该字段)';
+COMMENT ON COLUMN sys_tenant.create_by_name IS '创建人名称(冗余字段,用于查询优化,新增、更新、删除操作需要同步该字段)';
+COMMENT ON COLUMN sys_tenant.update_by_name IS '更新人名称(冗余字段,用于查询优化,新增、更新、删除操作需要同步该字段)';
+COMMENT ON COLUMN sys_tenant.has_children IS '是否有子租户 (true/false)';
 
 -- 租户套餐订阅表
 CREATE TABLE sys_tenant_subscription (
-                                         id                  BIGINT          NOT NULL,
-                                         tenant_id           BIGINT          NOT NULL,
-                                         package_id          BIGINT          NOT NULL,
-                                         subscription_type   SMALLINT        DEFAULT 1,
-                                         start_time          TIMESTAMP       NOT NULL,
-                                         end_time            TIMESTAMP       NOT NULL,
-                                         status              SMALLINT        DEFAULT 1,
-                                         is_auto_renew       BOOLEAN         DEFAULT FALSE,
-                                         source_type         SMALLINT        DEFAULT 1,
-                                         parent_grant_id     BIGINT          DEFAULT 0,
-                                         create_by           BIGINT          DEFAULT 0,
-                                         update_by           BIGINT          DEFAULT 0,
-                                         create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                         update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                         is_deleted          SMALLINT        DEFAULT 0,
-                                         PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    tenant_name         VARCHAR(100)    NOT NULL,
+    package_id          BIGINT          NOT NULL,
+    package_name        VARCHAR(100)    NOT NULL,
+    subscription_type   SMALLINT        DEFAULT 1,
+    start_time          TIMESTAMP       NOT NULL,
+    end_time            TIMESTAMP       NOT NULL,
+    status              SMALLINT        DEFAULT 1,
+    is_auto_renew       BOOLEAN         DEFAULT FALSE,
+    source_type         SMALLINT        DEFAULT 1,
+    parent_grant_id     BIGINT          DEFAULT 0,
+    parent_tenant_name  VARCHAR(100)    NOT NULL,
+    create_by           BIGINT          DEFAULT 0,
+    create_by_name		VARCHAR(100)    DEFAULT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_by           BIGINT          DEFAULT 0,
+	update_by_name		VARCHAR(100)    DEFAULT NULL,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_tenant_subscription IS '租户套餐订阅表 - 记录租户购买的套餐及订阅状态';
 COMMENT ON COLUMN sys_tenant_subscription.id IS '主键 ID';
 COMMENT ON COLUMN sys_tenant_subscription.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_tenant_subscription.tenant_name IS '租户名称';
 COMMENT ON COLUMN sys_tenant_subscription.package_id IS '套餐产品 ID';
+COMMENT ON COLUMN sys_tenant_subscription.package_name IS '套餐产品名称';
 COMMENT ON COLUMN sys_tenant_subscription.subscription_type IS '订阅类型 (1-自购 2-父租户分配)';
 COMMENT ON COLUMN sys_tenant_subscription.start_time IS '订阅开始时间';
 COMMENT ON COLUMN sys_tenant_subscription.end_time IS '订阅结束时间';
@@ -70,9 +87,12 @@ COMMENT ON COLUMN sys_tenant_subscription.status IS '状态 (1-生效 0-过期)'
 COMMENT ON COLUMN sys_tenant_subscription.is_auto_renew IS '是否自动续费';
 COMMENT ON COLUMN sys_tenant_subscription.source_type IS '来源类型';
 COMMENT ON COLUMN sys_tenant_subscription.parent_grant_id IS '父租户分配记录 ID';
+COMMENT ON COLUMN sys_tenant_subscription.parent_tenant_name IS '父租户名称';
 COMMENT ON COLUMN sys_tenant_subscription.create_by IS '创建人 ID';
-COMMENT ON COLUMN sys_tenant_subscription.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_tenant_subscription.create_by_name IS '创建人名称';
 COMMENT ON COLUMN sys_tenant_subscription.create_time IS '创建时间';
+COMMENT ON COLUMN sys_tenant_subscription.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_tenant_subscription.update_by_name IS '更新人名称';
 COMMENT ON COLUMN sys_tenant_subscription.update_time IS '更新时间';
 COMMENT ON COLUMN sys_tenant_subscription.is_deleted IS '逻辑删除';
 
@@ -82,22 +102,22 @@ COMMENT ON COLUMN sys_tenant_subscription.is_deleted IS '逻辑删除';
 
 -- 产品套餐定义表
 CREATE TABLE prod_package (
-                              id                  BIGINT          NOT NULL,
-                              package_name        VARCHAR(100)    NOT NULL,
-                              package_code        VARCHAR(50)     NOT NULL,
-                              description         VARCHAR(500)    DEFAULT '',
-                              price               DECIMAL(10,2)   DEFAULT 0.00,
-                              cycle_type          SMALLINT        DEFAULT 1,
-                              cycle_value         INT             DEFAULT 1,
-                              status              SMALLINT        DEFAULT 1,
-                              sort_order          INT             DEFAULT 0,
-                              ext_config          JSONB           DEFAULT '{}'::jsonb,
-                              create_by           BIGINT          DEFAULT 0,
-                              update_by           BIGINT          DEFAULT 0,
-                              create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                              update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                              is_deleted          SMALLINT        DEFAULT 0,
-                              PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    package_name        VARCHAR(100)    NOT NULL,
+    package_code        VARCHAR(50)     NOT NULL,
+    description         VARCHAR(500)    DEFAULT '',
+    price               DECIMAL(10,2)   DEFAULT 0.00,
+    cycle_type          SMALLINT        DEFAULT 1,
+    cycle_value         INT             DEFAULT 1,
+    status              SMALLINT        DEFAULT 1,
+    sort_order          INT             DEFAULT 0,
+    ext_config          JSONB           DEFAULT '{}'::jsonb,
+    create_by           BIGINT          DEFAULT 0,
+    update_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE prod_package IS '产品套餐定义表 - 定义可售卖的套餐模板';
 COMMENT ON COLUMN prod_package.id IS '主键 ID';
@@ -118,16 +138,16 @@ COMMENT ON COLUMN prod_package.is_deleted IS '逻辑删除';
 
 -- 套餐配额模板表
 CREATE TABLE prod_package_quota (
-                                    id                  BIGINT          NOT NULL,
-                                    package_id          BIGINT          NOT NULL,
-                                    resource_code       VARCHAR(50)     NOT NULL,
-                                    resource_name       VARCHAR(100)    NOT NULL,
-                                    quota_value         BIGINT          NOT NULL,
-                                    unit                VARCHAR(20)     DEFAULT '',
-                                    is_allow_overage    BOOLEAN         DEFAULT FALSE,
-                                    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                    is_deleted          SMALLINT        DEFAULT 0,
-                                    PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    package_id          BIGINT          NOT NULL,
+    resource_code       VARCHAR(50)     NOT NULL,
+    resource_name       VARCHAR(100)    NOT NULL,
+    quota_value         BIGINT          NOT NULL,
+    unit                VARCHAR(20)     DEFAULT '',
+    is_allow_overage    BOOLEAN         DEFAULT FALSE,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE prod_package_quota IS '套餐配额模板表 - 定义套餐包含的资源配额';
 COMMENT ON COLUMN prod_package_quota.id IS '主键 ID';
@@ -142,18 +162,18 @@ COMMENT ON COLUMN prod_package_quota.is_deleted IS '逻辑删除';
 
 -- 租户配额调整表
 CREATE TABLE sys_tenant_quota_adjustment (
-                                             id                  BIGINT          NOT NULL,
-                                             tenant_id           BIGINT          NOT NULL,
-                                             resource_code       VARCHAR(50)     NOT NULL,
-                                             adjust_value        BIGINT          NOT NULL,
-                                             adjust_type         SMALLINT        DEFAULT 1,
-                                             reason              VARCHAR(500)    DEFAULT '',
-                                             effective_time      TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                             expire_time         TIMESTAMP       DEFAULT NULL,
-                                             operator_id         BIGINT          DEFAULT 0,
-                                             create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                             is_deleted          SMALLINT        DEFAULT 0,
-                                             PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    resource_code       VARCHAR(50)     NOT NULL,
+    adjust_value        BIGINT          NOT NULL,
+    adjust_type         SMALLINT        DEFAULT 1,
+    reason              VARCHAR(500)    DEFAULT '',
+    effective_time      TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    expire_time         TIMESTAMP       DEFAULT NULL,
+    operator_id         BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_tenant_quota_adjustment IS '租户配额调整表 - 记录套餐外的配额增减 (加油包/补偿)';
 COMMENT ON COLUMN sys_tenant_quota_adjustment.id IS '主键 ID';
@@ -170,15 +190,15 @@ COMMENT ON COLUMN sys_tenant_quota_adjustment.is_deleted IS '逻辑删除';
 
 -- 资源使用计量表
 CREATE TABLE sys_resource_usage (
-                                    id                  BIGINT          NOT NULL,
-                                    tenant_id           BIGINT          NOT NULL,
-                                    resource_code       VARCHAR(50)     NOT NULL,
-                                    usage_value         BIGINT          NOT NULL,
-                                    business_type       VARCHAR(50)     DEFAULT '',
-                                    business_id         BIGINT          DEFAULT 0,
-                                    usage_time          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                    remark              VARCHAR(500)    DEFAULT '',
-                                    PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    resource_code       VARCHAR(50)     NOT NULL,
+    usage_value         BIGINT          NOT NULL,
+    business_type       VARCHAR(50)     DEFAULT '',
+    business_id         BIGINT          DEFAULT 0,
+    usage_time          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    remark              VARCHAR(500)    DEFAULT '',
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_resource_usage IS '资源使用计量表 - 记录租户资源消耗流水';
 COMMENT ON COLUMN sys_resource_usage.id IS '主键 ID';
@@ -192,23 +212,23 @@ COMMENT ON COLUMN sys_resource_usage.remark IS '备注';
 
 -- 订单表
 CREATE TABLE bill_order (
-                            id                  BIGINT          NOT NULL,
-                            tenant_id           BIGINT          NOT NULL,
-                            order_no            VARCHAR(64)     NOT NULL,
-                            product_type        SMALLINT        DEFAULT 1,
-                            product_id          BIGINT          DEFAULT 0,
-                            total_amount        DECIMAL(10,2)   NOT NULL,
-                            pay_amount          DECIMAL(10,2)   DEFAULT 0.00,
-                            status              SMALLINT        DEFAULT 0,
-                            pay_time            TIMESTAMP       DEFAULT NULL,
-                            pay_channel         VARCHAR(50)     DEFAULT '',
-                            order_items         JSONB           DEFAULT '[]'::jsonb,
-                            ext_attributes      JSONB           DEFAULT '{}'::jsonb,
-                            create_by           BIGINT          DEFAULT 0,
-                            create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                            update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                            is_deleted          SMALLINT        DEFAULT 0,
-                            PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    order_no            VARCHAR(64)     NOT NULL,
+    product_type        SMALLINT        DEFAULT 1,
+    product_id          BIGINT          DEFAULT 0,
+    total_amount        DECIMAL(10,2)   NOT NULL,
+    pay_amount          DECIMAL(10,2)   DEFAULT 0.00,
+    status              SMALLINT        DEFAULT 0,
+    pay_time            TIMESTAMP       DEFAULT NULL,
+    pay_channel         VARCHAR(50)     DEFAULT '',
+    order_items         JSONB           DEFAULT '[]'::jsonb,
+    ext_attributes      JSONB           DEFAULT '{}'::jsonb,
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE bill_order IS '订单表 - 记录租户购买订单';
 COMMENT ON COLUMN bill_order.id IS '主键 ID';
@@ -230,21 +250,21 @@ COMMENT ON COLUMN bill_order.is_deleted IS '逻辑删除';
 
 -- 发票管理表
 CREATE TABLE bill_invoice (
-                              id                  BIGINT          NOT NULL,
-                              tenant_id           BIGINT          NOT NULL,
-                              order_id            BIGINT          NOT NULL,
-                              invoice_no          VARCHAR(64)     DEFAULT '',
-                              invoice_type        SMALLINT        DEFAULT 1,
-                              invoice_title       VARCHAR(200)    NOT NULL,
-                              tax_id              VARCHAR(50)     NOT NULL,
-                              amount              DECIMAL(10,2)   NOT NULL,
-                              status              SMALLINT        DEFAULT 0,
-                              invoice_url         VARCHAR(500)    DEFAULT '',
-                              create_by           BIGINT          DEFAULT 0,
-                              create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                              update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                              is_deleted          SMALLINT        DEFAULT 0,
-                              PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    order_id            BIGINT          NOT NULL,
+    invoice_no          VARCHAR(64)     DEFAULT '',
+    invoice_type        SMALLINT        DEFAULT 1,
+    invoice_title       VARCHAR(200)    NOT NULL,
+    tax_id              VARCHAR(50)     NOT NULL,
+    amount              DECIMAL(10,2)   NOT NULL,
+    status              SMALLINT        DEFAULT 0,
+    invoice_url         VARCHAR(500)    DEFAULT '',
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE bill_invoice IS '发票管理表 - 记录租户发票申请与开具';
 COMMENT ON COLUMN bill_invoice.id IS '主键 ID';
@@ -268,21 +288,24 @@ COMMENT ON COLUMN bill_invoice.is_deleted IS '逻辑删除';
 
 -- 用户基础表
 CREATE TABLE sys_user (
-                          id                  BIGINT          NOT NULL,
-                          username            VARCHAR(50)     NOT NULL,
-                          password            VARCHAR(100)    NOT NULL,
-                          nickname            VARCHAR(50)     DEFAULT '',
-                          email               VARCHAR(100)    DEFAULT '',
-                          phone               VARCHAR(20)     DEFAULT '',
-                          avatar              VARCHAR(255)    DEFAULT '',
-                          status              SMALLINT        DEFAULT 1,
-                          login_ip            VARCHAR(50)     DEFAULT '',
-                          login_date          TIMESTAMP       DEFAULT NULL,
-                          create_by           BIGINT          DEFAULT 0,
-                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          is_deleted          SMALLINT        DEFAULT 0,
-                          PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    username            VARCHAR(50)     NOT NULL,
+    password            VARCHAR(100)    NOT NULL,
+    nickname            VARCHAR(50)     DEFAULT '',
+    email               VARCHAR(100)    DEFAULT '',
+    phone               VARCHAR(20)     DEFAULT '',
+    avatar              VARCHAR(255)    DEFAULT '',
+    status              SMALLINT        DEFAULT 1,
+    login_ip            VARCHAR(50)     DEFAULT '',
+    login_date          TIMESTAMP       DEFAULT NULL,
+    create_by           BIGINT          DEFAULT 0,
+    create_by_name		VARCHAR(100)    DEFAULT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_by           BIGINT          DEFAULT 0,
+	update_by_name		VARCHAR(100)    DEFAULT NULL,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_user IS '用户基础表 - 存储全局用户信息 (不区分租户)';
 COMMENT ON COLUMN sys_user.id IS '主键 ID';
@@ -296,21 +319,30 @@ COMMENT ON COLUMN sys_user.status IS '全局状态 (1-正常 0-禁用)';
 COMMENT ON COLUMN sys_user.login_ip IS '最后登录 IP';
 COMMENT ON COLUMN sys_user.login_date IS '最后登录时间';
 COMMENT ON COLUMN sys_user.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_user.create_by_name IS '创建人名称';
 COMMENT ON COLUMN sys_user.create_time IS '创建时间';
+COMMENT ON COLUMN sys_user.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_user.update_by_name IS '更新人名称';
 COMMENT ON COLUMN sys_user.update_time IS '更新时间';
 COMMENT ON COLUMN sys_user.is_deleted IS '逻辑删除';
 
 -- 用户 - 租户关联表
 CREATE TABLE sys_user_tenant_rel (
-                                     id                  BIGINT          NOT NULL,
-                                     user_id             BIGINT          NOT NULL,
-                                     tenant_id           BIGINT          NOT NULL,
-                                     dept_id             BIGINT          DEFAULT 0,
-                                     is_admin            BOOLEAN         DEFAULT FALSE,
-                                     join_time           TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                     is_deleted          SMALLINT        DEFAULT 0,
-                                     PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    user_id             BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    dept_id             BIGINT          DEFAULT 0,
+    is_admin            BOOLEAN         DEFAULT FALSE,
+    join_time           TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_default          SMALLINT        DEFAULT 0,
+    create_by           BIGINT          DEFAULT 0,
+    create_by_name		VARCHAR(100)    DEFAULT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_by           BIGINT          DEFAULT 0,
+	update_by_name		VARCHAR(100)    DEFAULT NULL,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_user_tenant_rel IS '用户 - 租户关联表 - 实现用户与多租户绑定';
 COMMENT ON COLUMN sys_user_tenant_rel.id IS '主键 ID';
@@ -319,24 +351,33 @@ COMMENT ON COLUMN sys_user_tenant_rel.tenant_id IS '租户 ID';
 COMMENT ON COLUMN sys_user_tenant_rel.dept_id IS '主部门 ID (必须属于当前租户)';
 COMMENT ON COLUMN sys_user_tenant_rel.is_admin IS '是否租户管理员(解决一个人在 A 公司是管理员、在 B 公司是普通员工，is_admin不等于角色)';
 COMMENT ON COLUMN sys_user_tenant_rel.join_time IS '加入时间';
+COMMENT ON COLUMN sys_user_tenant_rel.is_default IS '是否默认租户 (解决一个用户加入多个租户，默认一个租户)';
+COMMENT ON COLUMN sys_user_tenant_rel.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_user_tenant_rel.create_by_name IS '创建人名称';
 COMMENT ON COLUMN sys_user_tenant_rel.create_time IS '创建时间';
+COMMENT ON COLUMN sys_user_tenant_rel.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_user_tenant_rel.update_by_name IS '更新人名称';
+COMMENT ON COLUMN sys_user_tenant_rel.update_time IS '更新时间';
 COMMENT ON COLUMN sys_user_tenant_rel.is_deleted IS '逻辑删除';
 
--- 角色表
+-- 角色表 已改
 CREATE TABLE sys_role (
-                          id                  BIGINT          NOT NULL,
-                          role_name           VARCHAR(50)     NOT NULL,
-                          role_code           VARCHAR(50)     NOT NULL,
-                          role_level          SMALLINT        DEFAULT 2,
-                          tenant_id           BIGINT          DEFAULT 0,
-                          data_scope          SMALLINT        DEFAULT 1,
-                          status              SMALLINT        DEFAULT 1,
-                          sort_order          INT             DEFAULT 0,
-                          create_by           BIGINT          DEFAULT 0,
-                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          is_deleted          SMALLINT        DEFAULT 0,
-                          PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    role_name           VARCHAR(50)     NOT NULL,
+    role_code           VARCHAR(50)     NOT NULL,
+    role_level          SMALLINT        DEFAULT 2,
+    tenant_id           BIGINT          DEFAULT 0,
+    tenant_name         VARCHAR(100)     NOT NULL,
+    data_scope          SMALLINT        DEFAULT 1,
+    status              SMALLINT        DEFAULT 1,
+    create_by           BIGINT          DEFAULT 0,
+    create_by_name		VARCHAR(100)    DEFAULT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_by           BIGINT          DEFAULT 0,
+	update_by_name		VARCHAR(100)    DEFAULT NULL,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_role IS '角色表 - 定义系统/租户/用户级角色';
 COMMENT ON COLUMN sys_role.id IS '主键 ID';
@@ -346,24 +387,33 @@ COMMENT ON COLUMN sys_role.role_level IS '角色层级 (1-系统 2-租户 3-用�
 COMMENT ON COLUMN sys_role.tenant_id IS '所属租户 ID (系统级为 0)';
 COMMENT ON COLUMN sys_role.data_scope IS '数据范围 (1-全部 2-本部门 3-本人 4-自定义)';
 COMMENT ON COLUMN sys_role.status IS '状态 (1-正常 0-禁用)';
-COMMENT ON COLUMN sys_role.sort_order IS '排序';
 COMMENT ON COLUMN sys_role.create_by IS '创建人 ID';
 COMMENT ON COLUMN sys_role.create_time IS '创建时间';
 COMMENT ON COLUMN sys_role.update_time IS '更新时间';
 COMMENT ON COLUMN sys_role.is_deleted IS '逻辑删除';
+COMMENT ON COLUMN sys_role.tenant_name IS '租户名称';
+COMMENT ON COLUMN sys_role.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_role.create_by_name IS '创建人名称';
+COMMENT ON COLUMN sys_role.update_by_name IS '更新人名称';
 
--- 权限/资源表
+-- 权限/资源表 已改
 CREATE TABLE sys_permission (
-                                id                  BIGINT          NOT NULL,
-                                perm_name           VARCHAR(50)     NOT NULL,
-                                perm_code           VARCHAR(100)    NOT NULL,
-                                perm_type           SMALLINT        DEFAULT 1,
-                                parent_id           BIGINT          DEFAULT 0,
-                                path                VARCHAR(200)    DEFAULT '',
-                                status              SMALLINT        DEFAULT 1,
-                                create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                is_deleted          SMALLINT        DEFAULT 0,
-                                PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    perm_name           VARCHAR(50)     NOT NULL,
+    perm_code           VARCHAR(100)    NOT NULL,
+    perm_type           SMALLINT        DEFAULT 1,
+    parent_id           BIGINT          DEFAULT 0,
+    parent_name         VARCHAR(50)     NOT NULL,
+    path                VARCHAR(200)    DEFAULT '',
+    status              SMALLINT        DEFAULT 1,
+    create_by           BIGINT          DEFAULT 0,
+    create_by_name		VARCHAR(100)    DEFAULT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_by           BIGINT          DEFAULT 0,
+	update_by_name		VARCHAR(100)    DEFAULT NULL,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_permission IS '权限/资源表 - 定义系统所有可授权资源';
 COMMENT ON COLUMN sys_permission.id IS '主键 ID';
@@ -371,98 +421,112 @@ COMMENT ON COLUMN sys_permission.perm_name IS '权限名称';
 COMMENT ON COLUMN sys_permission.perm_code IS '权限标识 (如 system:user:add)';
 COMMENT ON COLUMN sys_permission.perm_type IS '类型 (1-菜单 2-按钮 3-接口 4-数据字段)';
 COMMENT ON COLUMN sys_permission.parent_id IS '父权限 ID';
+COMMENT ON COLUMN sys_permission.parent_name IS '父权限名称';
 COMMENT ON COLUMN sys_permission.path IS '资源路径';
 COMMENT ON COLUMN sys_permission.status IS '状态 (1-正常 0-禁用)';
+COMMENT ON COLUMN sys_permission.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_permission.create_by_name IS '创建人名称';
 COMMENT ON COLUMN sys_permission.create_time IS '创建时间';
+COMMENT ON COLUMN sys_permission.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_permission.update_by_name IS '更新人名称';
+COMMENT ON COLUMN sys_permission.update_time IS '更新时间';
 COMMENT ON COLUMN sys_permission.is_deleted IS '逻辑删除';
 
--- 权限策略控制表
+-- 权限策略控制表 已改
 CREATE TABLE sys_permission_policy (
-                                       id                  BIGINT          NOT NULL,
-                                       target_type         SMALLINT        NOT NULL,
-                                       target_id           BIGINT          NOT NULL,
-                                       permission_id       BIGINT          NOT NULL,
-                                       action              SMALLINT        NOT NULL,
-                                       priority            INT             DEFAULT 0,
-                                       inheritance_enabled BOOLEAN         DEFAULT TRUE,
-                                       create_by           BIGINT          DEFAULT 0,
-                                       create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                       is_deleted          SMALLINT        DEFAULT 0,
-                                       PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    target_type         SMALLINT        NOT NULL,
+    target_id           BIGINT          NOT NULL,
+    target_name         VARCHAR(100)     NOT NULL,
+    permission_id       BIGINT          NOT NULL,
+    perm_name           VARCHAR(50)     NOT NULL,
+    action              SMALLINT        NOT NULL,
+    priority            INT             DEFAULT 0,
+    inheritance_enabled BOOLEAN         DEFAULT TRUE,
+    create_by           BIGINT          DEFAULT 0,
+    create_by_name		VARCHAR(100)    DEFAULT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_by           BIGINT          DEFAULT 0,
+	update_by_name		VARCHAR(100)    DEFAULT NULL,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_permission_policy IS '权限策略控制表 - 实现四层权限及禁用继承逻辑';
 COMMENT ON COLUMN sys_permission_policy.id IS '主键 ID';
 COMMENT ON COLUMN sys_permission_policy.target_type IS '目标类型 (1-系统 2-租户 3-角色 4-用户)';
 COMMENT ON COLUMN sys_permission_policy.target_id IS '目标 ID (对应租户/角色/用户 ID)';
+COMMENT ON COLUMN sys_permission_policy.target_name IS '目标名称 (对应租户/角色/用户名称)';
 COMMENT ON COLUMN sys_permission_policy.permission_id IS '关联权限 ID';
+COMMENT ON COLUMN sys_permission_policy.perm_name IS '关联权限名称';
 COMMENT ON COLUMN sys_permission_policy.action IS '动作 (1-允许 2-拒绝)';
 COMMENT ON COLUMN sys_permission_policy.priority IS '优先级 (数字越大优先级越高)';
 COMMENT ON COLUMN sys_permission_policy.inheritance_enabled IS '是否向下继承';
 COMMENT ON COLUMN sys_permission_policy.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_permission_policy.create_by_name IS '创建人名称';
 COMMENT ON COLUMN sys_permission_policy.create_time IS '创建时间';
+COMMENT ON COLUMN sys_permission_policy.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_permission_policy.update_by_name IS '更新人名称';
+COMMENT ON COLUMN sys_permission_policy.update_time IS '更新时间';
 COMMENT ON COLUMN sys_permission_policy.is_deleted IS '逻辑删除';
 
 -- 用户角色关联表
 CREATE TABLE sys_user_role_rel (
-                                   id                  BIGINT          NOT NULL,
-                                   user_id             BIGINT          NOT NULL,
-                                   role_id             BIGINT          NOT NULL,
-                                   tenant_id           BIGINT          NOT NULL,
-                                   create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                   PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    user_id             BIGINT          NOT NULL,
+    role_id             BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    create_by           BIGINT          DEFAULT 0,
+    create_by_name		VARCHAR(100)    DEFAULT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_by           BIGINT          DEFAULT 0,
+	update_by_name		VARCHAR(100)    DEFAULT NULL,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_user_role_rel IS '用户角色关联表 - 用户与角色的绑定关系';
 COMMENT ON COLUMN sys_user_role_rel.id IS '主键 ID';
 COMMENT ON COLUMN sys_user_role_rel.user_id IS '用户 ID';
 COMMENT ON COLUMN sys_user_role_rel.role_id IS '角色 ID';
 COMMENT ON COLUMN sys_user_role_rel.tenant_id IS '租户 ID (角色必须属于此租户)';
+COMMENT ON COLUMN sys_user_role_rel.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_user_role_rel.create_by_name IS '创建人名称';
 COMMENT ON COLUMN sys_user_role_rel.create_time IS '创建时间';
-
--- 租户安全策略配置表
-CREATE TABLE sys_tenant_security (
-                                     id                  BIGINT          NOT NULL,
-                                     tenant_id           BIGINT          NOT NULL,
-                                     pwd_min_length      INT             DEFAULT 6,
-                                     pwd_complexity      SMALLINT        DEFAULT 0,
-                                     pwd_expire_days     INT             DEFAULT 0,
-                                     login_fail_limit    INT             DEFAULT 5,
-                                     lock_duration       INT             DEFAULT 30,
-                                     update_by           BIGINT          DEFAULT 0,
-                                     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                     PRIMARY KEY (id)
-);
-COMMENT ON TABLE sys_tenant_security IS '租户安全策略配置表 - 定义租户密码策略和登录限制';
-COMMENT ON COLUMN sys_tenant_security.id IS '主键 ID';
-COMMENT ON COLUMN sys_tenant_security.tenant_id IS '租户 ID';
-COMMENT ON COLUMN sys_tenant_security.pwd_min_length IS '密码最小长度';
-COMMENT ON COLUMN sys_tenant_security.pwd_complexity IS '密码复杂度 (0-无 1-字母 + 数字 2-字母 + 数字 + 特殊字符)';
-COMMENT ON COLUMN sys_tenant_security.pwd_expire_days IS '密码过期天数 (0-永不过期)';
-COMMENT ON COLUMN sys_tenant_security.login_fail_limit IS '登录失败锁定次数';
-COMMENT ON COLUMN sys_tenant_security.lock_duration IS '锁定时长 (分钟)';
-COMMENT ON COLUMN sys_tenant_security.update_by IS '更新人 ID';
-COMMENT ON COLUMN sys_tenant_security.update_time IS '更新时间';
+COMMENT ON COLUMN sys_user_role_rel.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_user_role_rel.update_by_name IS '更新人名称';
+COMMENT ON COLUMN sys_user_role_rel.update_time IS '更新时间';
+COMMENT ON COLUMN sys_user_role_rel.is_deleted IS '逻辑删除';
 
 -- 用户 Token 记录表
 CREATE TABLE sys_user_token (
-                                id                  BIGINT          NOT NULL,
-                                user_id             BIGINT          NOT NULL,
-                                tenant_id           BIGINT          NOT NULL,
-                                token               VARCHAR(255)    NOT NULL,
-                                device_info         VARCHAR(200)    DEFAULT '',
-                                login_time          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                expire_time         TIMESTAMP       NOT NULL,
-                                status              SMALLINT        DEFAULT 1,
-                                PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    user_id             BIGINT          NOT NULL,
+    user_name           VARCHAR(50)     NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    tenant_name         VARCHAR(50)     NOT NULL,
+    token               VARCHAR(255)    NOT NULL,
+    device_info         VARCHAR(200)    DEFAULT '',
+    login_ip            VARCHAR(50)     DEFAULT '',
+    login_time          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    expire_time         TIMESTAMP       NOT NULL,
+    status              SMALLINT        DEFAULT 1,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_user_token IS '用户 Token 记录表 - 用于多端登录管理和强制下线';
 COMMENT ON COLUMN sys_user_token.id IS '主键 ID';
 COMMENT ON COLUMN sys_user_token.user_id IS '用户 ID';
+COMMENT ON COLUMN sys_user_token.user_name IS '用户名称';
 COMMENT ON COLUMN sys_user_token.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_user_token.tenant_name IS '租户名称';
 COMMENT ON COLUMN sys_user_token.token IS '登录令牌';
 COMMENT ON COLUMN sys_user_token.device_info IS '设备信息';
+COMMENT ON COLUMN sys_user_token.login_ip IS '最后登录 IP';
 COMMENT ON COLUMN sys_user_token.login_time IS '登录时间';
 COMMENT ON COLUMN sys_user_token.expire_time IS '过期时间';
 COMMENT ON COLUMN sys_user_token.status IS '状态 (1-有效 0-失效)';
+COMMENT ON COLUMN sys_user_token.is_deleted IS '逻辑删除';
 
 -- =============================================================================
 -- 4. 组织架构域 (Organization)
@@ -470,20 +534,20 @@ COMMENT ON COLUMN sys_user_token.status IS '状态 (1-有效 0-失效)';
 
 -- 部门表
 CREATE TABLE sys_dept (
-                          id                  BIGINT          NOT NULL,
-                          dept_name           VARCHAR(50)     NOT NULL,
-                          parent_id           BIGINT          DEFAULT 0,
-                          ancestors           VARCHAR(500)    DEFAULT '',
-                          tenant_id           BIGINT          NOT NULL,
-                          leader_id           BIGINT          DEFAULT 0,
-                          phone               VARCHAR(20)     DEFAULT '',
-                          sort_order          INT             DEFAULT 0,
-                          status              SMALLINT        DEFAULT 1,
-                          create_by           BIGINT          DEFAULT 0,
-                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          is_deleted          SMALLINT        DEFAULT 0,
-                          PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    dept_name           VARCHAR(50)     NOT NULL,
+    parent_id           BIGINT          DEFAULT 0,
+    ancestors           VARCHAR(500)    DEFAULT '',
+    tenant_id           BIGINT          NOT NULL,
+    leader_id           BIGINT          DEFAULT 0,
+    phone               VARCHAR(20)     DEFAULT '',
+    sort_order          INT             DEFAULT 0,
+    status              SMALLINT        DEFAULT 1,
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_dept IS '部门表 - 存储租户组织架构，支持无限层级';
 COMMENT ON COLUMN sys_dept.id IS '主键 ID';
@@ -502,16 +566,16 @@ COMMENT ON COLUMN sys_dept.is_deleted IS '逻辑删除';
 
 -- 岗位表
 CREATE TABLE sys_post (
-                          id                  BIGINT          NOT NULL,
-                          post_name           VARCHAR(50)     NOT NULL,
-                          post_code           VARCHAR(50)     NOT NULL,
-                          dept_id             BIGINT          NOT NULL,
-                          tenant_id           BIGINT          NOT NULL,
-                          sort_order          INT             DEFAULT 0,
-                          status              SMALLINT        DEFAULT 1,
-                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          is_deleted          SMALLINT        DEFAULT 0,
-                          PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    post_name           VARCHAR(50)     NOT NULL,
+    post_code           VARCHAR(50)     NOT NULL,
+    dept_id             BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    sort_order          INT             DEFAULT 0,
+    status              SMALLINT        DEFAULT 1,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_post IS '岗位表 - 部门下的具体职位';
 COMMENT ON COLUMN sys_post.id IS '主键 ID';
@@ -526,15 +590,15 @@ COMMENT ON COLUMN sys_post.is_deleted IS '逻辑删除';
 
 -- 用户组表
 CREATE TABLE sys_user_group (
-                                id                  BIGINT          NOT NULL,
-                                group_name          VARCHAR(50)     NOT NULL,
-                                group_type          SMALLINT        DEFAULT 1,
-                                tenant_id           BIGINT          NOT NULL,
-                                description         VARCHAR(200)    DEFAULT '',
-                                create_by           BIGINT          DEFAULT 0,
-                                create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                is_deleted          SMALLINT        DEFAULT 0,
-                                PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    group_name          VARCHAR(50)     NOT NULL,
+    group_type          SMALLINT        DEFAULT 1,
+    tenant_id           BIGINT          NOT NULL,
+    description         VARCHAR(200)    DEFAULT '',
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_user_group IS '用户组表 - 虚拟组，用于跨部门权限分配';
 COMMENT ON COLUMN sys_user_group.id IS '主键 ID';
@@ -548,11 +612,11 @@ COMMENT ON COLUMN sys_user_group.is_deleted IS '逻辑删除';
 
 -- 用户组成员表
 CREATE TABLE sys_user_group_rel (
-                                    id                  BIGINT          NOT NULL,
-                                    group_id            BIGINT          NOT NULL,
-                                    user_id             BIGINT          NOT NULL,
-                                    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                    PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    group_id            BIGINT          NOT NULL,
+    user_id             BIGINT          NOT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_user_group_rel IS '用户组成员表 - 用户与用户组的关联';
 COMMENT ON COLUMN sys_user_group_rel.id IS '主键 ID';
@@ -562,12 +626,12 @@ COMMENT ON COLUMN sys_user_group_rel.create_time IS '创建时间';
 
 -- 角色数据权限关联表（本质上是当角色的数据范围 = 自定义部门时，能看哪些部门的数据）
 CREATE TABLE sys_role_dept_rel (
-                                   id                  BIGINT          NOT NULL,
-                                   role_id             BIGINT          NOT NULL,
-                                   dept_id             BIGINT          NOT NULL,
-                                   tenant_id           BIGINT          NOT NULL,
-                                   create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                   PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    role_id             BIGINT          NOT NULL,
+    dept_id             BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_role_dept_rel IS '角色数据权限关联表 - 角色自定义数据范围时关联的部门';
 COMMENT ON COLUMN sys_role_dept_rel.id IS '主键 ID';
@@ -582,18 +646,18 @@ COMMENT ON COLUMN sys_role_dept_rel.create_time IS '创建时间';
 
 -- 动态表单配置表
 CREATE TABLE sys_form_config (
-                                 id                  BIGINT          NOT NULL,
-                                 tenant_id           BIGINT          NOT NULL,
-                                 biz_type            VARCHAR(50)     NOT NULL,
-                                 form_name           VARCHAR(100)    NOT NULL,
-                                 form_schema         JSONB           NOT NULL,
-                                 status              SMALLINT        DEFAULT 1,
-                                 version             INT             DEFAULT 1,
-                                 create_by           BIGINT          DEFAULT 0,
-                                 create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                 update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                 is_deleted          SMALLINT        DEFAULT 0,
-                                 PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    biz_type            VARCHAR(50)     NOT NULL,
+    form_name           VARCHAR(100)    NOT NULL,
+    form_schema         JSONB           NOT NULL,
+    status              SMALLINT        DEFAULT 1,
+    version             INT             DEFAULT 1,
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_form_config IS '动态表单配置表 - 实现不同行业表单字段动态配置';
 COMMENT ON COLUMN sys_form_config.id IS '主键 ID';
@@ -610,20 +674,20 @@ COMMENT ON COLUMN sys_form_config.is_deleted IS '逻辑删除';
 
 -- 动态数据源配置表
 CREATE TABLE sys_datasource_config (
-                                       id                  BIGINT          NOT NULL,
-                                       tenant_id           BIGINT          NOT NULL,
-                                       datasource_code     VARCHAR(50)     NOT NULL,
-                                       datasource_name     VARCHAR(100)    NOT NULL,
-                                       datasource_type     SMALLINT        NOT NULL,
-                                       datasource_config   JSONB           NOT NULL,
-                                       cache_enabled       BOOLEAN         DEFAULT TRUE,
-                                       cache_expire        INT             DEFAULT 300,
-                                       status              SMALLINT        DEFAULT 1,
-                                       create_by           BIGINT          DEFAULT 0,
-                                       create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                       update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                       is_deleted          SMALLINT        DEFAULT 0,
-                                       PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    datasource_code     VARCHAR(50)     NOT NULL,
+    datasource_name     VARCHAR(100)    NOT NULL,
+    datasource_type     SMALLINT        NOT NULL,
+    datasource_config   JSONB           NOT NULL,
+    cache_enabled       BOOLEAN         DEFAULT TRUE,
+    cache_expire        INT             DEFAULT 300,
+    status              SMALLINT        DEFAULT 1,
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_datasource_config IS '动态数据源配置表 - 实现下拉框数据来源动态配置';
 COMMENT ON COLUMN sys_datasource_config.id IS '主键 ID';
@@ -642,24 +706,24 @@ COMMENT ON COLUMN sys_datasource_config.is_deleted IS '逻辑删除';
 
 -- 打印模板配置表
 CREATE TABLE sys_print_template (
-                                    id                  BIGINT          NOT NULL,
-                                    tenant_id           BIGINT          NOT NULL,
-                                    template_code       VARCHAR(50)     NOT NULL,
-                                    template_name       VARCHAR(100)    NOT NULL,
-                                    biz_type            VARCHAR(50)     NOT NULL,
-                                    template_type       SMALLINT        NOT NULL,
-                                    template_content    TEXT            NOT NULL,
-                                    template_config     JSONB           DEFAULT '{}'::jsonb,
-                                    paper_size          VARCHAR(20)     DEFAULT 'A4',
-                                    orientation         VARCHAR(10)     DEFAULT 'portrait',
-                                    status              SMALLINT        DEFAULT 1,
-                                    is_default          BOOLEAN         DEFAULT FALSE,
-                                    version             INT             DEFAULT 1,
-                                    create_by           BIGINT          DEFAULT 0,
-                                    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                    is_deleted          SMALLINT        DEFAULT 0,
-                                    PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    template_code       VARCHAR(50)     NOT NULL,
+    template_name       VARCHAR(100)    NOT NULL,
+    biz_type            VARCHAR(50)     NOT NULL,
+    template_type       SMALLINT        NOT NULL,
+    template_content    TEXT            NOT NULL,
+    template_config     JSONB           DEFAULT '{}'::jsonb,
+    paper_size          VARCHAR(20)     DEFAULT 'A4',
+    orientation         VARCHAR(10)     DEFAULT 'portrait',
+    status              SMALLINT        DEFAULT 1,
+    is_default          BOOLEAN         DEFAULT FALSE,
+    version             INT             DEFAULT 1,
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_print_template IS '打印模板配置表 - 实现不同行业打印/PDF 模板动态配置';
 COMMENT ON COLUMN sys_print_template.id IS '主键 ID';
@@ -686,19 +750,19 @@ COMMENT ON COLUMN sys_print_template.is_deleted IS '逻辑删除';
 
 -- 菜单表
 CREATE TABLE sys_menu (
-                          id                  BIGINT          NOT NULL,
-                          menu_name           VARCHAR(50)     NOT NULL,
-                          menu_type           SMALLINT        DEFAULT 1,
-                          parent_id           BIGINT          DEFAULT 0,
-                          path                VARCHAR(200)    DEFAULT '',
-                          component           VARCHAR(200)    DEFAULT '',
-                          perm_code           VARCHAR(100)    DEFAULT '',
-                          visible             BOOLEAN         DEFAULT TRUE,
-                          status              SMALLINT        DEFAULT 1,
-                          sort_order          INT             DEFAULT 0,
-                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          is_deleted          SMALLINT        DEFAULT 0,
-                          PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    menu_name           VARCHAR(50)     NOT NULL,
+    menu_type           SMALLINT        DEFAULT 1,
+    parent_id           BIGINT          DEFAULT 0,
+    path                VARCHAR(200)    DEFAULT '',
+    component           VARCHAR(200)    DEFAULT '',
+    perm_code           VARCHAR(100)    DEFAULT '',
+    visible             BOOLEAN         DEFAULT TRUE,
+    status              SMALLINT        DEFAULT 1,
+    sort_order          INT             DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_menu IS '菜单表 - 前端导航与按钮权限映射';
 COMMENT ON COLUMN sys_menu.id IS '主键 ID';
@@ -716,15 +780,15 @@ COMMENT ON COLUMN sys_menu.is_deleted IS '逻辑删除';
 
 -- 字典类型表
 CREATE TABLE sys_dict (
-                          id                  BIGINT          NOT NULL,
-                          dict_name           VARCHAR(100)    NOT NULL,
-                          dict_type           VARCHAR(100)    NOT NULL,
-                          tenant_id           BIGINT          DEFAULT 0,
-                          status              SMALLINT        DEFAULT 1,
-                          remark              VARCHAR(500)    DEFAULT '',
-                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          is_deleted          SMALLINT        DEFAULT 0,
-                          PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    dict_name           VARCHAR(100)    NOT NULL,
+    dict_type           VARCHAR(100)    NOT NULL,
+    tenant_id           BIGINT          DEFAULT 0,
+    status              SMALLINT        DEFAULT 1,
+    remark              VARCHAR(500)    DEFAULT '',
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_dict IS '字典类型表 - 定义系统常量类型';
 COMMENT ON COLUMN sys_dict.id IS '主键 ID';
@@ -738,15 +802,15 @@ COMMENT ON COLUMN sys_dict.is_deleted IS '逻辑删除';
 
 -- 字典数据表
 CREATE TABLE sys_dict_item (
-                               id                  BIGINT          NOT NULL,
-                               dict_id             BIGINT          NOT NULL,
-                               dict_label          VARCHAR(100)    NOT NULL,
-                               dict_value          VARCHAR(100)    NOT NULL,
-                               sort_order          INT             DEFAULT 0,
-                               status              SMALLINT        DEFAULT 1,
-                               create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                               is_deleted          SMALLINT        DEFAULT 0,
-                               PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    dict_id             BIGINT          NOT NULL,
+    dict_label          VARCHAR(100)    NOT NULL,
+    dict_value          VARCHAR(100)    NOT NULL,
+    sort_order          INT             DEFAULT 0,
+    status              SMALLINT        DEFAULT 1,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_dict_item IS '字典数据表 - 字典具体键值对';
 COMMENT ON COLUMN sys_dict_item.id IS '主键 ID';
@@ -760,44 +824,54 @@ COMMENT ON COLUMN sys_dict_item.is_deleted IS '逻辑删除';
 
 -- 文件资源表
 CREATE TABLE sys_file (
-                          id                  BIGINT          NOT NULL,
-                          tenant_id           BIGINT          NOT NULL,
-                          file_name           VARCHAR(255)    NOT NULL,
-                          file_path           VARCHAR(500)    NOT NULL,
-                          file_url            VARCHAR(500)    NOT NULL,
-                          file_size           BIGINT          DEFAULT 0,
-                          file_type           VARCHAR(50)     DEFAULT '',
-                          upload_by           BIGINT          DEFAULT 0,
-                          upload_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                          is_deleted          SMALLINT        DEFAULT 0,
-                          PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    tenant_name         VARCHAR(150)    NOT NULL,
+    file_name           VARCHAR(255)    NOT NULL,
+    original_name       VARCHAR(255)    NOT NULL,
+    file_path           VARCHAR(500)    NOT NULL,
+    file_url            VARCHAR(500)    NOT NULL,
+    file_size           BIGINT          NOT NULL,
+    file_type           VARCHAR(50)     NOT NULL,
+    mime_type           VARCHAR(50)     NOT NULL,
+    biz_type            VARCHAR(50)     NOT NULL,
+    upload_by           BIGINT          NOT NULL,
+    upload_name         VARCHAR(50)     NOT NULL,
+    upload_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_file IS '文件资源表 - 存储上传的文件信息';
 COMMENT ON COLUMN sys_file.id IS '主键 ID';
 COMMENT ON COLUMN sys_file.tenant_id IS '所属租户 ID';
+COMMENT ON COLUMN sys_file.tenant_name IS '所属租户名称';
 COMMENT ON COLUMN sys_file.file_name IS '文件名称';
+COMMENT ON COLUMN sys_file.original_name IS '原始文件名';
 COMMENT ON COLUMN sys_file.file_path IS '文件存储路径';
 COMMENT ON COLUMN sys_file.file_url IS '文件访问 URL';
 COMMENT ON COLUMN sys_file.file_size IS '文件大小 (字节)';
 COMMENT ON COLUMN sys_file.file_type IS '文件类型';
-COMMENT ON COLUMN sys_file.upload_by IS '上传人 ID';
+COMMENT ON COLUMN sys_file.mime_type IS 'MIME类型';
+COMMENT ON COLUMN sys_file.biz_type IS '业务类型分类';
+COMMENT ON COLUMN sys_file.upload_by IS '上传人ID';
+COMMENT ON COLUMN sys_file.upload_name IS '上传人名称';
 COMMENT ON COLUMN sys_file.upload_time IS '上传时间';
 COMMENT ON COLUMN sys_file.is_deleted IS '逻辑删除';
 
 -- 通知公告表
 CREATE TABLE sys_notice (
-                            id                  BIGINT          NOT NULL,
-                            notice_title        VARCHAR(100)    NOT NULL,
-                            notice_type         SMALLINT        DEFAULT 1,
-                            notice_content      TEXT            DEFAULT NULL,
-                            status              SMALLINT        DEFAULT 1,
-                            target_type         SMALLINT        DEFAULT 1,
-                            target_ids          VARCHAR(1000)   DEFAULT '',
-                            tenant_id           BIGINT          DEFAULT 0,
-                            create_by           BIGINT          DEFAULT 0,
-                            create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                            is_deleted          SMALLINT        DEFAULT 0,
-                            PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    notice_title        VARCHAR(100)    NOT NULL,
+    notice_type         SMALLINT        DEFAULT 1,
+    notice_content      TEXT            DEFAULT NULL,
+    status              SMALLINT        DEFAULT 1,
+    target_type         SMALLINT        DEFAULT 1,
+    target_ids          VARCHAR(1000)   DEFAULT '',
+    tenant_id           BIGINT          DEFAULT 0,
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_notice IS '通知公告表 - 系统公告与站内信';
 COMMENT ON COLUMN sys_notice.id IS '主键 ID';
@@ -814,14 +888,14 @@ COMMENT ON COLUMN sys_notice.is_deleted IS '逻辑删除';
 
 -- 用户公告阅读状态表
 CREATE TABLE sys_notice_user_rel (
-                                     id                  BIGINT          NOT NULL,
-                                     notice_id           BIGINT          NOT NULL,
-                                     user_id             BIGINT          NOT NULL,
-                                     tenant_id           BIGINT          NOT NULL,
-                                     read_status         SMALLINT        DEFAULT 0,
-                                     read_time           TIMESTAMP       DEFAULT NULL,
-                                     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                     PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    notice_id           BIGINT          NOT NULL,
+    user_id             BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    read_status         SMALLINT        DEFAULT 0,
+    read_time           TIMESTAMP       DEFAULT NULL,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_notice_user_rel IS '用户公告阅读状态表 - 记录用户公告已读/未读状态';
 COMMENT ON COLUMN sys_notice_user_rel.id IS '主键 ID';
@@ -834,24 +908,24 @@ COMMENT ON COLUMN sys_notice_user_rel.create_time IS '创建时间';
 
 -- 操作日志表
 CREATE TABLE sys_oper_log (
-                              id                  BIGINT          NOT NULL,
-                              tenant_id           BIGINT          DEFAULT 0,
-                              module              VARCHAR(50)     DEFAULT '',
-                              business_type       SMALLINT        DEFAULT 0,
-                              method              VARCHAR(100)    DEFAULT '',
-                              request_method      VARCHAR(10)     DEFAULT '',
-                              operator_name       VARCHAR(50)     DEFAULT '',
-                              operator_id         BIGINT          DEFAULT 0,
-                              dept_name           VARCHAR(50)     DEFAULT '',
-                              oper_url            VARCHAR(255)    DEFAULT '',
-                              oper_ip             VARCHAR(128)    DEFAULT '',
-                              oper_location       VARCHAR(255)    DEFAULT '',
-                              oper_param          VARCHAR(2000)   DEFAULT '',
-                              json_result         VARCHAR(2000)   DEFAULT '',
-                              status              SMALLINT        DEFAULT 1,
-                              error_msg           VARCHAR(2000)   DEFAULT '',
-                              oper_time           TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                              PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          DEFAULT 0,
+    module              VARCHAR(50)     DEFAULT '',
+    business_type       SMALLINT        DEFAULT 0,
+    method              VARCHAR(100)    DEFAULT '',
+    request_method      VARCHAR(10)     DEFAULT '',
+    operator_name       VARCHAR(50)     DEFAULT '',
+    operator_id         BIGINT          DEFAULT 0,
+    dept_name           VARCHAR(50)     DEFAULT '',
+    oper_url            VARCHAR(255)    DEFAULT '',
+    oper_ip             VARCHAR(128)    DEFAULT '',
+    oper_location       VARCHAR(255)    DEFAULT '',
+    oper_param          VARCHAR(2000)   DEFAULT '',
+    json_result         VARCHAR(2000)   DEFAULT '',
+    status              SMALLINT        DEFAULT 1,
+    error_msg           VARCHAR(2000)   DEFAULT '',
+    oper_time           TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_oper_log IS '操作日志表 - 审计用户操作行为';
 COMMENT ON COLUMN sys_oper_log.id IS '主键 ID';
@@ -874,18 +948,18 @@ COMMENT ON COLUMN sys_oper_log.oper_time IS '操作时间';
 
 -- 登录日志表
 CREATE TABLE sys_login_log (
-                               id                  BIGINT          NOT NULL,
-                               user_id             BIGINT          DEFAULT 0,
-                               username            VARCHAR(50)     DEFAULT '',
-                               tenant_id           BIGINT          DEFAULT 0,
-                               ip_address          VARCHAR(128)    DEFAULT '',
-                               login_location      VARCHAR(255)    DEFAULT '',
-                               browser             VARCHAR(50)     DEFAULT '',
-                               os                  VARCHAR(50)     DEFAULT '',
-                               status              SMALLINT        DEFAULT 1,
-                               msg                 VARCHAR(255)    DEFAULT '',
-                               login_time          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                               PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    user_id             BIGINT          DEFAULT 0,
+    username            VARCHAR(50)     DEFAULT '',
+    tenant_id           BIGINT          DEFAULT 0,
+    ip_address          VARCHAR(128)    DEFAULT '',
+    login_location      VARCHAR(255)    DEFAULT '',
+    browser             VARCHAR(50)     DEFAULT '',
+    os                  VARCHAR(50)     DEFAULT '',
+    status              SMALLINT        DEFAULT 1,
+    msg                 VARCHAR(255)    DEFAULT '',
+    login_time          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_login_log IS '登录日志表 - 记录用户登录信息';
 COMMENT ON COLUMN sys_login_log.id IS '主键 ID';
@@ -902,16 +976,16 @@ COMMENT ON COLUMN sys_login_log.login_time IS '登录时间';
 
 -- 数据变更审计表
 CREATE TABLE sys_data_audit_log (
-                                    id                  BIGINT          NOT NULL,
-                                    tenant_id           BIGINT          NOT NULL,
-                                    table_name          VARCHAR(50)     NOT NULL,
-                                    record_id           BIGINT          NOT NULL,
-                                    operator_id         BIGINT          NOT NULL,
-                                    operate_type        SMALLINT        DEFAULT 1,
-                                    old_value           JSONB           DEFAULT '{}'::jsonb,
-                                    new_value           JSONB           DEFAULT '{}'::jsonb,
-                                    operate_time        TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                    PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    table_name          VARCHAR(50)     NOT NULL,
+    record_id           BIGINT          NOT NULL,
+    operator_id         BIGINT          NOT NULL,
+    operate_type        SMALLINT        DEFAULT 1,
+    old_value           JSONB           DEFAULT '{}'::jsonb,
+    new_value           JSONB           DEFAULT '{}'::jsonb,
+    operate_time        TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_data_audit_log IS '数据变更审计表 - 记录数据字段变更详情';
 COMMENT ON COLUMN sys_data_audit_log.id IS '主键 ID';
@@ -930,24 +1004,24 @@ COMMENT ON COLUMN sys_data_audit_log.operate_time IS '操作时间';
 
 -- 消息模板表
 CREATE TABLE sys_message_template (
-                                      id                  BIGINT          NOT NULL,
-                                      template_code       VARCHAR(100)    NOT NULL,
-                                      template_name       VARCHAR(100)    NOT NULL,
-                                      tenant_id           BIGINT          DEFAULT 0,
-                                      biz_type            VARCHAR(50)     DEFAULT '',
-                                      message_type        SMALLINT        DEFAULT 1,
-                                      template_title      VARCHAR(200)    DEFAULT '',
-                                      template_content    TEXT            NOT NULL,
-                                      template_example    JSONB           DEFAULT '{}'::jsonb,
-                                      variables           JSONB           DEFAULT '[]'::jsonb,
-                                      status              SMALLINT        DEFAULT 1,
-                                      version             INT             DEFAULT 1,
-                                      language            VARCHAR(20)     DEFAULT 'zh-CN',
-                                      create_by           BIGINT          DEFAULT 0,
-                                      create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                      update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                      is_deleted          SMALLINT        DEFAULT 0,
-                                      PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    template_code       VARCHAR(100)    NOT NULL,
+    template_name       VARCHAR(100)    NOT NULL,
+    tenant_id           BIGINT          DEFAULT 0,
+    biz_type            VARCHAR(50)     DEFAULT '',
+    message_type        SMALLINT        DEFAULT 1,
+    template_title      VARCHAR(200)    DEFAULT '',
+    template_content    TEXT            NOT NULL,
+    template_example    JSONB           DEFAULT '{}'::jsonb,
+    variables           JSONB           DEFAULT '[]'::jsonb,
+    status              SMALLINT        DEFAULT 1,
+    version             INT             DEFAULT 1,
+    language            VARCHAR(20)     DEFAULT 'zh-CN',
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_message_template IS '消息模板表 - 定义各类消息的内容模板';
 COMMENT ON COLUMN sys_message_template.id IS '主键 ID';
@@ -996,22 +1070,22 @@ COMMENT ON COLUMN sys_message_template.is_deleted IS '逻辑删除';
 
 -- 站内信收件箱表
 CREATE TABLE sys_inbox_message (
-                                   id                  BIGINT          NOT NULL,
-                                   user_id             BIGINT          NOT NULL,
-                                   tenant_id           BIGINT          NOT NULL,
-                                   message_type        SMALLINT        DEFAULT 1,
-                                   title               VARCHAR(200)    NOT NULL,
-                                   content             TEXT            NOT NULL,
-                                   priority            SMALLINT        DEFAULT 1,
-                                   is_read             BOOLEAN         DEFAULT FALSE,
-                                   read_time           TIMESTAMP       DEFAULT NULL,
-                                   is_archived         BOOLEAN         DEFAULT FALSE,
-                                   archived_time       TIMESTAMP       DEFAULT NULL,
-                                   expire_time         TIMESTAMP       DEFAULT NULL,
-                                   action_url          VARCHAR(500)    DEFAULT '',
-                                   action_text         VARCHAR(50)     DEFAULT '',
-                                   create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                   PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    user_id             BIGINT          NOT NULL,
+    tenant_id           BIGINT          NOT NULL,
+    message_type        SMALLINT        DEFAULT 1,
+    title               VARCHAR(200)    NOT NULL,
+    content             TEXT            NOT NULL,
+    priority            SMALLINT        DEFAULT 1,
+    is_read             BOOLEAN         DEFAULT FALSE,
+    read_time           TIMESTAMP       DEFAULT NULL,
+    is_archived         BOOLEAN         DEFAULT FALSE,
+    archived_time       TIMESTAMP       DEFAULT NULL,
+    expire_time         TIMESTAMP       DEFAULT NULL,
+    action_url          VARCHAR(500)    DEFAULT '',
+    action_text         VARCHAR(50)     DEFAULT '',
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_inbox_message IS '站内信收件箱表 - 用户个人消息 inbox';
 COMMENT ON COLUMN sys_inbox_message.id IS '主键 ID';
@@ -1032,24 +1106,24 @@ COMMENT ON COLUMN sys_inbox_message.create_time IS '创建时间';
 
 -- 定时消息任务表
 CREATE TABLE sys_message_schedule (
-                                      id                  BIGINT          NOT NULL,
-                                      task_name           VARCHAR(100)    NOT NULL,
-                                      tenant_id           BIGINT          DEFAULT 0,
-                                      template_id         BIGINT          NOT NULL,
-                                      target_type         SMALLINT        NOT NULL,
-                                      target_ids          VARCHAR(1000)   DEFAULT '',
-                                      trigger_type        SMALLINT        DEFAULT 1,
-                                      trigger_condition   JSONB           DEFAULT '{}'::jsonb,
-                                      execute_time        TIMESTAMP       NOT NULL,
-                                      repeat_rule         JSONB           DEFAULT '{}'::jsonb,
-                                      status              SMALLINT        DEFAULT 0,
-                                      executed_count      INT             DEFAULT 0,
-                                      last_execute_time   TIMESTAMP       DEFAULT NULL,
-                                      create_by           BIGINT          DEFAULT 0,
-                                      create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                      update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
-                                      is_deleted          SMALLINT        DEFAULT 0,
-                                      PRIMARY KEY (id)
+    id                  BIGINT          NOT NULL,
+    task_name           VARCHAR(100)    NOT NULL,
+    tenant_id           BIGINT          DEFAULT 0,
+    template_id         BIGINT          NOT NULL,
+    target_type         SMALLINT        NOT NULL,
+    target_ids          VARCHAR(1000)   DEFAULT '',
+    trigger_type        SMALLINT        DEFAULT 1,
+    trigger_condition   JSONB           DEFAULT '{}'::jsonb,
+    execute_time        TIMESTAMP       NOT NULL,
+    repeat_rule         JSONB           DEFAULT '{}'::jsonb,
+    status              SMALLINT        DEFAULT 0,
+    executed_count      INT             DEFAULT 0,
+    last_execute_time   TIMESTAMP       DEFAULT NULL,
+    create_by           BIGINT          DEFAULT 0,
+    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+    is_deleted          SMALLINT        DEFAULT 0,
+    PRIMARY KEY (id)
 );
 COMMENT ON TABLE sys_message_schedule IS '定时消息任务表 - 预约发送或周期性发送的消息';
 COMMENT ON COLUMN sys_message_schedule.id IS '主键 ID';
@@ -1070,240 +1144,17 @@ COMMENT ON COLUMN sys_message_schedule.create_time IS '创建时间';
 COMMENT ON COLUMN sys_message_schedule.update_time IS '更新时间';
 COMMENT ON COLUMN sys_message_schedule.is_deleted IS '逻辑删除';
 
--- =============================================================================
--- 8. 数据分析报表 (Analytics & Reporting) - 后续扩展
--- =============================================================================
+-- 租户表增加冗余字段
+ALTER TABLE sys_tenant
+ADD COLUMN parent_name VARCHAR(100) DEFAULT NULL,
+ADD COLUMN package_name VARCHAR(100) DEFAULT NULL,
+ADD COLUMN create_by_name VARCHAR(100) DEFAULT NULL,
+ADD COLUMN update_by_name VARCHAR(100) DEFAULT NULL;
 
--- 报表定义表
--- CREATE TABLE sys_report_definition (
---     id                  BIGINT          NOT NULL,
---     report_code         VARCHAR(100)    NOT NULL,
---     report_name         VARCHAR(100)    NOT NULL,
---     tenant_id           BIGINT          DEFAULT 0,
---     biz_domain          VARCHAR(50)     NOT NULL,
---     report_type         SMALLINT        DEFAULT 1,
---     data_source_type    SMALLINT        DEFAULT 1,
---     data_source_config  JSONB           NOT NULL,
---     dimensions          JSONB           DEFAULT '[]'::jsonb,
---     metrics             JSONB           DEFAULT '[]'::jsonb,
---     filters             JSONB           DEFAULT '[]'::jsonb,
---     chart_config        JSONB           DEFAULT '{}'::jsonb,
---     refresh_type        SMALLINT        DEFAULT 1,
---     refresh_interval    INT             DEFAULT 3600,
---     cache_expire        INT             DEFAULT 1800,
---     status              SMALLINT        DEFAULT 1,
---     sort_order          INT             DEFAULT 0,
---     is_public           BOOLEAN         DEFAULT FALSE,
---     visible_roles       JSONB           DEFAULT '[]'::jsonb,
---     create_by           BIGINT          DEFAULT 0,
---     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     is_deleted          SMALLINT        DEFAULT 0,
---     PRIMARY KEY (id)
--- );
--- COMMENT ON TABLE sys_report_definition IS '报表定义表 - 定义报表的结构、数据源、维度指标';
--- COMMENT ON COLUMN sys_report_definition.id IS '主键 ID';
--- COMMENT ON COLUMN sys_report_definition.report_code IS '报表编码 (如：revenue_daily, tenant_growth)';
--- COMMENT ON COLUMN sys_report_definition.report_name IS '报表名称';
--- COMMENT ON COLUMN sys_report_definition.tenant_id IS '所属租户 ID (0 为系统报表)';
--- COMMENT ON COLUMN sys_report_definition.biz_domain IS '业务域 (如：billing, user, resource)';
--- COMMENT ON COLUMN sys_report_definition.report_type IS '报表类型 (1-列表 2-图表 3-透视表 4-仪表盘)';
--- COMMENT ON COLUMN sys_report_definition.data_source_type IS '数据源类型 (1-SQL 查询 2-API 接口 3-聚合表)';
--- COMMENT ON COLUMN sys_report_definition.data_source_config IS '数据源配置 (JSONB，SQL/API 定义)';
--- COMMENT ON COLUMN sys_report_definition.dimensions IS '维度定义 (JSONB，如时间/地区/套餐类型)';
--- COMMENT ON COLUMN sys_report_definition.metrics IS '指标定义 (JSONB，如金额/数量/增长率)';
--- COMMENT ON COLUMN sys_report_definition.filters IS '筛选条件 (JSONB，默认过滤条件)';
--- COMMENT ON COLUMN sys_report_definition.chart_config IS '图表配置 (JSONB，ECharts/AntV 配置)';
--- COMMENT ON COLUMN sys_report_definition.refresh_type IS '刷新类型 (1-实时 2-定时 3-手动)';
--- COMMENT ON COLUMN sys_report_definition.refresh_interval IS '刷新间隔 (秒)';
--- COMMENT ON COLUMN sys_report_definition.cache_expire IS '缓存过期时间 (秒)';
--- COMMENT ON COLUMN sys_report_definition.status IS '状态 (1-启用 0-停用)';
--- COMMENT ON COLUMN sys_report_definition.sort_order IS '排序';
--- COMMENT ON COLUMN sys_report_definition.is_public IS '是否公开';
--- COMMENT ON COLUMN sys_report_definition.visible_roles IS '可见角色 (JSONB，角色 ID 列表)';
--- COMMENT ON COLUMN sys_report_definition.create_by IS '创建人 ID';
--- COMMENT ON COLUMN sys_report_definition.create_time IS '创建时间';
--- COMMENT ON COLUMN sys_report_definition.update_time IS '更新时间';
--- COMMENT ON COLUMN sys_report_definition.is_deleted IS '逻辑删除';
---
--- -- 报表实例数据表
--- CREATE TABLE sys_report_instance (
---     id                  BIGINT          NOT NULL,
---     report_id           BIGINT          NOT NULL,
---     tenant_id           BIGINT          NOT NULL,
---     snapshot_time       TIMESTAMP       NOT NULL,
---     data_period_start   TIMESTAMP       DEFAULT NULL,
---     data_period_end     TIMESTAMP       DEFAULT NULL,
---     row_data            JSONB           NOT NULL,
---     summary_data        JSONB           DEFAULT '{}'::jsonb,
---     total_rows          INT             DEFAULT 0,
---     total_pages         INT             DEFAULT 0,
---     generate_duration   INT             DEFAULT 0,
---     cache_expire_time   TIMESTAMP       DEFAULT NULL,
---     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     PRIMARY KEY (id)
--- );
--- COMMENT ON TABLE sys_report_instance IS '报表实例数据表 - 存储生成的报表数据快照';
--- COMMENT ON COLUMN sys_report_instance.id IS '主键 ID';
--- COMMENT ON COLUMN sys_report_instance.report_id IS '关联报表定义 ID';
--- COMMENT ON COLUMN sys_report_instance.tenant_id IS '租户 ID';
--- COMMENT ON COLUMN sys_report_instance.snapshot_time IS '数据快照时间';
--- COMMENT ON COLUMN sys_report_instance.data_period_start IS '数据起始时间';
--- COMMENT ON COLUMN sys_report_instance.data_period_end IS '数据结束时间';
--- COMMENT ON COLUMN sys_report_instance.row_data IS '明细数据 (JSONB 数组)';
--- COMMENT ON COLUMN sys_report_instance.summary_data IS '汇总数据 (JSONB，如总计/平均值)';
--- COMMENT ON COLUMN sys_report_instance.total_rows IS '总行数';
--- COMMENT ON COLUMN sys_report_instance.total_pages IS '总页数';
--- COMMENT ON COLUMN sys_report_instance.generate_duration IS '生成耗时 (毫秒)';
--- COMMENT ON COLUMN sys_report_instance.cache_expire_time IS '缓存过期时间';
--- COMMENT ON COLUMN sys_report_instance.create_time IS '创建时间';
---
--- -- 仪表板配置表（可删除）
--- CREATE TABLE sys_dashboard (
---     id                  BIGINT          NOT NULL,
---     dashboard_code      VARCHAR(100)    NOT NULL,
---     dashboard_name      VARCHAR(100)    NOT NULL,
---     tenant_id           BIGINT          DEFAULT 0,
---     description         VARCHAR(500)    DEFAULT '',
---     layout_config       JSONB           NOT NULL,
---     widgets             JSONB           NOT NULL,
---     refresh_interval    INT             DEFAULT 60,
---     theme               VARCHAR(50)     DEFAULT 'light',
---     status              SMALLINT        DEFAULT 1,
---     is_public           BOOLEAN         DEFAULT FALSE,
---     visible_roles       JSONB           DEFAULT '[]'::jsonb,
---     create_by           BIGINT          DEFAULT 0,
---     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     is_deleted          SMALLINT        DEFAULT 0,
---     PRIMARY KEY (id)
--- );
--- COMMENT ON TABLE sys_dashboard IS '仪表板配置表 - 定义数据看板的布局和组件';
--- COMMENT ON COLUMN sys_dashboard.id IS '主键 ID';
--- COMMENT ON COLUMN sys_dashboard.dashboard_code IS '仪表板编码';
--- COMMENT ON COLUMN sys_dashboard.dashboard_name IS '仪表板名称';
--- COMMENT ON COLUMN sys_dashboard.tenant_id IS '所属租户 ID (0 为系统仪表板)';
--- COMMENT ON COLUMN sys_dashboard.description IS '描述';
--- COMMENT ON COLUMN sys_dashboard.layout_config IS '布局配置 (JSONB，行列数/栅格系统)';
--- COMMENT ON COLUMN sys_dashboard.widgets IS '组件列表 (JSONB，每个组件的位置/大小/关联报表)';
--- COMMENT ON COLUMN sys_dashboard.refresh_interval IS '刷新间隔 (秒)';
--- COMMENT ON COLUMN sys_dashboard.theme IS '主题 (light/dark)';
--- COMMENT ON COLUMN sys_dashboard.status IS '状态 (1-启用 0-停用)';
--- COMMENT ON COLUMN sys_dashboard.is_public IS '是否公开';
--- COMMENT ON COLUMN sys_dashboard.visible_roles IS '可见角色';
--- COMMENT ON COLUMN sys_dashboard.create_by IS '创建人 ID';
--- COMMENT ON COLUMN sys_dashboard.create_time IS '创建时间';
--- COMMENT ON COLUMN sys_dashboard.update_time IS '更新时间';
--- COMMENT ON COLUMN sys_dashboard.is_deleted IS '逻辑删除';
---
--- -- 数据导出任务表（可删除）
--- CREATE TABLE sys_export_task (
---     id                  BIGINT          NOT NULL,
---     task_no             VARCHAR(64)     NOT NULL,
---     tenant_id           BIGINT          NOT NULL,
---     export_type         SMALLINT        DEFAULT 1,
---     source_id           BIGINT          DEFAULT 0,
---     file_name           VARCHAR(255)    NOT NULL,
---     file_format         SMALLINT        DEFAULT 1,
---     file_size           BIGINT          DEFAULT 0,
---     row_count           INT             DEFAULT 0,
---     export_status       SMALLINT        DEFAULT 0,
---     progress            INT             DEFAULT 0,
---     error_msg           VARCHAR(500)    DEFAULT '',
---     download_url        VARCHAR(500)    DEFAULT '',
---     download_count      INT             DEFAULT 0,
---     expire_time         TIMESTAMP       DEFAULT NULL,
---     create_by           BIGINT          DEFAULT 0,
---     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     finish_time         TIMESTAMP       DEFAULT NULL,
---     is_deleted          SMALLINT        DEFAULT 0,
---     PRIMARY KEY (id)
--- );
--- COMMENT ON TABLE sys_export_task IS '数据导出任务表 - 异步导出 Excel/CSV 文件';
--- COMMENT ON COLUMN sys_export_task.id IS '主键 ID';
--- COMMENT ON COLUMN sys_export_task.task_no IS '任务编号';
--- COMMENT ON COLUMN sys_export_task.tenant_id IS '租户 ID';
--- COMMENT ON COLUMN sys_export_task.export_type IS '导出类型 (1-报表数据 2-原始数据 3-自定义查询)';
--- COMMENT ON COLUMN sys_export_task.source_id IS '来源 ID (报表 ID/其他业务 ID)';
--- COMMENT ON COLUMN sys_export_task.file_name IS '文件名';
--- COMMENT ON COLUMN sys_export_task.file_format IS '文件格式 (1-Excel 2-Csv 3-Pdf)';
--- COMMENT ON COLUMN sys_export_task.file_size IS '文件大小 (字节)';
--- COMMENT ON COLUMN sys_export_task.row_count IS '数据行数';
--- COMMENT ON COLUMN sys_export_task.export_status IS '导出状态 (0-待处理 1-处理中 2-完成 3-失败)';
--- COMMENT ON COLUMN sys_export_task.progress IS '进度百分比 (0-100)';
--- COMMENT ON COLUMN sys_export_task.error_msg IS '错误信息';
--- COMMENT ON COLUMN sys_export_task.download_url IS '下载 URL';
--- COMMENT ON COLUMN sys_export_task.download_count IS '下载次数';
--- COMMENT ON COLUMN sys_export_task.expire_time IS '过期时间 (7 天后自动清理)';
--- COMMENT ON COLUMN sys_export_task.create_by IS '创建人 ID';
--- COMMENT ON COLUMN sys_export_task.create_time IS '创建时间';
--- COMMENT ON COLUMN sys_export_task.finish_time IS '完成时间';
--- COMMENT ON COLUMN sys_export_task.is_deleted IS '逻辑删除';
---
--- -- 数据统计聚合表 (按天汇总)
--- CREATE TABLE sys_stat_daily (
---     id                  BIGINT          NOT NULL,
---     tenant_id           BIGINT          NOT NULL,
---     stat_date           DATE            NOT NULL,
---     stat_type           VARCHAR(50)     NOT NULL,
---     stat_dimension      VARCHAR(100)    DEFAULT '',
---     dimension_value     VARCHAR(500)    DEFAULT '',
---     metric_code         VARCHAR(50)     NOT NULL,
---     metric_value        DECIMAL(20,4)   DEFAULT 0,
---     metric_delta        DECIMAL(20,4)   DEFAULT 0,
---     compare_value       DECIMAL(20,4)   DEFAULT 0,
---     compare_ratio       DECIMAL(10,4)   DEFAULT 0,
---     ext_data            JSONB           DEFAULT '{}'::jsonb,
---     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     PRIMARY KEY (id)
--- );
--- COMMENT ON TABLE sys_stat_daily IS '数据统计聚合表 - 按天汇总的关键指标';
--- COMMENT ON COLUMN sys_stat_daily.id IS '主键 ID';
--- COMMENT ON COLUMN sys_stat_daily.tenant_id IS '租户 ID';
--- COMMENT ON COLUMN sys_stat_daily.stat_date IS '统计日期';
--- COMMENT ON COLUMN sys_stat_daily.stat_type IS '统计类型 (如：revenue, user, order, resource)';
--- COMMENT ON COLUMN sys_stat_daily.stat_dimension IS '统计维度 (如：package_type, industry)';
--- COMMENT ON COLUMN sys_stat_daily.dimension_value IS '维度值';
--- COMMENT ON COLUMN sys_stat_daily.metric_code IS '指标编码 (如：total_amount, new_count)';
--- COMMENT ON COLUMN sys_stat_daily.metric_value IS '指标值';
--- COMMENT ON COLUMN sys_stat_daily.metric_delta IS '较昨日增量';
--- COMMENT ON COLUMN sys_stat_daily.compare_value IS '对比值 (上周同期/上月同期)';
--- COMMENT ON COLUMN sys_stat_daily.compare_ratio IS '对比增长率';
--- COMMENT ON COLUMN sys_stat_daily.ext_data IS '扩展数据 (JSONB)';
--- COMMENT ON COLUMN sys_stat_daily.create_time IS '创建时间';
--- COMMENT ON COLUMN sys_stat_daily.update_time IS '更新时间';
---
--- -- 数据统计聚合表 (按月汇总)
--- CREATE TABLE sys_stat_monthly (
---     id                  BIGINT          NOT NULL,
---     tenant_id           BIGINT          NOT NULL,
---     stat_month          DATE            NOT NULL,
---     stat_type           VARCHAR(50)     NOT NULL,
---     stat_dimension      VARCHAR(100)    DEFAULT '',
---     dimension_value     VARCHAR(500)    DEFAULT '',
---     metric_code         VARCHAR(50)     NOT NULL,
---     metric_value        DECIMAL(20,4)   DEFAULT 0,
---     metric_delta        DECIMAL(20,4)   DEFAULT 0,
---     compare_value       DECIMAL(20,4)   DEFAULT 0,
---     compare_ratio       DECIMAL(10,4)   DEFAULT 0,
---     ext_data            JSONB           DEFAULT '{}'::jsonb,
---     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
---     PRIMARY KEY (id)
--- );
--- COMMENT ON TABLE sys_stat_monthly IS '数据统计聚合表 - 按月汇总的关键指标';
--- COMMENT ON COLUMN sys_stat_monthly.id IS '主键 ID';
--- COMMENT ON COLUMN sys_stat_monthly.tenant_id IS '租户 ID';
--- COMMENT ON COLUMN sys_stat_monthly.stat_month IS '统计月份 (月初日期)';
--- COMMENT ON COLUMN sys_stat_monthly.stat_type IS '统计类型';
--- COMMENT ON COLUMN sys_stat_monthly.stat_dimension IS '统计维度';
--- COMMENT ON COLUMN sys_stat_monthly.dimension_value IS '维度值';
--- COMMENT ON COLUMN sys_stat_monthly.metric_code IS '指标编码';
--- COMMENT ON COLUMN sys_stat_monthly.metric_value IS '指标值';
--- COMMENT ON COLUMN sys_stat_monthly.metric_delta IS '较上月增量';
--- COMMENT ON COLUMN sys_stat_monthly.compare_value IS '对比值 (去年同期)';
--- COMMENT ON COLUMN sys_stat_monthly.compare_ratio IS '对比增长率';
--- COMMENT ON COLUMN sys_stat_monthly.ext_data IS '扩展数据';
--- COMMENT ON COLUMN sys_stat_monthly.create_time IS '创建时间';
--- COMMENT ON COLUMN sys_stat_monthly.update_time IS '更新时间';
+COMMENT ON COLUMN sys_tenant.parent_name IS '父租户名称(冗余字段,用于查询优化,新增、更新、删除操作需要同步该字段)';
+COMMENT ON COLUMN sys_tenant.package_name IS '套餐名称(冗余字段,用于查询优化,新增、更新、删除操作需要同步该字段)';
+COMMENT ON COLUMN sys_tenant.create_by_name IS '创建人名称(冗余字段,用于查询优化,新增、更新、删除操作需要同步该字段)';
+COMMENT ON COLUMN sys_tenant.update_by_name IS '更新人名称(冗余字段,用于查询优化,新增、更新、删除操作需要同步该字段)';
+
+
+SELECT * FROM sys_file;
