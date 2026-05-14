@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.shy.nexusix.common.annotation.FieldSecurityLevel;
+import com.shy.nexusix.common.enums.SecurityLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -110,6 +112,7 @@ public class SysTenantSubscription implements Serializable {
     private LocalDateTime updateTime;
 
     @Schema(description = "逻辑删除", example = "ACTIVE")
+    @FieldSecurityLevel(SecurityLevel.CONFIDENTIAL)
     @TableField(value = "is_deleted")
     private String isDeleted;
 
