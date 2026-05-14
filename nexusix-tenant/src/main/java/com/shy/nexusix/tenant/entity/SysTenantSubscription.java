@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.shy.nexusix.common.annotation.FieldSecurityLevel;
+import com.shy.nexusix.common.enums.SecurityLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -26,18 +28,18 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_tenant_subscription")
-@Schema(name="SysTenantSubscription对象", description="租户套餐订阅表 - 记录租户购买的套餐及订阅状态")
+@Schema(name="SysTenantSubscription对象", description="租户套餐订阅表-记录租户购买的套餐及订阅状态")
 public class SysTenantSubscription implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
     @TableId(value = "id", type = IdType.ASSIGN_ID)
-    private Long id;
+    private String id;
 
     @Schema(description = "租户 ID", example = "1987654321098765432")
     @TableField(value = "tenant_id")
-    private Long tenantId;
+    private String tenantId;
 
     @Schema(description = "租户名称", example = "某科技公司")
     @TableField(value = "tenant_name")
@@ -45,13 +47,13 @@ public class SysTenantSubscription implements Serializable {
 
     @Schema(description = "套餐产品 ID", example = "1001")
     @TableField(value = "package_id")
-    private Long packageId;
+    private String packageId;
 
     @Schema(description = "套餐产品名称", example = "高级套餐")
     @TableField(value = "package_name")
     private String packageName;
 
-    @Schema(description = "订阅类型 (NEW-自购 RENEWAL-续费 UPGRADE-升级 DOWNGRADE-降级)", example = "NEW")
+    @Schema(description = "订阅类型", example = "NEW")
     @TableField(value = "subscription_type")
     private String subscriptionType;
 
@@ -65,7 +67,7 @@ public class SysTenantSubscription implements Serializable {
     @TableField(value = "end_time")
     private LocalDateTime endTime;
 
-    @Schema(description = "状态 (ACTIVE-生效 EXPIRED-过期 CANCELLED-取消 PENDING-待生效)", example = "ACTIVE")
+    @Schema(description = "状态", example = "ACTIVE")
     @TableField(value = "status")
     private String status;
 
@@ -79,39 +81,38 @@ public class SysTenantSubscription implements Serializable {
 
     @Schema(description = "父租户分配记录 ID", example = "1987654321098765432")
     @TableField(value = "parent_grant_id")
-    private Long parentGrantId;
+    private String parentGrantId;
 
     @Schema(description = "父租户名称", example = "某科技集团")
     @TableField(value = "parent_tenant_name")
-    private Long parentTenantName;
+    private String parentTenantName;
 
     @Schema(description = "创建人 ID", example = "100")
     @TableField(value = "create_by")
-    private Long createBy;
+    private String createBy;
 
     @Schema(description = "创建人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
     @TableField(value = "create_by_name")
     private String createByName;
 
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
-    @TableField(value = "create_time", fill = FieldFill.INSERT)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @TableField(value = "create_time")
     private LocalDateTime createTime;
 
     @Schema(description = "更新人 ID", example = "100")
     @TableField(value = "update_by")
-    private Long updateBy;
+    private String updateBy;
 
-    @Schema(description = "更新人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @Schema(description = "更新人姓名", example = "张三")
     @TableField(value = "update_by_name")
     private String updateByName;
 
     @Schema(description = "更新时间", format = "date-time", example = "2026-04-07 15:45:30")
-    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @TableField(value = "update_time")
     private LocalDateTime updateTime;
 
-    @Schema(description = "逻辑删除 (ACTIVE-正常 DELETED-删除)", example = "ACTIVE")
+    @Schema(description = "逻辑删除", example = "ACTIVE")
+    @FieldSecurityLevel(SecurityLevel.CONFIDENTIAL)
     @TableField(value = "is_deleted")
     private String isDeleted;
 

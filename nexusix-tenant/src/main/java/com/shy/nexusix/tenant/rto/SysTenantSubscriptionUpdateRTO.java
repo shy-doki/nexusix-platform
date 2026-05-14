@@ -3,7 +3,6 @@ package com.shy.nexusix.tenant.rto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.annotation.EnumField;
 import com.shy.nexusix.common.enums.GlobalEnum;
-import com.shy.nexusix.common.enums.GlobalEnum.SubscriptionStatus;
 import com.shy.nexusix.common.enums.GlobalEnum.SubscriptionType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
@@ -30,7 +29,7 @@ public class SysTenantSubscriptionUpdateRTO {
      */
     @NotNull(message = "Id不能为空")
     @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
-    private Long id;
+    private String id;
 
     /**
      * 租户ID
@@ -65,7 +64,7 @@ public class SysTenantSubscriptionUpdateRTO {
     private String packageName;
 
     /**
-     * 订阅类型(通过枚举转换)
+     * 订阅类型
      */
     @NotNull(message = "订阅类型不能为空")
     @EnumField
@@ -89,12 +88,12 @@ public class SysTenantSubscriptionUpdateRTO {
     private LocalDateTime endTime;
 
     /**
-     * 状态(通过枚举转换)
+     * 状态
      */
     @NotNull(message = "状态不能为空")
     @EnumField
-    @Schema(description = "状态(通过枚举转换)", example = "生效")
-    private SubscriptionStatus status;
+    @Schema(description = "状态", example = "生效")
+    private GlobalEnum.SubscriptionStatus status;
 
     /**
      * 是否自动续费
@@ -106,13 +105,13 @@ public class SysTenantSubscriptionUpdateRTO {
      * 来源类型
      */
     @Schema(description = "来源类型", example = "1")
-    private Integer sourceType;
+    private String sourceType;
 
     /**
      * 父租户分配记录ID
      */
     @Schema(description = "父租户分配记录ID", example = "1987654321098765432")
-    private Long parentGrantId;
+    private String parentGrantId;
 
     /**
      * 父租户名称
@@ -124,7 +123,7 @@ public class SysTenantSubscriptionUpdateRTO {
      * 创建人ID
      */
     @Schema(description = "创建人ID", example = "100")
-    private Long createBy;
+    private String createBy;
 
     /**
      * 创建人姓名
@@ -136,7 +135,7 @@ public class SysTenantSubscriptionUpdateRTO {
      * 更新人ID
      */
     @Schema(description = "更新人ID", example = "100")
-    private Long updateBy;
+    private String updateBy;
 
     /**
      * 更新人姓名
@@ -161,7 +160,7 @@ public class SysTenantSubscriptionUpdateRTO {
     /**
      * 逻辑删除
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "未删除")
+    @Schema(description = "逻辑删除", example = "未删除")
     @EnumField
     private GlobalEnum.Deleted isDeleted;
 

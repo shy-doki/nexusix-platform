@@ -13,17 +13,25 @@ import static com.shy.nexusix.common.constant.RegexConstant.Character.ALPHANUMER
 import static com.shy.nexusix.common.constant.RegexConstant.Code.SNOWFLAKE_ID;
 import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 
+/**
+ * 租户更新请求对象
+ * <p>
+ * 用于接收前端传递的租户更新数据，包含完整的校验规则
+ * </p>
+ *
+ * @author system
+ * @since 2026-05-14
+ */
 @Data
 @Schema(description = "租户更新请求对象")
 public class SysTenantUpdateRTO {
 
     /**
-     * <p>主键Id</p>
-     * <p>TODO 后续考虑加入加解密注解 这里就不加入正则判断 因为id默认加密传输</p>
+     * 主键Id
      */
     @NotNull(message = "Id不能为空")
     @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
-    private Long id;
+    private String id;
 
     /**
      * 租户名称
@@ -39,6 +47,27 @@ public class SysTenantUpdateRTO {
     @NotBlank(message = "租户编码不能为空")
     @Schema(description = "租户编码", example = "TEN0000001")
     private String tenantCode;
+
+    /**
+     * 租户类型
+     */
+    @NotBlank(message = "租户类型不能为空")
+    @Size(min = 2, max = 50, message = "租户类型必须在2-50字符之间")
+    @Schema(description = "租户类型", example = "餐饮、互联网")
+    private String tenantType;
+
+    /**
+     * 租户logo路径
+     */
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    private String tenantLogoUrl;
+
+    /**
+     * 租户描述
+     */
+    @Size(max = 500, message = "租户描述不能超过500字符")
+    @Schema(description = "租户描述", example = "这是...类型公司")
+    private String tenantDesc;
 
     /**
      * 父租户ID
@@ -73,11 +102,11 @@ public class SysTenantUpdateRTO {
     private String contactPhone;
 
     /**
-     * 状态(通过枚举转换)
+     * 状态
      */
     @NotNull(message = "状态不能为空")
     @EnumField
-    @Schema(description = "状态(通过枚举转换)", example = "正常")
+    @Schema(description = "状态", example = "正常")
     private GlobalEnum.TenantStatus status;
 
     /**
@@ -113,40 +142,30 @@ public class SysTenantUpdateRTO {
 
     /**
      * 创建人ID
-     * 默认为当前登录用户
-     * 超级管理员可以指定创建人ID
      */
     @Schema(description = "创建人ID", example = "100")
-    private Long createBy;
+    private String createBy;
 
     /**
      * 创建人姓名
-     * 默认为创建人姓名
-     * 超级管理员可以指定创建人姓名
      */
     @Schema(description = "创建人姓名", example = "张三")
     private String createByName;
 
     /**
      * 更新人ID
-     * 默认为当前登录用户
-     * 超级管理员可以指定更新人ID
      */
     @Schema(description = "更新人ID", example = "100")
-    private Long updateBy;
+    private String updateBy;
 
     /**
      * 更新人姓名
-     * 默认为创建人姓名
-     * 超级管理员可以指定更新人姓名
      */
     @Schema(description = "更新人姓名", example = "张三")
     private String updateByName;
 
     /**
      * 创建时间
-     * 默认为当前时间
-     * 超级管理员可以指定创建时间
      */
     @Schema(description = "创建时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
@@ -154,19 +173,15 @@ public class SysTenantUpdateRTO {
 
     /**
      * 更新时间
-     * 默认为当前时间
-     * 超级管理员可以指定更新时间
      */
     @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 
     /**
-     * 逻辑删除 (0-正常 1-删除)
-     * 默认为0
-     * 超级管理员可以指定逻辑删除状态
+     * 逻辑删除
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "未删除")
+    @Schema(description = "逻辑删除", example = "未删除")
     @EnumField
     private GlobalEnum.Deleted isDeleted;
 

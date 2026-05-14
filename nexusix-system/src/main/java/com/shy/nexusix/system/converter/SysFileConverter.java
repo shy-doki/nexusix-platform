@@ -96,7 +96,7 @@ public interface SysFileConverter {
      * @return 逻辑删除描述文本
      */
     @Named("intDeleteToDesc")
-    default String intDeleteToDesc(Integer code) {
+    default String intDeleteToDesc(String code) {
         if (code == null) return null;
         Deleted deleted = GlobalEnum.Deleted.getByCode(code);
         return deleted != null ? deleted.getDesc() : null;

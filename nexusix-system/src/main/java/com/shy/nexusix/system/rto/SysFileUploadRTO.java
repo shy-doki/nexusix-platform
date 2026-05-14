@@ -27,7 +27,7 @@ public class SysFileUploadRTO {
     private String bizType;
 
     /**
-     * 目标租户编码（不传则取当前用户所属租户）
+     * 目标租户编码
      */
     @Schema(description = "目标租户编码（不传则取当前用户所属租户）", example = "TEN0000001")
     @Size(max = 50, message = "租户编码不能超过50字符")

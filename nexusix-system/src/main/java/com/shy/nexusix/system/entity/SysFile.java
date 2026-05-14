@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
+import com.shy.nexusix.common.annotation.FieldSecurityLevel;
+import com.shy.nexusix.common.enums.SecurityLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -70,7 +72,6 @@ public class SysFile implements Serializable {
     private String uploadByName;
 
     @Schema(description = "上传时间", example = "2026-05-13 10:30:00")
-    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime uploadTime;
 
     @Schema(description = "更新人ID", example = "user001")
@@ -80,10 +81,10 @@ public class SysFile implements Serializable {
     private String updateByName;
 
     @Schema(description = "更新时间", example = "2026-05-13 10:30:00")
-    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
     @Schema(description = "逻辑删除", example = "0")
+    @FieldSecurityLevel(SecurityLevel.CONFIDENTIAL)
     private String isDeleted;
 
 

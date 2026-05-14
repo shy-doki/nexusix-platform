@@ -19,4 +19,5 @@ public class TimeRangeCommonRTO {
      */
     @Schema(description = "结束时间", example = "2026-12-31 23:59:59")
     private LocalDateTime endTime;
+
 }

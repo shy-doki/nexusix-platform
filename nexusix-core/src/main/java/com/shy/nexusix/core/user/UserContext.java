@@ -26,8 +26,8 @@ public class UserContext {
      * @return 当前登录用户ID
      * @throws cn.dev33.satoken.exception.NotLoginException 未登录时抛出
      */
-    public static Long getCurrentUserId() {
-        return StpUtil.getLoginIdAsLong();
+    public static String getCurrentUserId() {
+        return StpUtil.getLoginIdAsString();
     }
 
     /**
@@ -46,7 +46,7 @@ public class UserContext {
      *
      * @return true-是系统管理员
      */
-    public static boolean isSystemAdmin() {
+    public static boolean isSuperAdmin() {
         return StpUtil.getRoleList().contains(1);
     }
 

@@ -22,15 +22,15 @@ import java.time.LocalDateTime;
 public class SysFileUpdateRTO {
 
     /**
-     * 主键 ID (雪花算法)
+     * 主键ID
      */
-    @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
+    @Schema(description = "主键ID", example = "1987654321098765432")
     private Long id;
 
     /**
-     * 所属租户 ID
+     * 所属租户ID
      */
-    @Schema(description = "所属租户 ID", example = "1987654321098765432")
+    @Schema(description = "所属租户ID", example = "1987654321098765432")
     private Long tenantId;
 
     /**
@@ -40,9 +40,9 @@ public class SysFileUpdateRTO {
     private String tenantName;
 
     /**
-     * 存储文件名（UUID 重命名）
+     * 存储文件名
      */
-    @Schema(description = "存储文件名（UUID 重命名）", example = "a1b2c3d4e5f6.pdf")
+    @Schema(description = "存储文件名", example = "a1b2c3d4e5f6.pdf")
     private String fileName;
 
     /**
@@ -58,15 +58,15 @@ public class SysFileUpdateRTO {
     private String filePath;
 
     /**
-     * 文件访问 URL
+     * 文件访问URL
      */
-    @Schema(description = "文件访问 URL", example = "https://oss.example.com/uploads/report.pdf")
+    @Schema(description = "文件访问URL", example = "https://oss.example.com/uploads/report.pdf")
     private String fileUrl;
 
     /**
-     * 文件大小 (字节)
+     * 文件大小
      */
-    @Schema(description = "文件大小 (字节)", example = "102400")
+    @Schema(description = "文件大小(字节)", example = "102400")
     private Long fileSize;
 
     /**
@@ -76,9 +76,9 @@ public class SysFileUpdateRTO {
     private String fileType;
 
     /**
-     * MIME 类型
+     * MIME类型
      */
-    @Schema(description = "MIME 类型", example = "application/pdf")
+    @Schema(description = "MIME类型", example = "application/pdf")
     private String mimeType;
 
     /**
@@ -88,9 +88,9 @@ public class SysFileUpdateRTO {
     private String bizType;
 
     /**
-     * 上传人 ID
+     * 上传人ID
      */
-    @Schema(description = "上传人 ID", example = "100")
+    @Schema(description = "上传人ID", example = "100")
     private Long uploadBy;
 
     /**
@@ -107,9 +107,9 @@ public class SysFileUpdateRTO {
     private LocalDateTime uploadTime;
 
     /**
-     * 逻辑删除 (0-正常 1-删除)
+     * 逻辑删除
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除", example = "0")
     private Integer isDeleted;
 
 }

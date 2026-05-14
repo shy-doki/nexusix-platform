@@ -3,7 +3,6 @@ package com.shy.nexusix.tenant.rto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.annotation.EnumField;
 import com.shy.nexusix.common.enums.GlobalEnum;
-import com.shy.nexusix.common.enums.GlobalEnum.TenantStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -14,6 +13,15 @@ import static com.shy.nexusix.common.constant.RegexConstant.Character.ALPHANUMER
 import static com.shy.nexusix.common.constant.RegexConstant.Code.SNOWFLAKE_ID;
 import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 
+/**
+ * 租户新增请求对象
+ * <p>
+ * 用于接收前端传递的租户新增数据，包含完整的校验规则
+ * </p>
+ *
+ * @author system
+ * @since 2026-05-14
+ */
 @Data
 @Schema(description = "租户新增请求对象")
 public class SysTenantAddRTO {
@@ -35,6 +43,27 @@ public class SysTenantAddRTO {
     private String tenantCode;
 
     /**
+     * 租户类型
+     */
+    @NotBlank(message = "租户类型不能为空")
+    @Size(min = 2, max = 50, message = "租户类型必须在2-50字符之间")
+    @Schema(description = "租户类型", example = "餐饮、互联网")
+    private String tenantType;
+
+    /**
+     * 租户logo路径
+     */
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    private String tenantLogoUrl;
+
+    /**
+     * 租户描述
+     */
+    @Size(max = 500, message = "租户描述不能超过500字符")
+    @Schema(description = "租户描述", example = "这是...类型公司")
+    private String tenantDesc;
+
+    /**
      * 父租户ID
      */
     @NotNull(message = "父租户ID不能为空")
@@ -53,7 +82,7 @@ public class SysTenantAddRTO {
     /**
      * 祖级路径
      */
-    @Schema(description = "祖级列表 (物化路径，如 0/100/200)", example = "0/100/200")
+    @Schema(description = "祖级列表", example = "0/100/200")
     private String ancestors;
 
     /**
@@ -73,12 +102,12 @@ public class SysTenantAddRTO {
     private String contactPhone;
 
     /**
-     * 状态(通过枚举转换)
+     * 状态
      */
     @NotNull(message = "状态不能为空")
     @EnumField
-    @Schema(description = "状态(通过枚举转换)", example = "正常")
-    private TenantStatus status;
+    @Schema(description = "状态", example = "正常")
+    private GlobalEnum.TenantStatus status;
 
     /**
      * 服务过期时间
@@ -113,60 +142,46 @@ public class SysTenantAddRTO {
 
     /**
      * 创建人ID
-     * 默认为当前登录用户
-     * 超级管理员可以指定创建人ID
      */
     @Schema(description = "创建人ID", example = "100")
-    private Long createBy;
+    private String createBy;
 
     /**
      * 创建人姓名
-     * 默认为创建人姓名
-     * 超级管理员可以指定创建人姓名
      */
     @Schema(description = "创建人姓名", example = "张三")
     private String createByName;
 
     /**
-     * 更新人ID
-     * 默认为当前登录用户
-     * 超级管理员可以指定更新人ID
-     */
-    @Schema(description = "更新人ID", example = "100")
-    private Long updateBy;
-
-    /**
-     * 更新人姓名
-     * 默认为创建人姓名
-     * 超级管理员可以指定更新人姓名
-     */
-    @Schema(description = "更新人姓名", example = "张三")
-    private String updateByName;
-
-    /**
      * 创建时间
-     * 默认为当前时间
-     * 超级管理员可以指定创建时间
      */
     @Schema(description = "创建时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
 
     /**
+     * 更新人ID
+     */
+    @Schema(description = "更新人ID", example = "100")
+    private String updateBy;
+
+    /**
+     * 更新人姓名
+     */
+    @Schema(description = "更新人姓名", example = "张三")
+    private String updateByName;
+
+    /**
      * 更新时间
-     * 默认为当前时间
-     * 超级管理员可以指定更新时间
      */
     @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
 
     /**
-     * 逻辑删除 (0-正常 1-删除)
-     * 默认为0
-     * 超级管理员可以指定逻辑删除状态
+     * 逻辑删除
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除", example = "0")
     @EnumField
     private GlobalEnum.Deleted isDeleted;
 
