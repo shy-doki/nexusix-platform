@@ -8,6 +8,15 @@ import lombok.Data;
 
 import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 
+/**
+ * 租户条件查询请求对象
+ * <p>
+ * 继承自 {@link PageCommonRTO}，用于接收前端传递的租户查询条件
+ * </p>
+ *
+ * @author system
+ * @since 2026-05-14
+ */
 @Data
 @Schema(description = "租户条件查询请求对象")
 public class SysTenantQueryRTO extends PageCommonRTO {
@@ -23,6 +32,12 @@ public class SysTenantQueryRTO extends PageCommonRTO {
      */
     @Schema(description = "租户编码", example = "TEN******001")
     private String tenantCode;
+
+    /**
+     * 租户类型
+     */
+    @Schema(description = "租户类型", example = "餐饮、互联网")
+    private String tenantType;
 
     /**
      * 联系人姓名

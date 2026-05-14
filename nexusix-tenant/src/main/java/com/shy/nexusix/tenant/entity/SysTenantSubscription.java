@@ -26,7 +26,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_tenant_subscription")
-@Schema(name="SysTenantSubscription对象", description="租户套餐订阅表 - 记录租户购买的套餐及订阅状态")
+@Schema(name="SysTenantSubscription对象", description="租户套餐订阅表-记录租户购买的套餐及订阅状态")
 public class SysTenantSubscription implements Serializable {
 
     private static final long serialVersionUID = 1L;

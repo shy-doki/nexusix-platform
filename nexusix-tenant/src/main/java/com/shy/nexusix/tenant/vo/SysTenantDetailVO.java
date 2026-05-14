@@ -7,17 +7,29 @@ import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 
+/**
+ * 租户详情视图对象
+ * <p>
+ * 继承自 {@link SysTenantCommonVO}，包含租户的详细信息
+ * </p>
+ *
+ * @author system
+ * @since 2026-05-14
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Schema(description = "租户详情视图对象")
 public class SysTenantDetailVO extends SysTenantCommonVO {
 
-    @Schema(description = "租户类型", example = "餐饮、互联网")
-    private String tenantType;
-
+    /**
+     * 租户logo路径
+     */
     @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
     private String tenantLogoUrl;
 
+    /**
+     * 租户描述
+     */
     @Schema(description = "租户描述", example = "这是...类型公司")
     private String tenantDesc;
 

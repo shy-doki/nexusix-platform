@@ -13,6 +13,15 @@ import static com.shy.nexusix.common.constant.RegexConstant.Character.ALPHANUMER
 import static com.shy.nexusix.common.constant.RegexConstant.Code.SNOWFLAKE_ID;
 import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 
+/**
+ * 租户更新请求对象
+ * <p>
+ * 用于接收前端传递的租户更新数据，包含完整的校验规则
+ * </p>
+ *
+ * @author system
+ * @since 2026-05-14
+ */
 @Data
 @Schema(description = "租户更新请求对象")
 public class SysTenantUpdateRTO {
@@ -39,6 +48,27 @@ public class SysTenantUpdateRTO {
     @NotBlank(message = "租户编码不能为空")
     @Schema(description = "租户编码", example = "TEN0000001")
     private String tenantCode;
+
+    /**
+     * 租户类型
+     */
+    @NotBlank(message = "租户类型不能为空")
+    @Size(min = 2, max = 50, message = "租户类型必须在2-50字符之间")
+    @Schema(description = "租户类型", example = "餐饮、互联网")
+    private String tenantType;
+
+    /**
+     * 租户logo路径
+     */
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    private String tenantLogoUrl;
+
+    /**
+     * 租户描述
+     */
+    @Size(max = 500, message = "租户描述不能超过500字符")
+    @Schema(description = "租户描述", example = "这是...类型公司")
+    private String tenantDesc;
 
     /**
      * 父租户ID

@@ -23,9 +23,15 @@ public class SysTenantCommonVO {
     private String tenantName;
 
     /**
-     * 租户编码（脱敏）
+     * 租户类型
      */
-    @Schema(description = "租户编码（脱敏）", example = "TEN******001")
+    @Schema(description = "租户类型", example = "餐饮、互联网")
+    private String tenantType;
+
+    /**
+     * 租户编码
+     */
+    @Schema(description = "租户编码", example = "TEN00000001")
     private String tenantCode;
 
     /**
@@ -48,10 +54,10 @@ public class SysTenantCommonVO {
     private String contactPhone;
 
     /**
-     * 状态（0-禁用 1-启用）
+     * 状态
      * 通过枚举转换
      */
-    @Schema(description = "状态（0-禁用 1-启用）", example = "1")
+    @Schema(description = "状态", example = "1")
     private String status;
 
     /**
@@ -82,10 +88,10 @@ public class SysTenantCommonVO {
     private LocalDateTime createTime;
 
     /**
-     * 逻辑删除 (0-正常 1-删除)
+     * 逻辑删除
      * 超级管理员可见
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除", example = "0")
     private String isDeleted;
 
 }

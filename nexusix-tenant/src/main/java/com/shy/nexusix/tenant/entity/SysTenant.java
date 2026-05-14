@@ -26,7 +26,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_tenant")
-@Schema(name="SysTenant对象", description="租户信息表 - 存储租户基础信息，支持无限层级")
+@Schema(name="SysTenant对象", description="租户信息表-存储租户基础信息，支持无限层级")
 public class SysTenant implements Serializable {
 
     private static final long serialVersionUID = 1L;
