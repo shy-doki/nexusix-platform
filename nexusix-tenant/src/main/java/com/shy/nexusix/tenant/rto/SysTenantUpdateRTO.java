@@ -86,6 +86,12 @@ public class SysTenantUpdateRTO {
     private String parentName;
 
     /**
+     * 祖级路径（系统内部计算，前端无需传入）
+     */
+    @Schema(description = "祖级列表", hidden = true)
+    private String ancestors;
+
+    /**
      * 联系人姓名
      */
     @NotBlank(message = "联系人姓名不能为空")
