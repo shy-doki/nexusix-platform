@@ -72,6 +72,32 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByDesc(SysTenant::getCreateTime);
+        if (!UserContext.getCurrentRoles().contains("超级管理员")) {
+            for (String role : UserContext.getCurrentRoles()) {
+                switch (role) {
+                    case "管理员":
+                        wrapper.select(SysTenant::getId, SysTenant::getTenantName, SysTenant::getTenantType,
+                                SysTenant::getTenantLogoUrl, SysTenant::getTenantDesc, SysTenant::getTenantCode,
+                                SysTenant::getParentId, SysTenant::getParentName, SysTenant::getAncestors,
+                                SysTenant::getContactName, SysTenant::getContactPhone, SysTenant::getStatus,
+                                SysTenant::getExpireTime, SysTenant::getPackageId, SysTenant::getPackageName,
+                                SysTenant::getExtAttributes, SysTenant::getHasChildren, SysTenant::getCreateBy,
+                                SysTenant::getCreateByName, SysTenant::getUpdateBy, SysTenant::getUpdateByName,
+                                SysTenant::getCreateTime, SysTenant::getUpdateTime);
+                        break;
+                    default:
+                        wrapper.select(SysTenant::getId, SysTenant::getTenantName, SysTenant::getTenantType,
+                                SysTenant::getTenantLogoUrl, SysTenant::getTenantDesc,
+                                SysTenant::getParentId, SysTenant::getParentName, SysTenant::getAncestors,
+                                SysTenant::getContactName, SysTenant::getContactPhone, SysTenant::getStatus,
+                                SysTenant::getExpireTime, SysTenant::getPackageId, SysTenant::getPackageName,
+                                SysTenant::getExtAttributes, SysTenant::getHasChildren, SysTenant::getCreateBy,
+                                SysTenant::getCreateByName, SysTenant::getUpdateBy, SysTenant::getUpdateByName,
+                                SysTenant::getCreateTime, SysTenant::getUpdateTime);
+                        break;
+                }
+            }
+        }
 
         // 执行查询获取租户列表
         List<SysTenant> tenantList = this.list(wrapper);
@@ -587,6 +613,23 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 throw new BusinessException(400, "不能将子租户设为父租户");
             }
 
+        }
+
+        // 填充审计参数
+        if (UserContext.isSuperAdmin()) {
+            // 超级管理员
+            updateParam.setCreateBy(StringUtils.isNotBlank(updateParam.getCreateBy()) ? updateParam.getCreateBy() : UserContext.getCurrentUserId());
+            updateParam.setCreateByName(StringUtils.isNotBlank(updateParam.getCreateByName()) ? updateParam.getCreateByName() : UserContext.getCurrentUserName());
+            updateParam.setCreateTime(updateParam.getCreateTime() != null ? updateParam.getCreateTime() : LocalDateTime.now());
+
+            updateParam.setUpdateBy(StringUtils.isNotBlank(updateParam.getUpdateBy()) ? updateParam.getUpdateBy() : UserContext.getCurrentUserId());
+            updateParam.setUpdateByName(StringUtils.isNotBlank(updateParam.getUpdateByName()) ? updateParam.getUpdateByName() : UserContext.getCurrentUserName());
+            updateParam.setUpdateTime(updateParam.getUpdateTime() != null ? updateParam.getUpdateTime() : LocalDateTime.now());
+        } else {
+            // 其余
+            updateParam.setUpdateBy(UserContext.getCurrentUserId());
+            updateParam.setUpdateByName(UserContext.getCurrentUserName());
+            updateParam.setUpdateTime(LocalDateTime.now());
         }
 
         // 转换并更新租户信息
