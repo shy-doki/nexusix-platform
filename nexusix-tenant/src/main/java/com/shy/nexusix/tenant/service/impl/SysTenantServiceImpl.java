@@ -99,7 +99,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     public IPage<SysTenantCommonVO> queryTenantPage(PageCommonRTO page) {
 
         // 构建分页参数
-        Page<SysTenant> pageParam = new Page<>(page.getPageNum(), page.getPageSize());
+        IPage<SysTenant> pageParam = new Page<>(page.getPageNum(), page.getPageSize());
 
         // 构建查询条件：仅查询未删除的租户，按创建时间倒序排列
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()

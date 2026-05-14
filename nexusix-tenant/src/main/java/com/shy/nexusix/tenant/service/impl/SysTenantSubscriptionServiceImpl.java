@@ -273,7 +273,7 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         }
         // 构建更新对象并更新状态
         SysTenantSubscription updateSubscription = new SysTenantSubscription();
-        updateSubscription.setId(Long.parseLong(id));
+        updateSubscription.setId(id);
         updateSubscription.setStatus(subscriptionStatus.getCode());
         boolean result = this.updateById(updateSubscription);
         if (!result) {
@@ -294,7 +294,7 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         }
         // 执行逻辑删除：将isDeleted标记为已删除
         SysTenantSubscription subscription = new SysTenantSubscription();
-        subscription.setId(Long.parseLong(id));
+        subscription.setId(id);
         subscription.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
         boolean result = this.updateById(subscription);
         if (!result) {
@@ -335,7 +335,7 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
             throw new BusinessException(400, "单次批量修改数量不能超过100条");
         }
         // 校验批量修改中ID不为空且不重复
-        Set<Long> idSet = new HashSet<>();
+        Set<String> idSet = new HashSet<>();
         for (SysTenantSubscriptionUpdateRTO item : updateParamList) {
             if (item.getId() == null) {
                 throw new BusinessException(400, "批量修改中存在ID为空的记录");
