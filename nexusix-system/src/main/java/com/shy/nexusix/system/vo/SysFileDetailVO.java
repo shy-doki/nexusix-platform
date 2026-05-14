@@ -22,9 +22,9 @@ import java.time.LocalDateTime;
 public class SysFileDetailVO extends SysFileCommonVO {
 
     /**
-     * 存储文件名（UUID 重命名）
+     * 存储文件名
      */
-    @Schema(description = "存储文件名（UUID 重命名）", example = "a1b2c3d4e5f6.pdf")
+    @Schema(description = "存储文件名", example = "a1b2c3d4e5f6.pdf")
     private String fileName;
 
     /**
@@ -34,15 +34,15 @@ public class SysFileDetailVO extends SysFileCommonVO {
     private String filePath;
 
     /**
-     * 文件访问 URL
+     * 文件访问URL
      */
-    @Schema(description = "文件访问 URL", example = "https://oss.example.com/uploads/report.pdf")
+    @Schema(description = "文件访问URL", example = "https://oss.example.com/uploads/report.pdf")
     private String fileUrl;
 
     /**
-     * MIME 类型
+     * MIME类型
      */
-    @Schema(description = "MIME 类型", example = "application/pdf")
+    @Schema(description = "MIME类型", example = "application/pdf")
     private String mimeType;
 
     /**

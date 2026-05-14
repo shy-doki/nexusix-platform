@@ -28,25 +28,25 @@ public class SysFileCommonVO {
     private String tenantName;
 
     /**
-     * 原始文件名（用户上传时的文件名）
+     * 原始文件名
      */
     @Schema(description = "原始文件名", example = "企业营业执照.pdf")
     private String originalName;
 
     /**
-     * 文件大小（单位：字节）
+     * 文件大小
      */
-    @Schema(description = "文件大小（字节）", example = "2048576")
+    @Schema(description = "文件大小(字节)", example = "2048576")
     private Long fileSize;
 
     /**
-     * 文件格式（小写扩展名，如：pdf、jpg、png）
+     * 文件格式
      */
-    @Schema(description = "文件格式（小写扩展名）", example = "pdf")
+    @Schema(description = "文件格式", example = "pdf")
     private String fileType;
 
     /**
-     * 业务类型分类（如：logo、avatar、contract、license等）
+     * 业务类型分类
      */
     @Schema(description = "业务类型分类", example = "license")
     private String bizType;
@@ -58,14 +58,14 @@ public class SysFileCommonVO {
     private String uploadByName;
 
     /**
-     * 上传时间（格式化为字符串）
+     * 上传时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @Schema(description = "上传时间", example = "2026-04-29 10:30:00")
     private LocalDateTime uploadTime;
 
     /**
-     * 逻辑删除标记（0-正常，1-已删除）
+     * 逻辑删除
      */
     @Schema(description = "逻辑删除", example = "0")
     private String isDeleted;

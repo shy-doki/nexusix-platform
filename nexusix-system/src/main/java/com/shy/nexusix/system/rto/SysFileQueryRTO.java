@@ -58,9 +58,9 @@ public class SysFileQueryRTO extends PageCommonRTO {
     private String uploadByName;
 
     /**
-     * 上传时间范围(一个/多个)[第一个参数为开始时间;第二个参数为结束时间]
+     * 上传时间范围
      */
-    @Schema(description = "上传时间范围(一个/多个)[第一个参数为开始时间;第二个参数为结束时间]", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
+    @Schema(description = "上传时间范围", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
     private TimeRangeCommonRTO uploadTime;
 
 }
