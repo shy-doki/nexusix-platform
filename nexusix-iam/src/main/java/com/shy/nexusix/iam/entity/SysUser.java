@@ -98,5 +98,4 @@ public class SysUser implements Serializable {
     @TableField(value = "is_deleted")
     private String isDeleted;
 
-
 }

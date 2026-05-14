@@ -34,6 +34,7 @@
         <module>nexusix-audit</module>
         <module>nexusix-boot</module>
         <module>nexusix-system</module>
+        <module>nexusix-mq</module>
     </modules>
 
     <!-- 全局属性配置 统一管理版本号、编码、编译参数，方便后续修改维护 -->
@@ -106,6 +107,12 @@
                 <groupId>com.github.ulisesbocchio</groupId>
                 <artifactId>jasypt-spring-boot-starter</artifactId>
                 <version>${spring-jasypt.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-amqp</artifactId>
+                <version>${spring-boot.version}</version>
             </dependency>
 
             <!-- Spring AI alibaba -->

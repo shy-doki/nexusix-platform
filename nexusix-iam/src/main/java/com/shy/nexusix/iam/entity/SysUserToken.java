@@ -78,5 +78,4 @@ public class SysUserToken implements Serializable {
     @TableField(value = "is_deleted")
     private String isDeleted;
 
-
 }

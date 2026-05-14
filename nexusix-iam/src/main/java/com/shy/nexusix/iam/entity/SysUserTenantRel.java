@@ -86,5 +86,4 @@ public class SysUserTenantRel implements Serializable {
     @TableField(value = "is_deleted")
     private String isDeleted;
 
-
 }

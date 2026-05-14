@@ -94,5 +94,4 @@ public class SysPermPolicy implements Serializable {
     @TableField(value = "is_deleted")
     private String isDeleted;
 
-
 }

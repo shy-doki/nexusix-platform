@@ -767,7 +767,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
      * </p>
      *
      * @param addParamList 批量新增租户信息集合
-     * @return 成功新增的租户ID集合
+     * @return 成功新增的租户数量
      * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、参数校验失败或新增失败时抛出
      * @author shy
      * @since 2026-04-20
@@ -775,6 +775,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer batchAddTenant(List<SysTenantAddRTO> addParamList) {
+
+        // 校验参数集合非空
+        if (addParamList == null || addParamList.isEmpty()) {
+            throw new BusinessException(400, "批量新增租户列表不能为空");
+        }
 
         // 校验批量新增数量限制
         if (addParamList.size() > 100) {
@@ -799,12 +804,101 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "部分租户编码已存在，请检查后重试");
         }
 
-        // 批量保存租户信息
-        boolean batch = this.saveBatch(sysTenantConverter.toEntityListAdd(addParamList));
+        // 收集所有父租户ID，批量查询父租户信息
+        Set<String> parentIds = addParamList.stream()
+                .map(SysTenantAddRTO::getParentId)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
 
-        if (!batch) {
+        Map<String, SysTenant> parentTenantMap = new HashMap<>();
+        if (!parentIds.isEmpty()) {
+            LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
+                    .in(SysTenant::getId, parentIds)
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+            List<SysTenant> parentTenants = this.list(parentWrapper);
+
+            for (SysTenant parent : parentTenants) {
+                parentTenantMap.put(parent.getId(), parent);
+            }
+
+            // 校验所有父租户是否存在
+            for (String parentId : parentIds) {
+                if (!parentTenantMap.containsKey(parentId)) {
+                    throw new BusinessException(400, "父租户不存在: " + parentId);
+                }
+            }
+
+            // 校验父租户状态（冻结的父租户不能作为父级）
+            for (SysTenant parent : parentTenantMap.values()) {
+                if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(parent.getStatus())) {
+                    throw new BusinessException(400, "父租户已冻结，不能作为父级: " + parent.getTenantName());
+                }
+            }
+        }
+
+        // 为每个租户填充 ancestors 和审计参数
+        LocalDateTime now = LocalDateTime.now();
+        String currentUserId = UserContext.getCurrentUserId();
+        String currentUserName = UserContext.getCurrentUserName();
+        boolean isSuperAdmin = UserContext.isSuperAdmin();
+
+        List<SysTenant> entityList = new ArrayList<>(addParamList.size());
+
+        for (SysTenantAddRTO param : addParamList) {
+            String ancestors;
+
+            // 构建祖级列表 根据父租户信息生成
+            if (StringUtils.isNotBlank(param.getParentId())) {
+                SysTenant parentTenant = parentTenantMap.get(param.getParentId());
+
+                // 防止循环引用 检查当前租户编码是否已存在于父租户的 ancestors 中
+                String parentAncestors = parentTenant.getAncestors() != null ? parentTenant.getAncestors() : "rootTenant";
+                if (parentAncestors.contains(param.getTenantCode())
+                        || parentTenant.getTenantCode().equals(param.getTenantCode())) {
+                    throw new BusinessException(400, "不能将租户作为自身的后代: " + param.getTenantCode());
+                }
+
+                // 构建 ancestors 父租户的 ancestors + 父租户编码
+                ancestors = parentAncestors + "/" + parentTenant.getTenantCode();
+                param.setAncestors(ancestors);
+            } else {
+                // 根租户：祖级列表为 rootTenant
+                ancestors = "rootTenant";
+                param.setAncestors(ancestors);
+            }
+
+            // 填充审计参数
+            if (isSuperAdmin) {
+                param.setCreateBy(StringUtils.isNotBlank(param.getCreateBy()) ? param.getCreateBy() : currentUserId);
+                param.setCreateByName(StringUtils.isNotBlank(param.getCreateByName()) ? param.getCreateByName() : currentUserName);
+                param.setCreateTime(param.getCreateTime() != null ? param.getCreateTime() : now);
+
+                param.setUpdateBy(StringUtils.isNotBlank(param.getUpdateBy()) ? param.getUpdateBy() : currentUserId);
+                param.setUpdateByName(StringUtils.isNotBlank(param.getUpdateByName()) ? param.getUpdateByName() : currentUserName);
+                param.setUpdateTime(param.getUpdateTime() != null ? param.getUpdateTime() : now);
+            } else {
+                param.setCreateBy(currentUserId);
+                param.setCreateByName(currentUserName);
+                param.setCreateTime(now);
+
+                param.setUpdateBy(currentUserId);
+                param.setUpdateByName(currentUserName);
+                param.setUpdateTime(now);
+            }
+
+            // 转换实体并加入列表
+            entityList.add(sysTenantConverter.toEntityAdd(param));
+        }
+
+        // 第五阶段：批量保存租户信息
+        boolean result = this.saveBatch(entityList);
+
+        if (!result) {
             throw new BusinessException(500, "批量新增租户失败");
         }
+
+        // 更新父租户的 hasChildren 标记
+        updateParentHasChildren(parentTenantMap.keySet());
 
         return addParamList.size();
 
@@ -1492,6 +1586,43 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             if (!code.matches("^[a-zA-Z0-9]+$")) {
                 throw new BusinessException(400, fieldName + "格式不正确: " + code);
             }
+        }
+    }
+
+    /**
+     * <p>
+     * 更新指定父租户集合的 hasChildren 标记
+     * </p>
+     * <p>
+     * 当批量新增子租户时，需要更新所有涉及父租户的 hasChildren 标记为 true。
+     * 仅更新原来标记为 false 或 null 的父租户，避免不必要的数据库更新。
+     * </p>
+     *
+     * @param parentIds 父租户ID集合
+     * @author shy
+     * @since 2026-05-15
+     */
+    private void updateParentHasChildren(Set<String> parentIds) {
+        if (parentIds == null || parentIds.isEmpty()) {
+            return;
+        }
+
+        // 查询当前 hasChildren 为 false 或 null 的父租户
+        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
+                .in(SysTenant::getId, parentIds)
+                .and(w -> w.eq(SysTenant::getHasChildren, false).or().isNull(SysTenant::getHasChildren));
+
+        List<SysTenant> needUpdateTenants = this.list(wrapper);
+
+        if (!needUpdateTenants.isEmpty()) {
+            List<SysTenant> updateList = new ArrayList<>();
+            for (SysTenant tenant : needUpdateTenants) {
+                SysTenant update = new SysTenant();
+                update.setId(tenant.getId());
+                update.setHasChildren(true);
+                updateList.add(update);
+            }
+            this.updateBatchById(updateList);
         }
     }
 
