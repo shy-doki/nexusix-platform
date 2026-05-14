@@ -341,9 +341,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
                 throw new BusinessException(400, "开始时间不能晚于结束时间");
             }
-            if (startTime != null && endTime != null && endTime.isBefore(startTime)) {
-                throw new BusinessException(400, "结束时间不能早于开始时间");
-            }
 
             // 根据时间范围构建查询条件
             if (startTime != null && endTime != null) {
@@ -371,9 +368,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 校验时间范围合法性
             if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
                 throw new BusinessException(400, "开始时间不能晚于结束时间");
-            }
-            if (startTime != null && endTime != null && endTime.isBefore(startTime)) {
-                throw new BusinessException(400, "结束时间不能早于开始时间");
             }
 
             // 根据时间范围构建查询条件
@@ -482,9 +476,18 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 throw new BusinessException(400, "父租户不存在");
             }
 
-            // 构建祖级列表：父租户的祖级列表 + 父租户编码
-            ancestors =  parentTenant.getAncestors() + "/" + addParam.getTenantCode();
+            // 校验父租户状态（冻结的父租户不能作为父级）
+            if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(parentTenant.getStatus())) {
+                throw new BusinessException(400, "父租户已冻结，不能作为父级: " + parentTenant.getTenantName());
+            }
 
+            // 构建祖级列表：父租户的祖级列表 + 父租户编码
+            String parentAncestors = parentTenant.getAncestors() != null ? parentTenant.getAncestors() : "rootTenant";
+            ancestors = parentAncestors + "/" + parentTenant.getTenantCode();
+            addParam.setAncestors(ancestors);
+        } else {
+            // 根租户：祖级列表为 rootTenant
+            ancestors = "rootTenant";
             addParam.setAncestors(ancestors);
         }
 
@@ -698,6 +701,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         SysTenant updateTenant = new SysTenant();
         updateTenant.setId(id);
         updateTenant.setStatus(tenantStatus.getCode());
+        // 填充审计参数
+        updateTenant.setUpdateBy(UserContext.getCurrentUserId());
+        updateTenant.setUpdateByName(UserContext.getCurrentUserName());
+        updateTenant.setUpdateTime(LocalDateTime.now());
 
         boolean result = this.updateById(updateTenant);
 
@@ -748,11 +755,34 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         SysTenant tenant = new SysTenant();
         tenant.setId(id);
         tenant.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
+        // 填充审计参数
+        tenant.setUpdateBy(UserContext.getCurrentUserId());
+        tenant.setUpdateByName(UserContext.getCurrentUserName());
+        tenant.setUpdateTime(LocalDateTime.now());
 
         boolean result = this.updateById(tenant);
 
         if (!result) {
             throw new BusinessException(500, "删除租户失败");
+        }
+
+        // 检查原父租户是否还有其他子租户，更新 hasChildren 标记
+        if (existTenant.getParentId() != null && !"rootTenant".equals(existTenant.getParentId())) {
+            LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
+                    .eq(SysTenant::getParentId, existTenant.getParentId())
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                    .ne(SysTenant::getId, id);
+            long siblingCount = this.count(siblingWrapper);
+            if (siblingCount == 0) {
+                SysTenant updateOldParent = new SysTenant();
+                updateOldParent.setId(existTenant.getParentId());
+                updateOldParent.setHasChildren(false);
+                // 填充审计参数
+                updateOldParent.setUpdateBy(UserContext.getCurrentUserId());
+                updateOldParent.setUpdateByName(UserContext.getCurrentUserName());
+                updateOldParent.setUpdateTime(LocalDateTime.now());
+                this.updateById(updateOldParent);
+            }
         }
 
         return 1;
@@ -1122,6 +1152,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer batchUpdateTenantStatus(List<String> ids, String status) {
 
+        // 校验参数集合非空
+        if (ids == null || ids.isEmpty()) {
+            throw new BusinessException(400, "租户ID列表不能为空");
+        }
+
         // 校验批量更新数量限制
         if (ids.size() > 100) {
             throw new BusinessException(400, "单次批量更新数量不能超过100条");
@@ -1170,6 +1205,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 构建批量状态更新的数据列表
+        LocalDateTime now = LocalDateTime.now();
+        String currentUserId = UserContext.getCurrentUserId();
+        String currentUserName = UserContext.getCurrentUserName();
         List<SysTenant> updateList = new ArrayList<>();
         for (SysTenant tenant : existTenants) {
             // 跳过状态未变更的租户
@@ -1179,6 +1217,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             SysTenant updateTenant = new SysTenant();
             updateTenant.setId(tenant.getId());
             updateTenant.setStatus(tenantStatus.getCode());
+            // 填充审计参数
+            updateTenant.setUpdateBy(currentUserId);
+            updateTenant.setUpdateByName(currentUserName);
+            updateTenant.setUpdateTime(now);
             updateList.add(updateTenant);
         }
 
@@ -1214,6 +1256,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public Integer batchDeleteTenant(List<String> ids) {
 
+        // 校验参数集合非空
+        if (ids == null || ids.isEmpty()) {
+            throw new BusinessException(400, "租户ID列表不能为空");
+        }
+
         // 校验批量删除数量限制
         if (ids.size() > 100) {
             throw new BusinessException(400, "单次批量删除数量不能超过100条");
@@ -1248,12 +1295,24 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 构建批量逻辑删除的数据列表
+        LocalDateTime now = LocalDateTime.now();
+        String currentUserId = UserContext.getCurrentUserId();
+        String currentUserName = UserContext.getCurrentUserName();
         List<SysTenant> tenantList = new ArrayList<>();
+        Set<String> parentIdsToCheck = new HashSet<>();
         for (SysTenant tenant : existTenants) {
             SysTenant deleteTenant = new SysTenant();
             deleteTenant.setId(tenant.getId());
             deleteTenant.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
+            // 填充审计参数
+            deleteTenant.setUpdateBy(currentUserId);
+            deleteTenant.setUpdateByName(currentUserName);
+            deleteTenant.setUpdateTime(now);
             tenantList.add(deleteTenant);
+            // 收集需要检查 hasChildren 的父租户ID
+            if (tenant.getParentId() != null && !"rootTenant".equals(tenant.getParentId())) {
+                parentIdsToCheck.add(tenant.getParentId());
+            }
         }
 
         // 执行批量逻辑删除
@@ -1261,6 +1320,24 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         if (!batch) {
             throw new BusinessException(500, "批量删除租户失败");
+        }
+
+        // 检查原父租户是否还有其他子租户，更新 hasChildren 标记
+        for (String parentId : parentIdsToCheck) {
+            LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
+                    .eq(SysTenant::getParentId, parentId)
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+            long siblingCount = this.count(siblingWrapper);
+            if (siblingCount == 0) {
+                SysTenant updateOldParent = new SysTenant();
+                updateOldParent.setId(parentId);
+                updateOldParent.setHasChildren(false);
+                // 填充审计参数
+                updateOldParent.setUpdateBy(currentUserId);
+                updateOldParent.setUpdateByName(currentUserName);
+                updateOldParent.setUpdateTime(now);
+                this.updateById(updateOldParent);
+            }
         }
 
         return ids.size();
@@ -1308,6 +1385,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException(400, "父租户不存在: " + assignParam.getParentCode());
         }
 
+        // 校验父租户状态（冻结的父租户不能作为父级）
+        if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(parentTenant.getStatus())) {
+            throw new BusinessException(400, "父租户已冻结，不能作为父级: " + parentTenant.getTenantName());
+        }
+
         // 查询所有子租户
         LambdaQueryWrapper<SysTenant> subWrapper = new LambdaQueryWrapper<SysTenant>()
                 .in(SysTenant::getTenantCode, assignParam.getSubCode())
@@ -1342,6 +1424,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 执行分配：更新每个子租户的父租户信息
         int totalAffected = 0;
+        LocalDateTime now = LocalDateTime.now();
+        String currentUserId = UserContext.getCurrentUserId();
+        String currentUserName = UserContext.getCurrentUserName();
         for (SysTenant subTenant : subTenants) {
             // 记录旧的 ancestors 路径用于级联更新
             String oldAncestors = subTenant.getAncestors() != null ? subTenant.getAncestors() : "root";
@@ -1359,6 +1444,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             updateTenant.setParentId(parentTenant.getId());
             updateTenant.setParentName(parentTenant.getTenantName());
             updateTenant.setAncestors(newAncestors);
+            // 填充审计参数
+            updateTenant.setUpdateBy(currentUserId);
+            updateTenant.setUpdateByName(currentUserName);
+            updateTenant.setUpdateTime(now);
 
             boolean result = this.updateById(updateTenant);
             if (!result) {
@@ -1372,6 +1461,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 SysTenant updateParent = new SysTenant();
                 updateParent.setId(parentTenant.getId());
                 updateParent.setHasChildren(true);
+                // 填充审计参数
+                updateParent.setUpdateBy(currentUserId);
+                updateParent.setUpdateByName(currentUserName);
+                updateParent.setUpdateTime(now);
                 this.updateById(updateParent);
             }
 
@@ -1387,6 +1480,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                         SysTenant update = new SysTenant();
                         update.setId(descendant.getId());
                         update.setAncestors(descendant.getAncestors().replace(oldPath, newPath));
+                        // 填充审计参数
+                        update.setUpdateBy(currentUserId);
+                        update.setUpdateByName(currentUserName);
+                        update.setUpdateTime(now);
                         updateList.add(update);
                     }
                     this.updateBatchById(updateList);
@@ -1405,6 +1502,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     SysTenant updateOldParent = new SysTenant();
                     updateOldParent.setId(subTenant.getParentId());
                     updateOldParent.setHasChildren(false);
+                    // 填充审计参数
+                    updateOldParent.setUpdateBy(currentUserId);
+                    updateOldParent.setUpdateByName(currentUserName);
+                    updateOldParent.setUpdateTime(now);
                     this.updateById(updateOldParent);
                 }
             }
@@ -1473,6 +1574,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         int totalAffected = 0;
+        LocalDateTime now = LocalDateTime.now();
+        String currentUserId = UserContext.getCurrentUserId();
+        String currentUserName = UserContext.getCurrentUserName();
 
         for (SysTenant subTenant : subTenants) {
             // 不能将自己设为父租户
@@ -1511,6 +1615,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             updateTenant.setParentId(newParent.getId());
             updateTenant.setParentName(newParent.getTenantName());
             updateTenant.setAncestors(newAncestors);
+            // 填充审计参数
+            updateTenant.setUpdateBy(currentUserId);
+            updateTenant.setUpdateByName(currentUserName);
+            updateTenant.setUpdateTime(now);
 
             boolean result = this.updateById(updateTenant);
             if (!result) {
@@ -1523,6 +1631,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 SysTenant updateNewParent = new SysTenant();
                 updateNewParent.setId(newParent.getId());
                 updateNewParent.setHasChildren(true);
+                // 填充审计参数
+                updateNewParent.setUpdateBy(currentUserId);
+                updateNewParent.setUpdateByName(currentUserName);
+                updateNewParent.setUpdateTime(now);
                 this.updateById(updateNewParent);
             }
 
@@ -1537,6 +1649,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                         SysTenant update = new SysTenant();
                         update.setId(descendant.getId());
                         update.setAncestors(descendant.getAncestors().replace(oldPath, newPath));
+                        // 填充审计参数
+                        update.setUpdateBy(currentUserId);
+                        update.setUpdateByName(currentUserName);
+                        update.setUpdateTime(now);
                         updateList.add(update);
                     }
                     this.updateBatchById(updateList);
@@ -1555,6 +1671,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     SysTenant updateOldParent = new SysTenant();
                     updateOldParent.setId(subTenant.getParentId());
                     updateOldParent.setHasChildren(false);
+                    // 填充审计参数
+                    updateOldParent.setUpdateBy(currentUserId);
+                    updateOldParent.setUpdateByName(currentUserName);
+                    updateOldParent.setUpdateTime(now);
                     this.updateById(updateOldParent);
                 }
             }
