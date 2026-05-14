@@ -67,7 +67,7 @@ public class SysFileCommonVO {
     /**
      * 逻辑删除标记（0-正常，1-已删除）
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除", example = "0")
     private String isDeleted;
 
 }

@@ -30,15 +30,15 @@ public class SysTenantSubscriptionQueryRTO extends PageCommonRTO {
     private String packageId;
 
     /**
-     * 订阅类型 (1-自购 2-父租户分配)
+     * 订阅类型
      */
-    @Schema(description = "订阅类型 (1-自购 2-父租户分配)，支持数字编码、中文描述或枚举名称", example = "自购")
+    @Schema(description = "订阅类型", example = "自购")
     private String subscriptionType;
 
     /**
-     * 状态 (1-生效 0-过期)
+     * 状态
      */
-    @Schema(description = "状态 (1-生效 0-过期)，支持数字编码、中文描述或枚举名称", example = "生效")
+    @Schema(description = "状态", example = "生效")
     private String status;
 
     /**
@@ -68,7 +68,7 @@ public class SysTenantSubscriptionQueryRTO extends PageCommonRTO {
     /**
      * 逻辑删除
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除", example = "0")
     private String isDeleted;
 
 }

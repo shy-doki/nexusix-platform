@@ -308,6 +308,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         wrapper.like(StringUtils.isNotBlank(queryParam.getTenantName()),
                 SysTenant::getTenantName, queryParam.getTenantName());
 
+        // 租户类型查询
+        wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantType()),
+                SysTenant::getTenantType, queryParam.getTenantType());
+
         // 联系人姓名精确查询
         wrapper.eq(StringUtils.isNotBlank(queryParam.getContactName()),
                 SysTenant::getContactName, queryParam.getContactName());
@@ -379,6 +383,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             } else if (endTime != null) {
                 wrapper.le(SysTenant::getCreateTime, endTime);
             }
+        }
+
+        // 超级管理员
+        if (UserContext.isSuperAdmin()) {
+            wrapper.eq(StringUtils.isNotBlank(queryParam.getTenantCode()),
+                    SysTenant::getTenantCode, queryParam.getTenantCode());
         }
 
         // 条件分页查询

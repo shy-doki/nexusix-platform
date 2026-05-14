@@ -69,7 +69,7 @@ public class SysTenantSubscriptionCommonVO {
     private LocalDateTime endTime;
 
     /**
-     * 状态(中文描述)
+     * 状态
      */
     @Schema(description = "状态", example = "生效")
     private String status;

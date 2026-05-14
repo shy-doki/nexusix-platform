@@ -51,7 +51,7 @@ public class SysTenantSubscription implements Serializable {
     @TableField(value = "package_name")
     private String packageName;
 
-    @Schema(description = "订阅类型 (NEW-自购 RENEWAL-续费 UPGRADE-升级 DOWNGRADE-降级)", example = "NEW")
+    @Schema(description = "订阅类型", example = "NEW")
     @TableField(value = "subscription_type")
     private String subscriptionType;
 
@@ -65,7 +65,7 @@ public class SysTenantSubscription implements Serializable {
     @TableField(value = "end_time")
     private LocalDateTime endTime;
 
-    @Schema(description = "状态 (ACTIVE-生效 EXPIRED-过期 CANCELLED-取消 PENDING-待生效)", example = "ACTIVE")
+    @Schema(description = "状态", example = "ACTIVE")
     @TableField(value = "status")
     private String status;
 
@@ -94,24 +94,22 @@ public class SysTenantSubscription implements Serializable {
     private String createByName;
 
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
-    @TableField(value = "create_time", fill = FieldFill.INSERT)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @TableField(value = "create_time")
     private LocalDateTime createTime;
 
     @Schema(description = "更新人 ID", example = "100")
     @TableField(value = "update_by")
     private String updateBy;
 
-    @Schema(description = "更新人姓名(新增、更新、删除操作需要同步该字段)", example = "张三")
+    @Schema(description = "更新人姓名", example = "张三")
     @TableField(value = "update_by_name")
     private String updateByName;
 
     @Schema(description = "更新时间", format = "date-time", example = "2026-04-07 15:45:30")
-    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @TableField(value = "update_time")
     private LocalDateTime updateTime;
 
-    @Schema(description = "逻辑删除 (ACTIVE-正常 DELETED-删除)", example = "ACTIVE")
+    @Schema(description = "逻辑删除", example = "ACTIVE")
     @TableField(value = "is_deleted")
     private String isDeleted;
 

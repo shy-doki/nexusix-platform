@@ -1,5 +1,6 @@
 package com.shy.nexusix.tenant.rto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -28,9 +29,9 @@ public class SysTenantQueryRTO extends PageCommonRTO {
     private String tenantName;
 
     /**
-     * 租户编码（脱敏）
+     * 租户编码
      */
-    @Schema(description = "租户编码", example = "TEN******001")
+    @Schema(description = "租户编码", example = "TEN000001")
     private String tenantCode;
 
     /**
@@ -53,33 +54,35 @@ public class SysTenantQueryRTO extends PageCommonRTO {
     private String contactPhone;
 
     /**
-     * 状态（0-禁用 1-启用）
+     * 状态
      */
-    @Schema(description = "状态（0-禁用 1-启用）", example = "1")
+    @Schema(description = "状态", example = "1")
     private String status;
 
     /**
      * 服务过期时间
      */
-    @Schema(description = "服务过期时间范围(一个/多个)[第一个参数为开始时间;第二个参数为结束时间]", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
+    @Schema(description = "服务过期时间范围", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
     private TimeRangeCommonRTO expireTime;
 
     /**
      * 创建人姓名
      */
     @Schema(description = "创建人姓名", example = "李四")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private String createByName;
 
     /**
      * 创建时间
      */
-    @Schema(description = "创建时间范围(一个/多个)[第一个参数为开始时间;第二个参数为结束时间]", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
+    @Schema(description = "创建时间范围", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private TimeRangeCommonRTO createTime;
 
     /**
      * 逻辑删除
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除", example = "0")
     private String isDeleted;
 
 }

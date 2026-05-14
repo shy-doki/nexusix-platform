@@ -64,7 +64,7 @@ public class SysTenantSubscriptionUpdateRTO {
     private String packageName;
 
     /**
-     * 订阅类型(通过枚举转换)
+     * 订阅类型
      */
     @NotNull(message = "订阅类型不能为空")
     @EnumField
@@ -88,11 +88,11 @@ public class SysTenantSubscriptionUpdateRTO {
     private LocalDateTime endTime;
 
     /**
-     * 状态(通过枚举转换)
+     * 状态
      */
     @NotNull(message = "状态不能为空")
     @EnumField
-    @Schema(description = "状态(通过枚举转换)", example = "生效")
+    @Schema(description = "状态", example = "生效")
     private GlobalEnum.SubscriptionStatus status;
 
     /**
@@ -160,7 +160,7 @@ public class SysTenantSubscriptionUpdateRTO {
     /**
      * 逻辑删除
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "未删除")
+    @Schema(description = "逻辑删除", example = "未删除")
     @EnumField
     private GlobalEnum.Deleted isDeleted;
 

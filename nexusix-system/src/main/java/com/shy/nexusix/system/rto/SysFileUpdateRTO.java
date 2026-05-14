@@ -107,9 +107,9 @@ public class SysFileUpdateRTO {
     private LocalDateTime uploadTime;
 
     /**
-     * 逻辑删除 (0-正常 1-删除)
+     * 逻辑删除
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除", example = "0")
     private Integer isDeleted;
 
 }

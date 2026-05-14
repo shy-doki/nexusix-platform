@@ -145,13 +145,10 @@ public class Fastjson2Config implements WebMvcConfigurer {
                 field.setAccessible(true);
                 Object value = field.get(object);
 
-                if (value == null) {
-                    return false;
-                }
+                // 过滤 null 和空字符串
+                if (value == null) return false;
 
-                if (value instanceof String && ((String) value).isBlank()) {
-                    return false;
-                }
+                if (value instanceof String && ((String) value).isBlank()) return false;
 
                 return true;
             } catch (NoSuchFieldException | IllegalAccessException e) {

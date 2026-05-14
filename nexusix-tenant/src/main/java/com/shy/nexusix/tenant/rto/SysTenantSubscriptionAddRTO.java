@@ -57,11 +57,11 @@ public class SysTenantSubscriptionAddRTO {
     private String packageName;
 
     /**
-     * 订阅类型(通过枚举转换)
+     * 订阅类型
      */
     @NotNull(message = "订阅类型不能为空")
     @EnumField
-    @Schema(description = "订阅类型(通过枚举转换)", example = "自购")
+    @Schema(description = "订阅类型", example = "自购")
     private SubscriptionType subscriptionType;
 
     /**
@@ -81,11 +81,11 @@ public class SysTenantSubscriptionAddRTO {
     private LocalDateTime endTime;
 
     /**
-     * 状态(通过枚举转换)
+     * 状态
      */
     @NotNull(message = "状态不能为空")
     @EnumField
-    @Schema(description = "状态(通过枚举转换)", example = "生效")
+    @Schema(description = "状态", example = "生效")
     private GlobalEnum.SubscriptionStatus status;
 
     /**
@@ -125,6 +125,13 @@ public class SysTenantSubscriptionAddRTO {
     private String createByName;
 
     /**
+     * 创建时间
+     */
+    @Schema(description = "创建时间", example = "2026-04-07 15:45:30")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime createTime;
+
+    /**
      * 更新人ID
      */
     @Schema(description = "更新人ID", example = "100")
@@ -137,13 +144,6 @@ public class SysTenantSubscriptionAddRTO {
     private String updateByName;
 
     /**
-     * 创建时间
-     */
-    @Schema(description = "创建时间", example = "2026-04-07 15:45:30")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-    private LocalDateTime createTime;
-
-    /**
      * 更新时间
      */
     @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
@@ -153,7 +153,7 @@ public class SysTenantSubscriptionAddRTO {
     /**
      * 逻辑删除
      */
-    @Schema(description = "逻辑删除 (0-正常 1-删除)", example = "0")
+    @Schema(description = "逻辑删除", example = "0")
     @EnumField
     private GlobalEnum.Deleted isDeleted;
 
