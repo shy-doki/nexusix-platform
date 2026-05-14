@@ -7,8 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -18,64 +18,76 @@ import lombok.experimental.Accessors;
  * 权限/资源表-定义系统所有可授权资源
  * </p>
  *
- * @author author
+ * @author shy
  * @since 2026-05-13
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_perm")
-@ApiModel(value="SysPerm对象", description="权限/资源表-定义系统所有可授权资源")
+@Schema(name="SysPerm对象", description="权限/资源表-定义系统所有可授权资源")
 public class SysPerm implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @ApiModelProperty(value = "主键ID")
-    @TableId(value = "id", type = IdType.AUTO)
+    @Schema(description = "主键ID", example = "1987654321098765432")
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private String id;
 
-    @ApiModelProperty(value = "权限名称")
+    @Schema(description = "权限名称", example = "用户管理")
+    @TableField(value = "perm_name")
     private String permName;
 
-    @ApiModelProperty(value = "权限标识")
+    @Schema(description = "权限标识", example = "system:user:manage")
+    @TableField(value = "perm_code")
     private String permCode;
 
-    @ApiModelProperty(value = "类型")
+    @Schema(description = "类型", example = "MENU")
+    @TableField(value = "perm_type")
     private String permType;
 
-    @ApiModelProperty(value = "父权限ID")
+    @Schema(description = "父权限ID", example = "1000")
+    @TableField(value = "parent_id")
     private String parentId;
 
-    @ApiModelProperty(value = "父权限名称")
+    @Schema(description = "父权限名称", example = "系统管理")
+    @TableField(value = "parent_name")
     private String parentName;
 
-    @ApiModelProperty(value = "资源路径")
+    @Schema(description = "资源路径", example = "/system/user")
+    @TableField(value = "path")
     private String path;
 
-    @ApiModelProperty(value = "状态")
+    @Schema(description = "状态", example = "ENABLED")
+    @TableField(value = "status")
     private String status;
 
-    @ApiModelProperty(value = "创建人ID")
+    @Schema(description = "创建人ID", example = "100")
+    @TableField(value = "create_by")
     private String createBy;
 
-    @ApiModelProperty(value = "创建人名称")
+    @Schema(description = "创建人姓名", example = "张三")
+    @TableField(value = "create_by_name")
     private String createByName;
 
-    @ApiModelProperty(value = "更新人ID")
+    @Schema(description = "更新人ID", example = "100")
+    @TableField(value = "update_by")
     private String updateBy;
 
-    @ApiModelProperty(value = "更新人名称")
+    @Schema(description = "更新人姓名", example = "张三")
+    @TableField(value = "update_by_name")
     private String updateByName;
 
-    @ApiModelProperty(value = "创建时间")
-    @TableField(fill = FieldFill.INSERT)
+    @Schema(description = "创建时间", format = "date-time", example = "2026-05-13 15:45:30")
+    @TableField(value = "create_time")
     private LocalDateTime createTime;
 
-    @ApiModelProperty(value = "更新时间")
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @Schema(description = "更新时间", format = "date-time", example = "2026-05-13 15:45:30")
+    @TableField(value = "update_time")
     private LocalDateTime updateTime;
 
-    @ApiModelProperty(value = "逻辑删除")
+    @Schema(description = "逻辑删除", example = "ACTIVE")
+    @TableField(value = "is_deleted")
     private String isDeleted;
 
 
