@@ -29,6 +29,11 @@
             <artifactId>nexusix-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.shy.nexusix.mq</groupId>
+            <artifactId>nexusix-mq</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

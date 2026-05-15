@@ -1,8 +1,10 @@
 package com.shy.nexusix.boot;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.ulisesbocchio.jasyptspringboot.annotation.EnableEncryptableProperties;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
@@ -11,6 +13,7 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan(basePackages = "com.shy.nexusix")
 @MapperScan("com.shy.nexusix.**.mapper")
 @EnableEncryptableProperties
+@EnableRabbit
 public class NexusixBootApplication {
 
     public static void main(String[] args) {
