@@ -4,11 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
-import com.shy.nexusix.common.annotation.FieldSecurityLevel;
-import com.shy.nexusix.common.enums.SecurityLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -84,7 +80,6 @@ public class SysFile implements Serializable {
     private LocalDateTime updateTime;
 
     @Schema(description = "逻辑删除", example = "0")
-    @FieldSecurityLevel(SecurityLevel.CONFIDENTIAL)
     private String isDeleted;
 
 

@@ -4,13 +4,10 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.shy.nexusix.common.annotation.FieldSecurityLevel;
-import com.shy.nexusix.common.enums.SecurityLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -54,7 +51,6 @@ public class SysTenant implements Serializable {
     private String tenantDesc;
 
     @Schema(description = "租户唯一编码", example = "TENANT_001")
-    @FieldSecurityLevel(SecurityLevel.INTERNAL)
     @TableField(value = "tenant_code")
     private String tenantCode;
 
@@ -128,7 +124,6 @@ public class SysTenant implements Serializable {
     private LocalDateTime updateTime;
 
     @Schema(description = "逻辑删除", example = "ACTIVE")
-    @FieldSecurityLevel(SecurityLevel.CONFIDENTIAL)
     @TableField(value = "is_deleted")
     private String isDeleted;
 

@@ -219,4 +219,20 @@ public class GlobalConstant {
 
     }
 
+    /**
+     *  Redis键常量
+     */
+    public static final class RedisKey {
+
+        private RedisKey() {
+        }
+
+        /**
+         * Redis键：全局权限编码
+         * <p>使用场景：程序启动时存入全局权限编码</p>
+         */
+        public static final String PERM_CODE_LIST = "system:permCodeList";
+
+    }
+
 }

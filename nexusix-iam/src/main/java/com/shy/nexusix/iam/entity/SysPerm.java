@@ -38,9 +38,17 @@ public class SysPerm implements Serializable {
     @TableField(value = "perm_name")
     private String permName;
 
+    @Schema(description = "权限描述", example = "用户管理权限")
+    @TableField(value = "perm_desc")
+    private String permDesc;
+
     @Schema(description = "权限标识", example = "system:user:manage")
     @TableField(value = "perm_code")
     private String permCode;
+
+    @Schema(description = "权限键", example = "system:user:manage")
+    @TableField(value = "perm_key")
+    private String permKey;
 
     @Schema(description = "类型", example = "MENU")
     @TableField(value = "perm_type")

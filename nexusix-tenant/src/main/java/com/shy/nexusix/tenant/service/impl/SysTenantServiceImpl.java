@@ -69,10 +69,31 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     public List<SysTenantCommonVO> queryTenantList() {
 
         // 构建查询条件：仅查询未删除的租户，按创建时间倒序排列
-        // 字段权限由 FieldPermissionInterceptor 自动裁剪，无需手动 select
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByDesc(SysTenant::getCreateTime);
+
+        if (!UserContext.isSuperAdmin()) {
+            wrapper.select(SysTenant::getId,
+                    SysTenant::getTenantName,
+                    SysTenant::getTenantType,
+                    SysTenant::getTenantCode,
+                    SysTenant::getParentName,
+                    SysTenant::getAncestors,
+                    SysTenant::getContactName,
+                    SysTenant::getContactPhone,
+                    SysTenant::getStatus,
+                    SysTenant::getExpireTime,
+                    SysTenant::getPackageName,
+                    SysTenant::getExtAttributes,
+                    SysTenant::getHasChildren,
+                    SysTenant::getCreateBy,
+                    SysTenant::getCreateByName,
+                    SysTenant::getUpdateBy,
+                    SysTenant::getUpdateByName,
+                    SysTenant::getCreateTime,
+                    SysTenant::getUpdateTime);
+        }
 
         // 执行查询获取租户列表
         List<SysTenant> tenantList = this.list(wrapper);
