@@ -235,4 +235,47 @@ public class GlobalConstant {
 
     }
 
+    /**
+     *  permKey权限键常量
+     */
+    public static final class PermKey {
+
+        /**
+         * permKey键：权限键-逻辑删除
+         * <p>使用场景：FieldAccess注解中标识是否能查询该字段</p>
+         */
+        public static final String PERM_KEY_LOGIC_QUERY = "system:permKey:isQuery:isDelete";
+
+        /**
+         * permKey键：权限键-逻辑删除
+         * <p>使用场景：FieldAccess注解中标识是否能新增该字段</p>
+         */
+        public static final String PERM_KEY_LOGIC_CREATE = "system:permKey:isCreate:isDelete";
+
+        /**
+         * permKey键：权限键-逻辑删除
+         * <p>使用场景：FieldAccess注解中标识是否能更新该字段</p>
+         */
+        public static final String PERM_KEY_LOGIC_UPDATE = "system:permKey:isUpdate:isDelete";
+
+        /**
+         * permKey键：权限键-租户编码
+         * <p>使用场景：FieldAccess注解中标识是否能查询该字段</p>
+         */
+        public static final String PERM_KEY_TENANT_QUERY = "system:permKey:isQuery:tenantCode";
+
+        /**
+         * permKey键：权限键-租户编码
+         * <p>使用场景：FieldAccess注解中标识是否能新增该字段</p>
+         */
+        public static final String PERM_KEY_TENANT_CREATE = "system:permKey:isCreate:tenantCode";
+
+        /**
+         * permKey键：权限键-租户编码
+         * <p>使用场景：FieldAccess注解中标识是否能更新该字段</p>
+         */
+        public static final String PERM_KEY_TENANT_UPDATE = "system:permKey:isUpdate:tenantCode";
+
+    }
+
 }

@@ -1,4 +1,4 @@
-package com.shy.nexusix.core.tenant;
+package com.shy.nexusix.core.context;
 
 import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.StpUtil;

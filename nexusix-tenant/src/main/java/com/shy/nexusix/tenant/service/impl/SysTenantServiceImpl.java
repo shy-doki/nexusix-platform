@@ -7,7 +7,7 @@ import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
-import com.shy.nexusix.core.user.UserContext;
+import com.shy.nexusix.core.context.UserContext;
 import com.shy.nexusix.tenant.converter.SysTenantConverter;
 import com.shy.nexusix.tenant.entity.SysTenant;
 import com.shy.nexusix.tenant.mapper.SysTenantMapper;

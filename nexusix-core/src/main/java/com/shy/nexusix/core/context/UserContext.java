@@ -1,4 +1,4 @@
-package com.shy.nexusix.core.user;
+package com.shy.nexusix.core.context;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.shy.nexusix.common.constant.GlobalConstant;
