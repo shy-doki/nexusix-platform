@@ -532,7 +532,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             addParam.setUpdateByName(StringUtils.isNotBlank(addParam.getUpdateByName()) ? addParam.getUpdateByName() : UserContext.getCurrentUserName());
             addParam.setUpdateTime(addParam.getUpdateTime() != null ? addParam.getUpdateTime() : LocalDateTime.now());
         } else {
-            // 其余 结合该用户所能操作的列进行填充
+            // 其余
             addParam.setCreateBy(UserContext.getCurrentUserId());
             addParam.setCreateByName(UserContext.getCurrentUserName());
             addParam.setCreateTime(LocalDateTime.now());
