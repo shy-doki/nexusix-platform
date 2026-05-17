@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户基础表-存储全局用户信息 (不区分租户) 前端控制器
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @RestController
 @RequestMapping("/sys-user")

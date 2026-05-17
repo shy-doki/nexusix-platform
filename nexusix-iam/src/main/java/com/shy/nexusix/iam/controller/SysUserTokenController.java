@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户Token记录表-用于多端登录管理和强制下线 前端控制器
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @RestController
 @RequestMapping("/sys-user-token")

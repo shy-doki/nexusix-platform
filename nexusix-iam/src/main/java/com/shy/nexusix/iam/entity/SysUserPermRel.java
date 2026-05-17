@@ -15,7 +15,7 @@ import lombok.experimental.Accessors;
 
 /**
  * <p>
- * 权限策略控制表-实现四层权限及禁用继承逻辑
+ * 用户生效权限表(策略计算结果快照)
  * </p>
  *
  * @author shy
@@ -24,36 +24,59 @@ import lombok.experimental.Accessors;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("sys_perm_policy")
-@ApiModel(value="SysPermPolicy对象", description="权限策略控制表-实现四层权限及禁用继承逻辑")
-public class SysPermPolicy implements Serializable {
+@TableName("sys_user_perm_rel")
+@ApiModel(value="SysUserPermRel对象", description="用户生效权限表(策略计算结果快照)")
+public class SysUserPermRel implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @ApiModelProperty(value = "主键ID")
     @TableId(value = "id", type = IdType.AUTO)
     private String id;
 
-    @ApiModelProperty(value = "策略编码")
-    private String policyCode;
+    @ApiModelProperty(value = "用户编码")
+    private String userCode;
 
-    @ApiModelProperty(value = "目标类型")
-    private String targetType;
+    @ApiModelProperty(value = "用户名称")
+    private String userName;
 
-    @ApiModelProperty(value = "目标编码")
-    private String targetCode;
+    @ApiModelProperty(value = "用户昵称")
+    private String nickName;
 
-    @ApiModelProperty(value = "目标名称")
-    private String targetName;
-
-    @ApiModelProperty(value = "关联权限编码")
+    @ApiModelProperty(value = "权限编码")
     private String permCode;
 
-    @ApiModelProperty(value = "关联权限名称")
+    @ApiModelProperty(value = "权限名称")
     private String permName;
 
-    @ApiModelProperty(value = "动作")
+    @ApiModelProperty(value = "租户编码")
+    private String tenantCode;
+
+    @ApiModelProperty(value = "租户名称")
+    private String tenantName;
+
+    @ApiModelProperty(value = "生效动作: ALLOW / DENY")
     private String action;
+
+    @ApiModelProperty(value = "来源策略编码")
+    private String policyCode;
+
+    @ApiModelProperty(value = "策略层级: SYSTEM / TENANT / ROLE / USER")
+    private String policyLevel;
+
+    @ApiModelProperty(value = "数据库表名")
+    private String tableName;
+
+    @ApiModelProperty(value = "表描述")
+    private String tableDesc;
+
+    @ApiModelProperty(value = "访问类型")
+    private String accessType;
+
+    @ApiModelProperty(value = "可操作字段")
+    private String fieldOperates;
+
+    @ApiModelProperty(value = "不可操作字段")
+    private String fieldUnOperate;
 
     @ApiModelProperty(value = "创建人编码")
     private String createBy;

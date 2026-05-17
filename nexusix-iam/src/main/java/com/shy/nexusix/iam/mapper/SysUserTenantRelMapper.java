@@ -8,8 +8,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 用户-租户关联表-实现用户与多租户绑定 Mapper 接口
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 public interface SysUserTenantRelMapper extends BaseMapper<SysUserTenantRel> {
 

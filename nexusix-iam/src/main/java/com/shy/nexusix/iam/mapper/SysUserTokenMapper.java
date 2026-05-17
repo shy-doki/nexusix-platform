@@ -8,8 +8,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 用户Token记录表-用于多端登录管理和强制下线 Mapper 接口
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 public interface SysUserTokenMapper extends BaseMapper<SysUserToken> {
 

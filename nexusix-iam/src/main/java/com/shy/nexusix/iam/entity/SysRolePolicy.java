@@ -7,8 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
-
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -19,79 +19,67 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author shy
- * @since 2026-05-13
+ * @since 2026-05-17
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_role_policy")
-@Schema(name="SysRolePolicy对象", description="角色策略控制表-实现角色级联禁用及策略继承")
+@ApiModel(value="SysRolePolicy对象", description="角色策略控制表-实现角色级联禁用及策略继承")
 public class SysRolePolicy implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "主键ID", example = "1987654321098765432")
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @ApiModelProperty(value = "主键ID")
+    @TableId(value = "id", type = IdType.AUTO)
     private String id;
 
-    @Schema(description = "目标类型", example = "USER")
-    @TableField(value = "target_type")
+    @ApiModelProperty(value = "目标类型")
     private String targetType;
 
-    @Schema(description = "目标ID", example = "1001")
-    @TableField(value = "target_id")
-    private String targetId;
+    @ApiModelProperty(value = "目标编码")
+    private String targetCode;
 
-    @Schema(description = "目标名称", example = "张三")
-    @TableField(value = "target_name")
+    @ApiModelProperty(value = "目标名称")
     private String targetName;
 
-    @Schema(description = "关联角色ID", example = "3001")
-    @TableField(value = "role_id")
-    private String roleId;
+    @ApiModelProperty(value = "关联角色编码")
+    private String roleCode;
 
-    @Schema(description = "关联角色名称", example = "系统管理员")
-    @TableField(value = "role_name")
+    @ApiModelProperty(value = "关联角色名称")
     private String roleName;
 
-    @Schema(description = "动作", example = "ALLOW")
-    @TableField(value = "action")
+    @ApiModelProperty(value = "动作")
     private String action;
 
-    @Schema(description = "优先级", example = "1")
-    @TableField(value = "priority")
+    @ApiModelProperty(value = "优先级")
     private Integer priority;
 
-    @Schema(description = "是否向下继承", example = "true")
-    @TableField(value = "inheritance_enabled")
+    @ApiModelProperty(value = "是否向下继承")
     private Boolean inheritanceEnabled;
 
-    @Schema(description = "创建人ID", example = "100")
-    @TableField(value = "create_by")
+    @ApiModelProperty(value = "创建人编码")
     private String createBy;
 
-    @Schema(description = "创建人姓名", example = "张三")
-    @TableField(value = "create_by_name")
+    @ApiModelProperty(value = "创建人名称")
     private String createByName;
 
-    @Schema(description = "更新人ID", example = "100")
-    @TableField(value = "update_by")
+    @ApiModelProperty(value = "更新人编码")
     private String updateBy;
 
-    @Schema(description = "更新人姓名", example = "张三")
-    @TableField(value = "update_by_name")
+    @ApiModelProperty(value = "更新人名称")
     private String updateByName;
 
-    @Schema(description = "创建时间", format = "date-time", example = "2026-05-13 15:45:30")
-    @TableField(value = "create_time")
+    @ApiModelProperty(value = "创建时间")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @Schema(description = "更新时间", format = "date-time", example = "2026-05-13 15:45:30")
-    @TableField(value = "update_time")
+    @ApiModelProperty(value = "更新时间")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @Schema(description = "逻辑删除", example = "ACTIVE")
-    @TableField(value = "is_deleted")
+    @ApiModelProperty(value = "逻辑删除")
     private String isDeleted;
+
 
 }

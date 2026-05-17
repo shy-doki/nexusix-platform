@@ -4,11 +4,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
-
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -19,63 +17,53 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author shy
- * @since 2026-05-13
+ * @since 2026-05-17
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_user_token")
-@Schema(name="SysUserToken对象", description="用户Token记录表-用于多端登录管理和强制下线")
+@ApiModel(value="SysUserToken对象", description="用户Token记录表-用于多端登录管理和强制下线")
 public class SysUserToken implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "主键ID", example = "1987654321098765432")
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @ApiModelProperty(value = "主键ID")
+    @TableId(value = "id", type = IdType.AUTO)
     private String id;
 
-    @Schema(description = "用户ID", example = "1001")
-    @TableField(value = "user_id")
-    private String userId;
+    @ApiModelProperty(value = "用户编码")
+    private String userCode;
 
-    @Schema(description = "用户名称", example = "admin")
-    @TableField(value = "user_name")
+    @ApiModelProperty(value = "用户名称")
     private String userName;
 
-    @Schema(description = "租户ID", example = "TENANT_001")
-    @TableField(value = "tenant_id")
-    private String tenantId;
+    @ApiModelProperty(value = "租户编码")
+    private String tenantCode;
 
-    @Schema(description = "租户名称", example = "某某科技有限公司")
-    @TableField(value = "tenant_name")
+    @ApiModelProperty(value = "租户名称")
     private String tenantName;
 
-    @Schema(description = "登录令牌", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-    @TableField(value = "token")
+    @ApiModelProperty(value = "登录令牌")
     private String token;
 
-    @Schema(description = "设备信息", example = "Chrome 120.0 on Windows 10")
-    @TableField(value = "device_info")
+    @ApiModelProperty(value = "设备信息")
     private String deviceInfo;
 
-    @Schema(description = "最后登录IP", example = "192.168.1.100")
-    @TableField(value = "login_ip")
+    @ApiModelProperty(value = "最后登录IP")
     private String loginIp;
 
-    @Schema(description = "登录时间", example = "2026-05-13 15:45:30")
-    @TableField(value = "login_time")
+    @ApiModelProperty(value = "登录时间")
     private LocalDateTime loginTime;
 
-    @Schema(description = "过期时间", example = "2026-05-14 15:45:30")
-    @TableField(value = "expire_time")
+    @ApiModelProperty(value = "过期时间")
     private LocalDateTime expireTime;
 
-    @Schema(description = "状态", example = "ACTIVE")
-    @TableField(value = "status")
+    @ApiModelProperty(value = "状态")
     private String status;
 
-    @Schema(description = "逻辑删除", example = "ACTIVE")
-    @TableField(value = "is_deleted")
+    @ApiModelProperty(value = "逻辑删除")
     private String isDeleted;
+
 
 }

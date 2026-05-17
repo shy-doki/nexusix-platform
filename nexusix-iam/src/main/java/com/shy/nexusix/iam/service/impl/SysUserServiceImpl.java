@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
  * 用户基础表-存储全局用户信息 (不区分租户) 服务实现类
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @Service
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements ISysUserService {

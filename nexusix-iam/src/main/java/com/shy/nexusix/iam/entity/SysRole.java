@@ -7,8 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
-
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -19,79 +19,66 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author shy
- * @since 2026-05-13
+ * @since 2026-05-17
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_role")
-@Schema(name="SysRole对象", description="角色表-定义系统/租户/用户级角色")
+@ApiModel(value="SysRole对象", description="角色表-定义系统/租户/用户级角色")
 public class SysRole implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "主键ID", example = "1987654321098765432")
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @ApiModelProperty(value = "主键ID")
+    @TableId(value = "id", type = IdType.AUTO)
     private String id;
 
-    @Schema(description = "角色名称", example = "系统管理员")
-    @TableField(value = "role_name")
+    @ApiModelProperty(value = "角色名称")
     private String roleName;
 
-    @Schema(description = "角色描述", example = "拥有系统所有权限")
-    @TableField(value = "role_desc")
+    @ApiModelProperty(value = "角色描述")
     private String roleDesc;
 
-    @Schema(description = "角色编码", example = "ROLE_ADMIN")
-    @TableField(value = "role_code")
+    @ApiModelProperty(value = "角色编码")
     private String roleCode;
 
-    @Schema(description = "所属租户ID", example = "TENANT_001")
-    @TableField(value = "tenant_id")
-    private String tenantId;
+    @ApiModelProperty(value = "租户编码")
+    private String tenantCode;
 
-    @Schema(description = "租户名称", example = "某某科技有限公司")
-    @TableField(value = "tenant_name")
+    @ApiModelProperty(value = "租户名称")
     private String tenantName;
 
-    @Schema(description = "数据范围", example = "ALL")
-    @TableField(value = "data_scope")
+    @ApiModelProperty(value = "数据范围")
     private String dataScope;
 
-    @Schema(description = "状态", example = "ENABLED")
-    @TableField(value = "status")
+    @ApiModelProperty(value = "状态")
     private String status;
 
-    @Schema(description = "排序顺序", example = "1")
-    @TableField(value = "sort_order")
+    @ApiModelProperty(value = "排序顺序")
     private Integer sortOrder;
 
-    @Schema(description = "创建人ID", example = "100")
-    @TableField(value = "create_by")
+    @ApiModelProperty(value = "创建人编码")
     private String createBy;
 
-    @Schema(description = "创建人姓名", example = "张三")
-    @TableField(value = "create_by_name")
+    @ApiModelProperty(value = "创建人名称")
     private String createByName;
 
-    @Schema(description = "更新人ID", example = "100")
-    @TableField(value = "update_by")
+    @ApiModelProperty(value = "更新人编码")
     private String updateBy;
 
-    @Schema(description = "更新人姓名", example = "张三")
-    @TableField(value = "update_by_name")
+    @ApiModelProperty(value = "更新人名称")
     private String updateByName;
 
-    @Schema(description = "创建时间", format = "date-time", example = "2026-05-13 15:45:30")
-    @TableField(value = "create_time")
+    @ApiModelProperty(value = "创建时间")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @Schema(description = "更新时间", format = "date-time", example = "2026-05-13 15:45:30")
-    @TableField(value = "update_time")
+    @ApiModelProperty(value = "更新时间")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @Schema(description = "逻辑删除", example = "ACTIVE")
-    @TableField(value = "is_deleted")
+    @ApiModelProperty(value = "逻辑删除")
     private String isDeleted;
 
 

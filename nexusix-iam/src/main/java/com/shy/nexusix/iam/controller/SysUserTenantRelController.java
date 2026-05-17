@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 用户-租户关联表-实现用户与多租户绑定 前端控制器
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @RestController
 @RequestMapping("/sys-user-tenant-rel")

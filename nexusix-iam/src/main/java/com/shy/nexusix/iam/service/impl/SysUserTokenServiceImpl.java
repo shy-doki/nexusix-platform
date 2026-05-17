@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
  * 用户Token记录表-用于多端登录管理和强制下线 服务实现类
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @Service
 public class SysUserTokenServiceImpl extends ServiceImpl<SysUserTokenMapper, SysUserToken> implements ISysUserTokenService {

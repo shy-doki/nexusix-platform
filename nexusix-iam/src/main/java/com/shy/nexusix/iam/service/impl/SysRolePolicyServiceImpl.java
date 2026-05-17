@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
  * 角色策略控制表-实现角色级联禁用及策略继承 服务实现类
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @Service
 public class SysRolePolicyServiceImpl extends ServiceImpl<SysRolePolicyMapper, SysRolePolicy> implements ISysRolePolicyService {

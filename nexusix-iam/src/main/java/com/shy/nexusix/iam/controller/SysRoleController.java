@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 角色表-定义系统/租户/用户级角色 前端控制器
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @RestController
 @RequestMapping("/sys-role")

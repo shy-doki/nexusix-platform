@@ -7,11 +7,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * <p>
- * 权限/资源表-定义系统所有可授权资源 前端控制器
+ * 权限/资源表-定义系统所有可授权资源（含字段级权限） 前端控制器
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @RestController
 @RequestMapping("/sys-perm")

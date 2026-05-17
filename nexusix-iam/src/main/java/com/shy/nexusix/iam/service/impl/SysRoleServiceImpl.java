@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
  * 角色表-定义系统/租户/用户级角色 服务实现类
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @Service
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements ISysRoleService {

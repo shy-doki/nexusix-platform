@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
  * 用户-租户关联表-实现用户与多租户绑定 服务实现类
  * </p>
  *
- * @author author
- * @since 2026-05-13
+ * @author shy
+ * @since 2026-05-17
  */
 @Service
 public class SysUserTenantRelServiceImpl extends ServiceImpl<SysUserTenantRelMapper, SysUserTenantRel> implements ISysUserTenantRelService {

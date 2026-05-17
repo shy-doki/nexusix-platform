@@ -71,7 +71,9 @@ public class MyBatisPlusConfig {
                         "sys_role",
                         "sys_tenant_security",
                         "sys_login_log",
-                        "sys_oper_log"
+                        "sys_oper_log",
+                        "sys_perm_policy",
+                        "sys_role_policy"
                 );
                 // 判断当前表是否在忽略列表中
                 boolean ignore = ignoreTables.contains(tableName);

@@ -7,115 +7,97 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
-
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 /**
  * <p>
- * 权限/资源表-定义系统所有可授权资源
+ * 权限/资源表-定义系统所有可授权资源（含字段级权限）
  * </p>
  *
  * @author shy
- * @since 2026-05-13
+ * @since 2026-05-17
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_perm")
-@Schema(name="SysPerm对象", description="权限/资源表-定义系统所有可授权资源")
+@ApiModel(value="SysPerm对象", description="权限/资源表-定义系统所有可授权资源（含字段级权限）")
 public class SysPerm implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "主键ID", example = "1987654321098765432")
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @ApiModelProperty(value = "主键ID")
+    @TableId(value = "id", type = IdType.AUTO)
     private String id;
 
-    @Schema(description = "权限名称", example = "用户管理")
-    @TableField(value = "perm_name")
+    @ApiModelProperty(value = "权限名称")
     private String permName;
 
-    @Schema(description = "权限描述", example = "用户管理权限")
-    @TableField(value = "perm_desc")
+    @ApiModelProperty(value = "权限描述")
     private String permDesc;
 
-    @Schema(description = "权限标识", example = "system:user:manage")
-    @TableField(value = "perm_code")
+    @ApiModelProperty(value = "权限标识")
     private String permCode;
 
-    @Schema(description = "权限键", example = "system:user:manage")
-    @TableField(value = "perm_key")
+    @ApiModelProperty(value = "权限键值(只可超级管理员变更，且变更后需要重启服务并修改相关常量)")
     private String permKey;
 
-    @Schema(description = "类型", example = "MENU")
-    @TableField(value = "perm_type")
+    @ApiModelProperty(value = "权限类型：MENU-菜单 / BUTTON-按钮 / API-接口 / FIELD_GROUP-字段组 / FIELD-字段")
     private String permType;
 
-    @Schema(description = "父权限ID", example = "1000")
-    @TableField(value = "parent_id")
-    private String parentId;
+    @ApiModelProperty(value = "父权限编码")
+    private String parentCode;
 
-    @Schema(description = "父权限名称", example = "系统管理")
-    @TableField(value = "parent_name")
+    @ApiModelProperty(value = "父权限名称")
     private String parentName;
 
-    @Schema(description = "资源路径", example = "/system/user")
-    @TableField(value = "path")
+    @ApiModelProperty(value = "资源路径")
     private String path;
 
-    @Schema(description = "关联数据库表名", example = "sys_user")
-    @TableField(value = "table_name")
+    @ApiModelProperty(value = "关联数据库表名")
     private String tableName;
 
-    @Schema(description = "关联数据库表名描述", example = "用户管理")
-    @TableField(value = "table_desc")
+    @ApiModelProperty(value = "关联数据库表描述")
     private String tableDesc;
 
-    @Schema(description = "关联数据库字段名", example = "user_name")
-    @TableField(value = "field_name")
+    @ApiModelProperty(value = "关联数据库字段名")
     private String fieldName;
 
-    @Schema(description = "关联数据库字段描述", example = "用户名")
-    @TableField(value = "field_desc")
+    @ApiModelProperty(value = "关联数据库字段描述")
     private String fieldDesc;
 
-    @Schema(description = "操作类型", example = "CREATE")
-    @TableField(value = "operation_type")
-    private String operationType;
+    @ApiModelProperty(value = "操作类型")
+    private String operateType;
 
-    @Schema(description = "状态", example = "ENABLED")
-    @TableField(value = "status")
+    @ApiModelProperty(value = "状态")
     private String status;
 
-    @Schema(description = "创建人ID", example = "100")
-    @TableField(value = "create_by")
+    @ApiModelProperty(value = "创建人编码")
     private String createBy;
 
-    @Schema(description = "创建人姓名", example = "张三")
-    @TableField(value = "create_by_name")
+    @ApiModelProperty(value = "创建人名称")
     private String createByName;
 
-    @Schema(description = "更新人ID", example = "100")
-    @TableField(value = "update_by")
+    @ApiModelProperty(value = "更新人编码")
     private String updateBy;
 
-    @Schema(description = "更新人姓名", example = "张三")
-    @TableField(value = "update_by_name")
+    @ApiModelProperty(value = "更新人名称")
     private String updateByName;
 
-    @Schema(description = "创建时间", format = "date-time", example = "2026-05-13 15:45:30")
-    @TableField(value = "create_time")
+    @ApiModelProperty(value = "创建时间")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @Schema(description = "更新时间", format = "date-time", example = "2026-05-13 15:45:30")
-    @TableField(value = "update_time")
+    @ApiModelProperty(value = "更新时间")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @Schema(description = "逻辑删除", example = "ACTIVE")
-    @TableField(value = "is_deleted")
+    @ApiModelProperty(value = "逻辑删除")
     private String isDeleted;
+
 
 }

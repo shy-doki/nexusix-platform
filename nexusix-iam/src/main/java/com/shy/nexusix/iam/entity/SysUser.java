@@ -7,8 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
-
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -19,83 +19,73 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author shy
- * @since 2026-05-13
+ * @since 2026-05-17
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_user")
-@Schema(name="SysUser对象", description="用户基础表-存储全局用户信息 (不区分租户)")
+@ApiModel(value="SysUser对象", description="用户基础表-存储全局用户信息 (不区分租户)")
 public class SysUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "主键ID", example = "1987654321098765432")
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @ApiModelProperty(value = "主键ID")
+    @TableId(value = "id", type = IdType.AUTO)
     private String id;
 
-    @Schema(description = "用户名", example = "admin")
-    @TableField(value = "username")
+    @ApiModelProperty(value = "用户名")
     private String username;
 
-    @Schema(description = "加密密码", example = "$2a$10$xxxxx")
-    @TableField(value = "password")
+    @ApiModelProperty(value = "用户编码")
+    private String userCode;
+
+    @ApiModelProperty(value = "加密密码")
     private String password;
 
-    @Schema(description = "昵称", example = "管理员")
-    @TableField(value = "nickname")
+    @ApiModelProperty(value = "昵称")
     private String nickname;
 
-    @Schema(description = "邮箱", example = "admin@example.com")
-    @TableField(value = "email")
+    @ApiModelProperty(value = "邮箱")
     private String email;
 
-    @Schema(description = "手机号", example = "13800138000", pattern = "^1[3-9]\\d{9}$")
-    @TableField(value = "phone")
+    @ApiModelProperty(value = "手机号")
     private String phone;
 
-    @Schema(description = "头像地址", example = "/upload/avatar/2026/05/13/xxx.png")
-    @TableField(value = "avatar")
+    @ApiModelProperty(value = "头像地址")
     private String avatar;
 
-    @Schema(description = "全局状态", example = "ENABLED")
-    @TableField(value = "status")
+    @ApiModelProperty(value = "全局状态")
     private String status;
 
-    @Schema(description = "最后登录IP", example = "192.168.1.100")
-    @TableField(value = "login_ip")
+    @ApiModelProperty(value = "最后登录IP")
     private String loginIp;
 
-    @Schema(description = "最后登录时间", example = "2026-05-13 15:45:30")
-    @TableField(value = "login_date")
+    @ApiModelProperty(value = "最后登录时间")
     private LocalDateTime loginDate;
 
-    @Schema(description = "创建人ID", example = "100")
-    @TableField(value = "create_by")
+    @ApiModelProperty(value = "创建人编码")
     private String createBy;
 
-    @Schema(description = "创建人姓名", example = "张三")
-    @TableField(value = "create_by_name")
+    @ApiModelProperty(value = "创建人名称")
     private String createByName;
 
-    @Schema(description = "更新人ID", example = "100")
-    @TableField(value = "update_by")
+    @ApiModelProperty(value = "更新人编码")
     private String updateBy;
 
-    @Schema(description = "更新人姓名", example = "张三")
-    @TableField(value = "update_by_name")
+    @ApiModelProperty(value = "更新人名称")
     private String updateByName;
 
-    @Schema(description = "更新时间", format = "date-time", example = "2026-05-13 15:45:30")
-    @TableField(value = "update_time")
+    @ApiModelProperty(value = "更新时间")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @Schema(description = "创建时间", format = "date-time", example = "2026-05-13 15:45:30")
-    @TableField(value = "create_time")
+    @ApiModelProperty(value = "创建时间")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @Schema(description = "逻辑删除", example = "ACTIVE")
-    @TableField(value = "is_deleted")
+    @ApiModelProperty(value = "逻辑删除")
     private String isDeleted;
+
 
 }
