@@ -228,53 +228,54 @@ public class GlobalConstant {
         }
 
         /**
-         * Redis键：全局权限编码
-         * <p>使用场景：程序启动时存入全局权限编码</p>
+         * 可操作字段集合
          */
-        public static final String PERM_CODE_LIST = "system:permCodeList";
+        public static final String OPERABLE_COLUMNS = "operableColumns";
+
+        /**
+         * 不可操作字段集合
+         */
+        public static final String UN_OPERABLE_COLUMNS = "unOperableColumns";
 
     }
 
     /**
-     *  permKey权限键常量
+     *  数据表常量
      */
-    public static final class PermKey {
+    public static final class Table {
+
+        private Table() {
+        }
 
         /**
-         * permKey键：权限键-逻辑删除
-         * <p>使用场景：FieldAccess注解中标识是否能查询该字段</p>
+         * 租户表
          */
-        public static final String PERM_KEY_LOGIC_QUERY = "system:permKey:isQuery:isDelete";
+        public static final String TENANT = "sys_tenant";
+
+    }
+
+    /**
+     *  字段操作
+     */
+    public static final class OperableType {
+
+        private OperableType() {
+        }
 
         /**
-         * permKey键：权限键-逻辑删除
-         * <p>使用场景：FieldAccess注解中标识是否能新增该字段</p>
+         * 查询类型
          */
-        public static final String PERM_KEY_LOGIC_CREATE = "system:permKey:isCreate:isDelete";
+        public static final String QUERY_TYPE = "query";
 
         /**
-         * permKey键：权限键-逻辑删除
-         * <p>使用场景：FieldAccess注解中标识是否能更新该字段</p>
+         * 新增类型
          */
-        public static final String PERM_KEY_LOGIC_UPDATE = "system:permKey:isUpdate:isDelete";
+        public static final String CREATE_TYPE = "create";
 
         /**
-         * permKey键：权限键-租户编码
-         * <p>使用场景：FieldAccess注解中标识是否能查询该字段</p>
+         * 修改类型
          */
-        public static final String PERM_KEY_TENANT_QUERY = "system:permKey:isQuery:tenantCode";
-
-        /**
-         * permKey键：权限键-租户编码
-         * <p>使用场景：FieldAccess注解中标识是否能新增该字段</p>
-         */
-        public static final String PERM_KEY_TENANT_CREATE = "system:permKey:isCreate:tenantCode";
-
-        /**
-         * permKey键：权限键-租户编码
-         * <p>使用场景：FieldAccess注解中标识是否能更新该字段</p>
-         */
-        public static final String PERM_KEY_TENANT_UPDATE = "system:permKey:isUpdate:tenantCode";
+        public static final String UPDATE_TYPE = "update";
 
     }
 

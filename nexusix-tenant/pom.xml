@@ -30,6 +30,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.shy.nexusix.iam</groupId>
+            <artifactId>nexusix-iam</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.shy.nexusix.mq</groupId>
             <artifactId>nexusix-mq</artifactId>
             <version>${project.version}</version>

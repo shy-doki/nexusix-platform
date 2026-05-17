@@ -66,6 +66,26 @@ public class SysPerm implements Serializable {
     @TableField(value = "path")
     private String path;
 
+    @Schema(description = "关联数据库表名", example = "sys_user")
+    @TableField(value = "table_name")
+    private String tableName;
+
+    @Schema(description = "关联数据库表名描述", example = "用户管理")
+    @TableField(value = "table_desc")
+    private String tableDesc;
+
+    @Schema(description = "关联数据库字段名", example = "user_name")
+    @TableField(value = "field_name")
+    private String fieldName;
+
+    @Schema(description = "关联数据库字段描述", example = "用户名")
+    @TableField(value = "field_desc")
+    private String fieldDesc;
+
+    @Schema(description = "操作类型", example = "CREATE")
+    @TableField(value = "operation_type")
+    private String operationType;
+
     @Schema(description = "状态", example = "ENABLED")
     @TableField(value = "status")
     private String status;

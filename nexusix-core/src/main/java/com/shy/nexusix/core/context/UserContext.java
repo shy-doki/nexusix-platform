@@ -2,6 +2,8 @@ package com.shy.nexusix.core.context;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.shy.nexusix.common.constant.GlobalConstant;
+import com.shy.nexusix.core.entity.ColumnPerm;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 
@@ -268,6 +270,78 @@ public class UserContext {
      */
     public static boolean isTenantAdmin() {
         return StpUtil.getRoleList().contains(1);
+    }
+
+    /**
+     * 获取当前用户在指定表上可操作的列名
+     *
+     * @param tableName 表名（如：sys_tenant）
+     * @param operationType 操作类型（query/update/create）
+     * @return 该表在该操作类型下可操作的列名集合
+     */
+    public static Set<String> getOperableColumns(String tableName, String operationType) {
+        if (StringUtils.isBlank(tableName) || StringUtils.isBlank(operationType)) {
+            return Collections.emptySet();
+        }
+
+        // 获取当前用户在指定表上可操作的列名
+        Object opsObj = StpUtil.getSession().get(GlobalConstant.RedisKey.OPERABLE_COLUMNS);
+        if (opsObj == null) return Collections.emptySet();
+
+        ColumnPerm opsCol = (ColumnPerm) opsObj;
+
+        // 根据操作类型获取对应的数据
+        Set<String> operationCol = new HashSet<>();
+        switch (operationType) {
+            case "query":
+                operationCol = opsCol.getQuery().get(tableName);
+                break;
+            case "create":
+                operationCol = opsCol.getCreate().get(tableName);
+                break;
+            case "update":
+                operationCol = opsCol.getUpdate().get(tableName);
+                break;
+        }
+        if (operationCol == null) return Collections.emptySet();
+
+        return operationCol;
+    }
+
+    /**
+     * 获取当前用户在指定表上不可操作的列名
+     *
+     * @param tableName 表名（如：sys_tenant）
+     * @param operationType 操作类型（query/update/create）
+     * @return 该表在该操作类型下不可操作的列名集合
+     */
+    public static Set<String> getUnOperableColumns(String tableName, String operationType) {
+        if (StringUtils.isBlank(tableName) || StringUtils.isBlank(operationType)) {
+            return Collections.emptySet();
+        }
+
+        // 获取当前用户在指定表上不可操作的列名
+        Object unOpsObj = StpUtil.getSession().get(GlobalConstant.RedisKey.UN_OPERABLE_COLUMNS);
+        if (unOpsObj == null) return Collections.emptySet();
+
+        ColumnPerm unOpsCol = (ColumnPerm) unOpsObj;
+
+        // 根据操作类型获取对应数据
+        Set<String> unOperationCol = new HashSet<>();
+        switch (operationType) {
+            case "query":
+                unOperationCol = unOpsCol.getQuery().get(tableName);
+                break;
+            case "create":
+                unOperationCol = unOpsCol.getCreate().get(tableName);
+                break;
+            case "update":
+                unOperationCol = unOpsCol.getUpdate().get(tableName);
+                break;
+        }
+        if (unOperationCol == null) return Collections.emptySet();
+
+        return unOperationCol;
     }
 
 }

@@ -3,6 +3,7 @@ package com.shy.nexusix.tenant.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.shy.nexusix.common.constant.GlobalConstant;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -74,25 +76,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 .orderByDesc(SysTenant::getCreateTime);
 
         if (!UserContext.isSuperAdmin()) {
-            wrapper.select(SysTenant::getId,
-                    SysTenant::getTenantName,
-                    SysTenant::getTenantType,
-                    SysTenant::getTenantCode,
-                    SysTenant::getParentName,
-                    SysTenant::getAncestors,
-                    SysTenant::getContactName,
-                    SysTenant::getContactPhone,
-                    SysTenant::getStatus,
-                    SysTenant::getExpireTime,
-                    SysTenant::getPackageName,
-                    SysTenant::getExtAttributes,
-                    SysTenant::getHasChildren,
-                    SysTenant::getCreateBy,
-                    SysTenant::getCreateByName,
-                    SysTenant::getUpdateBy,
-                    SysTenant::getUpdateByName,
-                    SysTenant::getCreateTime,
-                    SysTenant::getUpdateTime);
+            // 获取该用户所能操作的列
+            Set<String> unOperableColumnSet = UserContext.getUnOperableColumns(GlobalConstant.Table.TENANT, GlobalConstant.OperableType.QUERY_TYPE);
+
+            if (!unOperableColumnSet.isEmpty()) {
+                // 构建查询条件 仅查询可操作列
+                wrapper.select(SysTenant.class, column -> !unOperableColumnSet.contains(column.getProperty()));
+            }
         }
 
         // 执行查询获取租户列表
@@ -473,6 +463,25 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public Integer addTenant(SysTenantAddRTO addParam) {
 
+        if (!UserContext.isSuperAdmin()) {
+            Set<String> unOperableColumnSet = UserContext.getUnOperableColumns(GlobalConstant.Table.TENANT, GlobalConstant.OperableType.CREATE_TYPE);
+
+            if (!unOperableColumnSet.isEmpty()) {
+                // 反射批量清空不可操作字段（避免用户恶意传参）
+                try {
+                    for (String fieldName : unOperableColumnSet) {
+                        Field field = SysTenantAddRTO.class.getDeclaredField(fieldName);
+                        // 设置字段可访问
+                        field.setAccessible(true);
+                        // 清空字段值
+                        field.set(addParam, null);
+                    }
+                } catch (Exception e) {
+                    throw new BusinessException(500, "参数错误");
+                }
+            }
+        }
+
         // 校验租户编码是否已存在
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getTenantCode, addParam.getTenantCode());
@@ -523,7 +532,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             addParam.setUpdateByName(StringUtils.isNotBlank(addParam.getUpdateByName()) ? addParam.getUpdateByName() : UserContext.getCurrentUserName());
             addParam.setUpdateTime(addParam.getUpdateTime() != null ? addParam.getUpdateTime() : LocalDateTime.now());
         } else {
-            // 其余
+            // 其余 结合该用户所能操作的列进行填充
             addParam.setCreateBy(UserContext.getCurrentUserId());
             addParam.setCreateByName(UserContext.getCurrentUserName());
             addParam.setCreateTime(LocalDateTime.now());
