@@ -10,12 +10,15 @@ import com.shy.nexusix.common.enums.GlobalEnum.SubscriptionType;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
+import com.shy.nexusix.core.context.UserContext;
 import com.shy.nexusix.tenant.converter.SysTenantSubscriptionConverter;
+import com.shy.nexusix.tenant.entity.SysTenant;
 import com.shy.nexusix.tenant.entity.SysTenantSubscription;
 import com.shy.nexusix.tenant.mapper.SysTenantSubscriptionMapper;
 import com.shy.nexusix.tenant.rto.SysTenantSubscriptionAddRTO;
 import com.shy.nexusix.tenant.rto.SysTenantSubscriptionQueryRTO;
 import com.shy.nexusix.tenant.rto.SysTenantSubscriptionUpdateRTO;
+import com.shy.nexusix.tenant.service.ISysTenantService;
 import com.shy.nexusix.tenant.service.ISysTenantSubscriptionService;
 import com.shy.nexusix.tenant.vo.SysTenantSubscriptionCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantSubscriptionDetailVO;
@@ -40,6 +43,9 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
 
     @Autowired
     private SysTenantSubscriptionConverter sysTenantSubscriptionConverter;
+
+    @Autowired
+    private ISysTenantService iSysTenantService;
 
     @Override
     public List<SysTenantSubscriptionCommonVO> querySubscriptionList() {
@@ -71,13 +77,12 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         Page<SysTenantSubscription> pageParam = new Page<>(queryParam.getPageNum(), queryParam.getPageSize());
         LambdaQueryWrapper<SysTenantSubscription> wrapper = new LambdaQueryWrapper<>();
 
-        // 租户ID精确查询
-        if (StringUtils.isNotBlank(queryParam.getTenantId())) {
-            wrapper.eq(SysTenantSubscription::getTenantId, Long.parseLong(queryParam.getTenantId()));
+        if (StringUtils.isNotBlank(queryParam.getTenantCode())) {
+            wrapper.eq(SysTenantSubscription::getTenantCode, queryParam.getTenantCode());
         }
 
         if (StringUtils.isNotBlank(queryParam.getPackageCode())) {
-            wrapper.eq(SysTenantSubscription::getPackageId, Long.parseLong(queryParam.getPackageCode()));
+            wrapper.eq(SysTenantSubscription::getPackageCode, queryParam.getPackageCode());
         }
 
         // 订阅类型条件查询：通过parse方法支持多种输入格式
@@ -184,22 +189,50 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
 
     @Override
     public Integer addSubscription(SysTenantSubscriptionAddRTO addParam) {
-        // 校验同一租户不能重复订阅同一套餐
         LambdaQueryWrapper<SysTenantSubscription> wrapper = new LambdaQueryWrapper<SysTenantSubscription>()
-                .eq(SysTenantSubscription::getTenantId, Long.parseLong(addParam.getTenantId()))
-                .eq(SysTenantSubscription::getPackageId, Long.parseLong(addParam.getPackageCode()))
+                .eq(SysTenantSubscription::getTenantCode, addParam.getTenantCode())
+                .eq(SysTenantSubscription::getPackageCode, addParam.getPackageCode())
                 .eq(SysTenantSubscription::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         long count = this.count(wrapper);
         if (count > 0) {
             throw new BusinessException(400, "该租户已订阅此套餐");
         }
-        // 校验订阅时间合法性：开始时间不能晚于结束时间
         if (addParam.getStartTime() != null && addParam.getEndTime() != null
                 && addParam.getStartTime().isAfter(addParam.getEndTime())) {
             throw new BusinessException(400, "订阅开始时间不能晚于结束时间");
         }
-        // 通过转换器将RTO转换为实体并保存
-        boolean result = this.save(sysTenantSubscriptionConverter.toEntityAdd(addParam));
+
+        SysTenantSubscription subscription = sysTenantSubscriptionConverter.toEntityAdd(addParam);
+
+        SysTenant tenant = iSysTenantService.lambdaQuery()
+                .eq(SysTenant::getTenantCode, addParam.getTenantCode())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .one();
+        if (tenant == null) {
+            throw new BusinessException(400, "租户不存在: " + addParam.getTenantCode());
+        }
+        subscription.setTenantId(String.valueOf(tenant.getId()));
+
+        if (StringUtils.isNotBlank(addParam.getParentCode())) {
+            SysTenant parentTenant = iSysTenantService.lambdaQuery()
+                    .eq(SysTenant::getTenantCode, addParam.getParentCode())
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                    .one();
+            if (parentTenant != null) {
+                subscription.setParentId(String.valueOf(parentTenant.getId()));
+            }
+        }
+
+        subscription.setCreateById(UserContext.getCurrentUserId());
+        subscription.setCreateByCode(UserContext.getCurrentUserId());
+        subscription.setCreateByName(UserContext.getCurrentUserName());
+        subscription.setCreateTime(LocalDateTime.now());
+        subscription.setUpdateById(UserContext.getCurrentUserId());
+        subscription.setUpdateByCode(UserContext.getCurrentUserId());
+        subscription.setUpdateByName(UserContext.getCurrentUserName());
+        subscription.setUpdateTime(LocalDateTime.now());
+
+        boolean result = this.save(subscription);
         if (!result) {
             throw new BusinessException(500, "新增订阅失败");
         }
@@ -209,35 +242,62 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer updateSubscription(SysTenantSubscriptionUpdateRTO updateParam) {
-        // 查询待更新的订阅是否存在
         LambdaQueryWrapper<SysTenantSubscription> wrapper = new LambdaQueryWrapper<SysTenantSubscription>()
-                .eq(SysTenantSubscription::getId, updateParam.getId())
+                .eq(SysTenantSubscription::getId, Long.parseLong(updateParam.getId()))
                 .eq(SysTenantSubscription::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysTenantSubscription existSubscription = this.getOne(wrapper);
         if (existSubscription == null) {
             throw new BusinessException(404, "订阅不存在");
         }
-        // 校验租户和套餐组合是否重复（排除自身）
-        boolean tenantChanged = !existSubscription.getTenantId().equals(Long.parseLong(updateParam.getTenantId()));
-        boolean packageChanged = !existSubscription.getPackageId().equals(Long.parseLong(updateParam.getPackageCode()));
+
+        boolean tenantChanged = !existSubscription.getTenantCode().equals(updateParam.getTenantCode());
+        boolean packageChanged = !existSubscription.getPackageCode().equals(updateParam.getPackageCode());
         if (tenantChanged || packageChanged) {
             LambdaQueryWrapper<SysTenantSubscription> dupWrapper = new LambdaQueryWrapper<SysTenantSubscription>()
-                    .eq(SysTenantSubscription::getTenantId, Long.parseLong(updateParam.getTenantId()))
-                    .eq(SysTenantSubscription::getPackageId, Long.parseLong(updateParam.getPackageCode()))
+                    .eq(SysTenantSubscription::getTenantCode, updateParam.getTenantCode())
+                    .eq(SysTenantSubscription::getPackageCode, updateParam.getPackageCode())
                     .eq(SysTenantSubscription::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
-                    .ne(SysTenantSubscription::getId, updateParam.getId());
+                    .ne(SysTenantSubscription::getId, Long.parseLong(updateParam.getId()));
             long dupCount = this.count(dupWrapper);
             if (dupCount > 0) {
                 throw new BusinessException(400, "该租户已订阅此套餐");
             }
         }
-        // 校验订阅时间合法性：开始时间不能晚于结束时间
         if (updateParam.getStartTime() != null && updateParam.getEndTime() != null
                 && updateParam.getStartTime().isAfter(updateParam.getEndTime())) {
             throw new BusinessException(400, "订阅开始时间不能晚于结束时间");
         }
-        // 通过转换器将RTO转换为实体并更新
+
         SysTenantSubscription subscription = sysTenantSubscriptionConverter.toEntityUpdate(updateParam);
+
+        SysTenant tenant = iSysTenantService.lambdaQuery()
+                .eq(SysTenant::getTenantCode, updateParam.getTenantCode())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .one();
+        if (tenant == null) {
+            throw new BusinessException(400, "租户不存在: " + updateParam.getTenantCode());
+        }
+        subscription.setTenantId(String.valueOf(tenant.getId()));
+
+        if (StringUtils.isNotBlank(updateParam.getParentCode())) {
+            SysTenant parentTenant = iSysTenantService.lambdaQuery()
+                    .eq(SysTenant::getTenantCode, updateParam.getParentCode())
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                    .one();
+            if (parentTenant != null) {
+                subscription.setParentId(String.valueOf(parentTenant.getId()));
+            }
+        }
+
+        subscription.setCreateById(existSubscription.getCreateById());
+        subscription.setCreateByCode(existSubscription.getCreateByCode());
+        subscription.setCreateByName(existSubscription.getCreateByName());
+        subscription.setCreateTime(existSubscription.getCreateTime());
+        subscription.setUpdateById(UserContext.getCurrentUserId());
+        subscription.setUpdateByCode(UserContext.getCurrentUserId());
+        subscription.setUpdateByName(UserContext.getCurrentUserName());
+        subscription.setUpdateTime(LocalDateTime.now());
+
         boolean result = this.updateById(subscription);
         if (!result) {
             throw new BusinessException(500, "修改订阅失败");
@@ -271,10 +331,13 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         if (subscriptionStatus.getCode().equals(existSubscription.getStatus())) {
             throw new BusinessException(400, "订阅状态未变更");
         }
-        // 构建更新对象并更新状态
         SysTenantSubscription updateSubscription = new SysTenantSubscription();
-        updateSubscription.setId(id);
+        updateSubscription.setId(Long.parseLong(id));
         updateSubscription.setStatus(subscriptionStatus.getCode());
+        updateSubscription.setUpdateById(UserContext.getCurrentUserId());
+        updateSubscription.setUpdateByCode(UserContext.getCurrentUserId());
+        updateSubscription.setUpdateByName(UserContext.getCurrentUserName());
+        updateSubscription.setUpdateTime(LocalDateTime.now());
         boolean result = this.updateById(updateSubscription);
         if (!result) {
             throw new BusinessException(500, "更新订阅状态失败");
@@ -284,18 +347,20 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
 
     @Override
     public Integer deleteSubscription(String id) {
-        // 查询订阅是否存在且未删除
         LambdaQueryWrapper<SysTenantSubscription> wrapper = new LambdaQueryWrapper<SysTenantSubscription>()
-                .eq(SysTenantSubscription::getId, id)
+                .eq(SysTenantSubscription::getId, Long.parseLong(id))
                 .eq(SysTenantSubscription::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysTenantSubscription existSubscription = this.getOne(wrapper);
         if (existSubscription == null) {
             throw new BusinessException(400, "订阅不存在");
         }
-        // 执行逻辑删除：将isDeleted标记为已删除
         SysTenantSubscription subscription = new SysTenantSubscription();
-        subscription.setId(id);
+        subscription.setId(Long.parseLong(id));
         subscription.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
+        subscription.setUpdateById(UserContext.getCurrentUserId());
+        subscription.setUpdateByCode(UserContext.getCurrentUserId());
+        subscription.setUpdateByName(UserContext.getCurrentUserName());
+        subscription.setUpdateTime(LocalDateTime.now());
         boolean result = this.updateById(subscription);
         if (!result) {
             throw new BusinessException(500, "删除订阅失败");
@@ -306,21 +371,57 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer batchAddSubscription(List<SysTenantSubscriptionAddRTO> addParamList) {
-        // 校验批量新增数量上限
         if (addParamList.size() > 100) {
             throw new BusinessException(400, "单次批量新增数量不能超过100条");
         }
-        // 校验批量新增中是否存在重复的租户+套餐组合
         Set<String> combinationSet = new HashSet<>();
         for (SysTenantSubscriptionAddRTO param : addParamList) {
-            String combination = param.getTenantId() + ":" + param.getPackageCode();
+            String combination = param.getTenantCode() + ":" + param.getPackageCode();
             if (combinationSet.contains(combination)) {
-                throw new BusinessException(400, "批量新增中存在重复的租户+套餐组合: 租户=" + param.getTenantId() + ", 套餐=" + param.getPackageCode());
+                throw new BusinessException(400, "批量新增中存在重复的租户+套餐组合: 租户=" + param.getTenantCode() + ", 套餐=" + param.getPackageCode());
             }
             combinationSet.add(combination);
         }
-        // 通过转换器批量转换并保存
-        boolean batch = this.saveBatch(sysTenantSubscriptionConverter.toEntityListAdd(addParamList));
+
+        List<SysTenantSubscription> entityList = sysTenantSubscriptionConverter.toEntityListAdd(addParamList);
+        String currentUserId = UserContext.getCurrentUserId();
+        String currentUserName = UserContext.getCurrentUserName();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (int i = 0; i < entityList.size(); i++) {
+            SysTenantSubscription entity = entityList.get(i);
+            SysTenantSubscriptionAddRTO param = addParamList.get(i);
+
+            SysTenant tenant = iSysTenantService.lambdaQuery()
+                    .eq(SysTenant::getTenantCode, param.getTenantCode())
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                    .one();
+            if (tenant == null) {
+                throw new BusinessException(400, "租户不存在: " + param.getTenantCode());
+            }
+            entity.setTenantId(String.valueOf(tenant.getId()));
+
+            if (StringUtils.isNotBlank(param.getParentCode())) {
+                SysTenant parentTenant = iSysTenantService.lambdaQuery()
+                        .eq(SysTenant::getTenantCode, param.getParentCode())
+                        .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                        .one();
+                if (parentTenant != null) {
+                    entity.setParentId(String.valueOf(parentTenant.getId()));
+                }
+            }
+
+            entity.setCreateById(currentUserId);
+            entity.setCreateByCode(currentUserId);
+            entity.setCreateByName(currentUserName);
+            entity.setCreateTime(now);
+            entity.setUpdateById(currentUserId);
+            entity.setUpdateByCode(currentUserId);
+            entity.setUpdateByName(currentUserName);
+            entity.setUpdateTime(now);
+        }
+
+        boolean batch = this.saveBatch(entityList);
         if (!batch) {
             throw new BusinessException(500, "批量新增订阅失败");
         }
@@ -330,22 +431,20 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer batchUpdateSubscription(List<SysTenantSubscriptionUpdateRTO> updateParamList) {
-        // 校验批量修改数量上限
         if (updateParamList.size() > 100) {
             throw new BusinessException(400, "单次批量修改数量不能超过100条");
         }
-        // 校验批量修改中ID不为空且不重复
-        Set<String> idSet = new HashSet<>();
+        Set<Long> idSet = new HashSet<>();
         for (SysTenantSubscriptionUpdateRTO item : updateParamList) {
             if (item.getId() == null) {
                 throw new BusinessException(400, "批量修改中存在ID为空的记录");
             }
-            if (idSet.contains(item.getId())) {
+            Long idLong = Long.parseLong(item.getId());
+            if (idSet.contains(idLong)) {
                 throw new BusinessException(400, "批量修改中存在重复的订阅ID: " + item.getId());
             }
-            idSet.add(item.getId());
+            idSet.add(idLong);
         }
-        // 校验所有ID对应的记录存在且未删除
         LambdaQueryWrapper<SysTenantSubscription> idWrapper = new LambdaQueryWrapper<SysTenantSubscription>()
                 .in(SysTenantSubscription::getId, idSet)
                 .eq(SysTenantSubscription::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -353,8 +452,42 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         if (existIdCount != idSet.size()) {
             throw new BusinessException(400, "部分订阅ID不存在或已删除，请检查后重试");
         }
-        // 通过转换器批量转换并更新
-        boolean batch = this.updateBatchById(sysTenantSubscriptionConverter.toEntityListUpdate(updateParamList));
+
+        List<SysTenantSubscription> entityList = sysTenantSubscriptionConverter.toEntityListUpdate(updateParamList);
+        String currentUserId = UserContext.getCurrentUserId();
+        String currentUserName = UserContext.getCurrentUserName();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (int i = 0; i < entityList.size(); i++) {
+            SysTenantSubscription entity = entityList.get(i);
+            SysTenantSubscriptionUpdateRTO param = updateParamList.get(i);
+
+            SysTenant tenant = iSysTenantService.lambdaQuery()
+                    .eq(SysTenant::getTenantCode, param.getTenantCode())
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                    .one();
+            if (tenant == null) {
+                throw new BusinessException(400, "租户不存在: " + param.getTenantCode());
+            }
+            entity.setTenantId(String.valueOf(tenant.getId()));
+
+            if (StringUtils.isNotBlank(param.getParentCode())) {
+                SysTenant parentTenant = iSysTenantService.lambdaQuery()
+                        .eq(SysTenant::getTenantCode, param.getParentCode())
+                        .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                        .one();
+                if (parentTenant != null) {
+                    entity.setParentId(String.valueOf(parentTenant.getId()));
+                }
+            }
+
+            entity.setUpdateById(currentUserId);
+            entity.setUpdateByCode(currentUserId);
+            entity.setUpdateByName(currentUserName);
+            entity.setUpdateTime(now);
+        }
+
+        boolean batch = this.updateBatchById(entityList);
         if (!batch) {
             throw new BusinessException(500, "批量更新订阅失败");
         }
@@ -392,16 +525,21 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         if (existSubscriptions.isEmpty()) {
             throw new BusinessException(404, "未找到可更新状态的订阅");
         }
-        // 过滤出状态需要变更的订阅记录
         List<SysTenantSubscription> updateList = new ArrayList<>();
+        String currentUserId = UserContext.getCurrentUserId();
+        String currentUserName = UserContext.getCurrentUserName();
+        LocalDateTime now = LocalDateTime.now();
         for (SysTenantSubscription subscription : existSubscriptions) {
-            // 跳过状态未变更的记录
             if (subscriptionStatus.getCode().equals(subscription.getStatus())) {
                 continue;
             }
             SysTenantSubscription updateSubscription = new SysTenantSubscription();
             updateSubscription.setId(subscription.getId());
             updateSubscription.setStatus(subscriptionStatus.getCode());
+            updateSubscription.setUpdateById(currentUserId);
+            updateSubscription.setUpdateByCode(currentUserId);
+            updateSubscription.setUpdateByName(currentUserName);
+            updateSubscription.setUpdateTime(now);
             updateList.add(updateSubscription);
         }
         if (updateList.isEmpty()) {
@@ -438,12 +576,18 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         if (existSubscriptions.isEmpty()) {
             throw new BusinessException(404, "未找到可删除的订阅");
         }
-        // 构建逻辑删除更新列表
         List<SysTenantSubscription> subscriptionList = new ArrayList<>();
+        String currentUserId = UserContext.getCurrentUserId();
+        String currentUserName = UserContext.getCurrentUserName();
+        LocalDateTime now = LocalDateTime.now();
         for (SysTenantSubscription subscription : existSubscriptions) {
             SysTenantSubscription deleteSubscription = new SysTenantSubscription();
             deleteSubscription.setId(subscription.getId());
             deleteSubscription.setIsDeleted(GlobalEnum.Deleted.DELETED.getCode());
+            deleteSubscription.setUpdateById(currentUserId);
+            deleteSubscription.setUpdateByCode(currentUserId);
+            deleteSubscription.setUpdateByName(currentUserName);
+            deleteSubscription.setUpdateTime(now);
             subscriptionList.add(deleteSubscription);
         }
         // 批量执行逻辑删除

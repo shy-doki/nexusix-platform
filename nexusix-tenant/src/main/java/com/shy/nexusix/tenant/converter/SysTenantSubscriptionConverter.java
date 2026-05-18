@@ -9,7 +9,6 @@ import com.shy.nexusix.tenant.rto.SysTenantSubscriptionAddRTO;
 import com.shy.nexusix.tenant.rto.SysTenantSubscriptionUpdateRTO;
 import com.shy.nexusix.tenant.vo.SysTenantSubscriptionCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantSubscriptionDetailVO;
-import com.shy.nexusix.tenant.vo.SysTenantSubscriptionExportVO;
 import org.mapstruct.*;
 
 import java.util.List;
@@ -37,6 +36,11 @@ public interface SysTenantSubscriptionConverter {
     @Mapping(target = "subscriptionType", source = "subscriptionType", qualifiedByName = "subscriptionTypeToCode")
     @Mapping(target = "status", source = "status", qualifiedByName = "subscriptionStatusToCode")
     @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "deletedToCode")
+    @Mapping(target = "tenantId", ignore = true)
+    @Mapping(target = "packageId", ignore = true)
+    @Mapping(target = "parentId", ignore = true)
+    @Mapping(target = "createById", ignore = true)
+    @Mapping(target = "updateById", ignore = true)
     SysTenantSubscription toEntityAdd(SysTenantSubscriptionAddRTO addParam);
 
     /**
@@ -48,6 +52,11 @@ public interface SysTenantSubscriptionConverter {
     @Mapping(target = "subscriptionType", source = "subscriptionType", qualifiedByName = "subscriptionTypeToCode")
     @Mapping(target = "status", source = "status", qualifiedByName = "subscriptionStatusToCode")
     @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "deletedToCode")
+    @Mapping(target = "tenantId", ignore = true)
+    @Mapping(target = "packageId", ignore = true)
+    @Mapping(target = "parentId", ignore = true)
+    @Mapping(target = "createById", ignore = true)
+    @Mapping(target = "updateById", ignore = true)
     SysTenantSubscription toEntityUpdate(SysTenantSubscriptionUpdateRTO updateParam);
 
     /**
@@ -67,6 +76,11 @@ public interface SysTenantSubscriptionConverter {
     @Mapping(target = "subscriptionType", source = "subscriptionType", qualifiedByName = "subscriptionTypeToCode")
     @Mapping(target = "status", source = "status", qualifiedByName = "subscriptionStatusToCode")
     @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "deletedToCode")
+    @Mapping(target = "tenantId", ignore = true)
+    @Mapping(target = "packageId", ignore = true)
+    @Mapping(target = "parentId", ignore = true)
+    @Mapping(target = "createById", ignore = true)
+    @Mapping(target = "updateById", ignore = true)
     List<SysTenantSubscription> toEntityListUpdate(List<SysTenantSubscriptionUpdateRTO> updateParamList);
 
     /**
@@ -110,35 +124,8 @@ public interface SysTenantSubscriptionConverter {
      * @return 详情视图对象
      */
     @Named("toDetailVO")
-    @Mapping(target = "subscriptionType", source = "subscriptionType", qualifiedByName = "intSubscriptionTypeToDesc")
-    @Mapping(target = "status", source = "status", qualifiedByName = "intSubscriptionStatusToDesc")
-    @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "intDeletedToDesc")
     SysTenantSubscriptionDetailVO toDetailVO(SysTenantSubscription subscription);
 
-    /**
-     * Entity转导出VO
-     *
-     * @param subscription 实体对象
-     * @return 导出视图对象
-     */
-    @Named("toExportVO")
-    @Mapping(target = "subscriptionType", source = "subscriptionType", qualifiedByName = "intSubscriptionTypeToDesc")
-    @Mapping(target = "status", source = "status", qualifiedByName = "intSubscriptionStatusToDesc")
-    @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "intDeletedToDesc")
-    SysTenantSubscriptionExportVO toExportVO(SysTenantSubscription subscription);
-
-    /**
-     * Entity列表转导出VO列表
-     *
-     * @param subscriptionList 实体对象列表
-     * @return 导出视图对象列表
-     */
-    @IterableMapping(qualifiedByName = "toExportVO")
-    List<SysTenantSubscriptionExportVO> toExportVoList(List<SysTenantSubscription> subscriptionList);
-
-    /**
-     * 订阅类型枚举转编码
-     */
     @Named("subscriptionTypeToCode")
     default String subscriptionTypeToCode(SubscriptionType subscriptionType) {
         if (subscriptionType == null) return null;
