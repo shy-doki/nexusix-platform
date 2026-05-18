@@ -40,28 +40,21 @@ public class SysTenantDetailVO extends SysTenantCommonVO {
     private String ancestors;
 
     /**
-     * 当前主套餐
-     */
-    @Schema(description = "当前主套餐", example = "1001")
-    private String packageName;
-
-    /**
      * 扩展属性 (JSONB，存储行业特定配置)
      */
     @Schema(description = "扩展属性 (JSONB，存储行业特定配置)", example = "{\"industry\": \"tech\", \"quota\": 100}")
     private String extAttributes;
 
     /**
-     * 更新人
+     * 创建人编码
      */
-    @Schema(description = "更新人姓名", example = "100")
-    private String updateByName;
+    @Schema(description = "创建人编码", example = "USER_ADMIN")
+    private String createByCode;
 
     /**
-     * 更新时间
+     * 更新人编码
      */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-    @Schema(description = "更新时间", format = "date-time", example = "2026-04-07 15:45:30")
-    private LocalDateTime updateTime;
+    @Schema(description = "更新人编码", example = "100")
+    private String updateByCode;
 
 }

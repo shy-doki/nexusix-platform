@@ -66,10 +66,15 @@ public class SysTenantQueryRTO extends PageCommonRTO {
     private TimeRangeCommonRTO expireTime;
 
     /**
+     * 创建人编码
+     */
+    @Schema(description = "创建人编码", example = "100")
+    private String createByCode;
+
+    /**
      * 创建人姓名
      */
     @Schema(description = "创建人姓名", example = "李四")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private String createByName;
 
     /**
@@ -80,7 +85,27 @@ public class SysTenantQueryRTO extends PageCommonRTO {
     private TimeRangeCommonRTO createTime;
 
     /**
+     * 更新人编码
+     */
+    @Schema(description = "更新人编码", example = "100")
+    private String updateByCode;
+
+    /**
+     * 更新人姓名
+     */
+    @Schema(description = "更新人姓名", example = "王五")
+    private String updateByName;
+
+    /**
+     * 更新时间
+     */
+    @Schema(description = "更新时间范围", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private TimeRangeCommonRTO updateTime;
+
+    /**
      * 逻辑删除
+     * 超级管理员可填
      */
     @Schema(description = "逻辑删除", example = "0")
     private String isDeleted;

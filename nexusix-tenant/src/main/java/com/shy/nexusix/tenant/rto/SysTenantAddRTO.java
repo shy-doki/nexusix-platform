@@ -38,7 +38,6 @@ public class SysTenantAddRTO {
      * 租户编码
      */
     @NotBlank(message = "租户编码不能为空")
-    @Pattern(regexp = ALPHANUMERIC, message = "租户编码格式不正确")
     @Schema(description = "租户编码", example = "TEN0000001")
     private String tenantCode;
 
@@ -66,8 +65,7 @@ public class SysTenantAddRTO {
     /**
      * 父租户ID
      */
-    @NotNull(message = "父租户ID不能为空")
-    @Pattern(regexp = SNOWFLAKE_ID, message = "父租户ID格式不正确")
+    @NotNull(message = "父租户编码不能为空")
     @Schema(description = "父租户编码", example = "1987654321098765432")
     private String parentCode;
 
@@ -81,6 +79,7 @@ public class SysTenantAddRTO {
 
     /**
      * 祖级路径
+     * 超级管理员可填
      */
     @Schema(description = "祖级列表", example = "0/100/200")
     private String ancestors;
@@ -111,6 +110,7 @@ public class SysTenantAddRTO {
 
     /**
      * 服务过期时间
+     * 超级管理员、管理员可填
      */
     @NotNull(message = "服务过期时间不能为空")
     @Future(message = "服务过期时间不能早于当前时间")
@@ -119,11 +119,10 @@ public class SysTenantAddRTO {
     private LocalDateTime expireTime;
 
     /**
-     * 套餐ID
+     * 套餐编码
      */
-    @NotNull(message = "套餐ID不能为空")
-    @Pattern(regexp = SNOWFLAKE_ID, message = "套餐ID格式不正确")
-    @Schema(description = "套餐ID", example = "1001")
+    @NotNull(message = "套餐编码不能为空")
+    @Schema(description = "套餐编码", example = "1001")
     private String packageCode;
 
     /**
@@ -141,38 +140,44 @@ public class SysTenantAddRTO {
     private String extAttributes;
 
     /**
-     * 创建人ID
+     * 创建人编码
+     * 超级管理员可填
      */
-    @Schema(description = "创建人ID", example = "100")
-    private String createBy;
+    @Schema(description = "创建人编码", example = "100")
+    private String createByCode;
 
     /**
      * 创建人姓名
+     * 超级管理员可填
      */
     @Schema(description = "创建人姓名", example = "张三")
     private String createByName;
 
     /**
      * 创建时间
+     * 超级管理员可填
      */
     @Schema(description = "创建时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
 
     /**
-     * 更新人ID
+     * 更新人编码
+     * 超级管理员可填
      */
-    @Schema(description = "更新人ID", example = "100")
-    private String updateBy;
+    @Schema(description = "更新人编码", example = "100")
+    private String updateCode;
 
     /**
      * 更新人姓名
+     * 超级管理员可填
      */
     @Schema(description = "更新人姓名", example = "张三")
     private String updateByName;
 
     /**
      * 更新时间
+     * 超级管理员可填
      */
     @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
@@ -180,6 +185,7 @@ public class SysTenantAddRTO {
 
     /**
      * 逻辑删除
+     * 超级管理员可填
      */
     @Schema(description = "逻辑删除", example = "0")
     @EnumField

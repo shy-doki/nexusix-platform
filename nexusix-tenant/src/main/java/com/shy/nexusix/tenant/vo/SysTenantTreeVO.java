@@ -21,10 +21,10 @@ import java.util.List;
 public class SysTenantTreeVO extends SysTenantCommonVO {
 
     /**
-     * 父租户ID
+     * 父租户编码
      */
-    @Schema(description = "父租户ID", example = "1987654321098765432")
-    private Long parentCode;
+    @Schema(description = "父租户编码", example = "1987654321098765432")
+    private String parentCode;
 
 
     /**

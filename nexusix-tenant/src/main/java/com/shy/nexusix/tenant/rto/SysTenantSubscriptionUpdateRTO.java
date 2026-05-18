@@ -32,12 +32,11 @@ public class SysTenantSubscriptionUpdateRTO {
     private String id;
 
     /**
-     * 租户ID
+     * 租户编码
      */
-    @NotBlank(message = "租户ID不能为空")
-    @Pattern(regexp = SNOWFLAKE_ID, message = "租户ID格式不正确")
-    @Schema(description = "租户ID", example = "1987654321098765432")
-    private String tenantId;
+    @NotBlank(message = "租户编码不能为空")
+    @Schema(description = "租户编码", example = "1987654321098765432")
+    private String tenantCode;
 
     /**
      * 租户名称
@@ -48,11 +47,10 @@ public class SysTenantSubscriptionUpdateRTO {
     private String tenantName;
 
     /**
-     * 套餐产品ID
+     * 套餐产品编码
      */
-    @NotBlank(message = "套餐产品ID不能为空")
-    @Pattern(regexp = SNOWFLAKE_ID, message = "套餐产品ID格式不正确")
-    @Schema(description = "套餐产品ID", example = "1001")
+    @NotBlank(message = "套餐产品编码不能为空")
+    @Schema(description = "套餐产品编码", example = "1001")
     private String packageCode;
 
     /**
@@ -108,50 +106,56 @@ public class SysTenantSubscriptionUpdateRTO {
     private String sourceType;
 
     /**
-     * 父租户分配记录ID
+     * 父租户编码
      */
-    @Schema(description = "父租户分配记录ID", example = "1987654321098765432")
-    private String parentGrantId;
+    @Schema(description = "父租户编码", example = "1001")
+    private String parentCode;
 
     /**
      * 父租户名称
      */
-    @Schema(description = "父租户名称", example = "某科技集团")
-    private String parentTenantName;
+    @Schema(description = "父租户名称", example = "某某科技有限公司")
+    private String parentName;
 
     /**
-     * 创建人ID
+     * 创建人编码
+     * 超级管理员可填
      */
-    @Schema(description = "创建人ID", example = "100")
-    private String createBy;
+    @Schema(description = "创建人编码", example = "100")
+    private String createByCode;
 
     /**
      * 创建人姓名
+     * 超级管理员可填
      */
     @Schema(description = "创建人姓名", example = "张三")
     private String createByName;
 
     /**
-     * 更新人ID
-     */
-    @Schema(description = "更新人ID", example = "100")
-    private String updateBy;
-
-    /**
-     * 更新人姓名
-     */
-    @Schema(description = "更新人姓名", example = "张三")
-    private String updateByName;
-
-    /**
      * 创建时间
+     * 超级管理员可填
      */
     @Schema(description = "创建时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createTime;
 
     /**
+     * 更新人编码
+     * 超级管理员可填
+     */
+    @Schema(description = "更新人编码", example = "100")
+    private String updateByCode;
+
+    /**
+     * 更新人姓名
+     * 超级管理员可填
+     */
+    @Schema(description = "更新人姓名", example = "张三")
+    private String updateByName;
+
+    /**
      * 更新时间
+     * 超级管理员可填
      */
     @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
@@ -159,6 +163,7 @@ public class SysTenantSubscriptionUpdateRTO {
 
     /**
      * 逻辑删除
+     * 超级管理员可填
      */
     @Schema(description = "逻辑删除", example = "未删除")
     @EnumField

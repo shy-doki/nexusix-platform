@@ -19,16 +19,10 @@ import java.time.LocalDateTime;
 public class SysTenantSubscriptionCommonVO {
 
     /**
-     * 主键Id
+     * 订阅编码
      */
-    @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
-    private Long id;
-
-    /**
-     * 租户ID
-     */
-    @Schema(description = "租户ID", example = "1987654321098765432")
-    private Long tenantId;
+    @Schema(description = "订阅编码", example = "SUB_001")
+    private String subscriptionCode;
 
     /**
      * 租户名称
@@ -37,19 +31,13 @@ public class SysTenantSubscriptionCommonVO {
     private String tenantName;
 
     /**
-     * 套餐产品ID
-     */
-    @Schema(description = "套餐产品ID", example = "1001")
-    private Long packageId;
-
-    /**
      * 套餐产品名称
      */
     @Schema(description = "套餐产品名称", example = "高级套餐")
     private String packageName;
 
     /**
-     * 订阅类型(中文描述)
+     * 订阅类型
      */
     @Schema(description = "订阅类型", example = "自购")
     private String subscriptionType;
@@ -69,6 +57,18 @@ public class SysTenantSubscriptionCommonVO {
     private LocalDateTime endTime;
 
     /**
+     * 来源类型
+     */
+    @Schema(description = "来源类型", example = "1")
+    private Integer sourceType;
+
+    /**
+     * 父租户名称
+     */
+    @Schema(description = "父租户名称", example = "某科技集团")
+    private String parentName;
+
+    /**
      * 状态
      */
     @Schema(description = "状态", example = "生效")
@@ -81,10 +81,10 @@ public class SysTenantSubscriptionCommonVO {
     private Boolean isAutoRenew;
 
     /**
-     * 逻辑删除(中文描述)
+     * 创建人姓名
      */
-    @Schema(description = "逻辑删除", example = "未删除")
-    private String isDeleted;
+    @Schema(description = "创建人姓名", example = "张三")
+    private String createByName;
 
     /**
      * 创建时间
@@ -99,5 +99,18 @@ public class SysTenantSubscriptionCommonVO {
     @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime updateTime;
+
+    /**
+     * 更新人姓名
+     */
+    @Schema(description = "更新人姓名", example = "张三")
+    private String updateByName;
+
+    /**
+     * 逻辑删除
+     * 超级管理员可见
+     */
+    @Schema(description = "逻辑删除", example = "未删除")
+    private String isDeleted;
 
 }

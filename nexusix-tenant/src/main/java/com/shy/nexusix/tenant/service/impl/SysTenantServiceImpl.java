@@ -42,14 +42,6 @@ import java.util.stream.Collectors;
 @Service
 public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant> implements ISysTenantService {
 
-    // TODO 业务校验 + 软删除考虑使用aop结合注解去做
-
-    // TODO 权限校验 控制器层/aop处理
-
-    // TODO 业务校验(如不同角色查看的数据内容)
-
-    // TODO 后续实现逻辑删除仅超级管理可见 才返回 否则剔除
-
     @Autowired
     private SysTenantConverter sysTenantConverter;
 
@@ -187,7 +179,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 仅分页查询根租户（parentId = 0）
         LambdaQueryWrapper<SysTenant> rootWrapper = new LambdaQueryWrapper<SysTenant>()
-                .and(w -> w.eq(SysTenant::getParentCode, "rootTenant").or().isNull(SysTenant::getParentCode))
+                .and(w -> w.eq(SysTenant::getParentId, "rootTenant").or().isNull(SysTenant::getParentId))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByDesc(SysTenant::getCreateTime);
 
@@ -289,7 +281,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 目标租户为根节点，取第一个即为所求
         // 如果目标租户本身是根节点（parentId=0），则直接返回
         // 否则需从树中找到目标租户节点
-        if (targetTenant.getParentCode() == null || "rootTenant".equals(targetTenant.getParentCode())) {
+        if (targetTenant.getParentId() == null || "rootTenant".equals(targetTenant.getParentId())) {
             return tree.isEmpty() ? null : tree.get(0);
         }
 
@@ -501,10 +493,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         String ancestors;
 
         // 处理父租户关系
-        if (StringUtils.isNotBlank(addParam.getParentCode())) {
+        if (StringUtils.isNotBlank(addParam.getParentId())) {
             // 查询父租户是否存在
             LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
-                    .eq(SysTenant::getId, addParam.getParentCode())
+                    .eq(SysTenant::getId, addParam.getParentId())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
             SysTenant parentTenant = this.getOne(parentWrapper);
 
@@ -605,16 +597,16 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 如果修改了父租户, 需要进行层级关系校验
-        if (!existTenant.getParentCode().equals(updateParam.getParentCode())) {
+        if (!existTenant.getParentId().equals(updateParam.getParentId())) {
 
             // 不能将自己设为父租户
-            if (updateParam.getParentCode().equals(updateParam.getId())) {
+            if (updateParam.getParentId().equals(updateParam.getId())) {
                 throw new BusinessException(400, "不能将自己设为父租户");
             }
 
             // 校验新父租户是否存在
             LambdaQueryWrapper<SysTenant> newParentWrapper = new LambdaQueryWrapper<SysTenant>()
-                    .eq(SysTenant::getId, updateParam.getParentCode())
+                    .eq(SysTenant::getId, updateParam.getParentId())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
             SysTenant newParentTenant = this.getOne(newParentWrapper);
 
@@ -724,7 +716,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 冻结租户时，校验该租户下是否存在正常状态的子租户
         if (GlobalEnum.TenantStatus.DISABLED.equals(tenantStatus)) {
             LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
-                    .eq(SysTenant::getParentCode, existTenant.getId())
+                    .eq(SysTenant::getParentId, existTenant.getId())
                     .eq(SysTenant::getStatus, GlobalEnum.TenantStatus.ENABLED.getCode())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
             long childCount = this.count(childWrapper);
@@ -780,7 +772,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 检查是否存在子租户，有子租户则不允许删除
         LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
-                .eq(SysTenant::getParentCode, id)
+                .eq(SysTenant::getParentId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         long childCount = this.count(childWrapper);
         if (childCount > 0) {
@@ -803,15 +795,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 检查原父租户是否还有其他子租户，更新 hasChildren 标记
-        if (existTenant.getParentCode() != null && !"rootTenant".equals(existTenant.getParentCode())) {
+        if (existTenant.getParentId() != null && !"rootTenant".equals(existTenant.getParentId())) {
             LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
-                    .eq(SysTenant::getParentCode, existTenant.getParentCode())
+                    .eq(SysTenant::getParentId, existTenant.getParentId())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .ne(SysTenant::getId, id);
             long siblingCount = this.count(siblingWrapper);
             if (siblingCount == 0) {
                 SysTenant updateOldParent = new SysTenant();
-                updateOldParent.setId(existTenant.getParentCode());
+                updateOldParent.setId(existTenant.getParentId());
                 updateOldParent.setHasChildren(false);
                 // 填充审计参数
                 updateOldParent.setUpdateBy(UserContext.getCurrentUserId());
@@ -873,7 +865,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 收集所有父租户ID，批量查询父租户信息
         Set<String> parentIds = addParamList.stream()
-                .map(SysTenantAddRTO::getParentCode)
+                .map(SysTenantAddRTO::getParentId)
                 .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toSet());
 
@@ -915,8 +907,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             String ancestors;
 
             // 构建祖级列表 根据父租户信息生成
-            if (StringUtils.isNotBlank(param.getParentCode())) {
-                SysTenant parentTenant = parentTenantMap.get(param.getParentCode());
+            if (StringUtils.isNotBlank(param.getParentId())) {
+                SysTenant parentTenant = parentTenantMap.get(param.getParentId());
 
                 // 防止循环引用 检查当前租户编码是否已存在于父租户的 ancestors 中
                 String parentAncestors = parentTenant.getAncestors() != null ? parentTenant.getAncestors() : "rootTenant";
@@ -1067,8 +1059,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         Set<String> newParentIds = new HashSet<>();
         for (SysTenantUpdateRTO param : updateParamList) {
             SysTenant existTenant = existTenantMap.get(param.getId());
-            if (!existTenant.getParentCode().equals(param.getParentCode())) {
-                newParentIds.add(param.getParentCode());
+            if (!existTenant.getParentId().equals(param.getParentId())) {
+                newParentIds.add(param.getParentId());
             }
         }
 
@@ -1110,14 +1102,14 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             SysTenant existTenant = existTenantMap.get(param.getId());
 
             // 如果修改了父租户，进行层级关系校验
-            if (!existTenant.getParentCode().equals(param.getParentCode())) {
+            if (!existTenant.getParentId().equals(param.getParentId())) {
 
                 // 不能将自己设为父租户
-                if (param.getParentCode().equals(param.getId())) {
+                if (param.getParentId().equals(param.getId())) {
                     throw new BusinessException(400, "不能将自己设为父租户: " + param.getTenantCode());
                 }
 
-                SysTenant newParentTenant = newParentTenantMap.get(param.getParentCode());
+                SysTenant newParentTenant = newParentTenantMap.get(param.getParentId());
 
                 // 防止循环引用：检查当前租户是否是新父租户的祖先
                 if (newParentTenant.getAncestors() != null
@@ -1231,7 +1223,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 冻结租户时，校验这些租户下是否存在正常状态的子租户
         if (GlobalEnum.TenantStatus.DISABLED.equals(tenantStatus)) {
             LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
-                    .in(SysTenant::getParentCode, idSet)
+                    .in(SysTenant::getParentId, idSet)
                     .eq(SysTenant::getStatus, GlobalEnum.TenantStatus.ENABLED.getCode())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
             long childCount = this.count(childWrapper);
@@ -1323,7 +1315,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 检查这些租户下是否存在子租户
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                .in(SysTenant::getParentCode, idSet)
+                .in(SysTenant::getParentId, idSet)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         long childCount = this.count(wrapper);
         if (childCount > 0) {
@@ -1346,8 +1338,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             deleteTenant.setUpdateTime(now);
             tenantList.add(deleteTenant);
             // 收集需要检查 hasChildren 的父租户ID
-            if (tenant.getParentCode() != null && !"rootTenant".equals(tenant.getParentCode())) {
-                parentIdsToCheck.add(tenant.getParentCode());
+            if (tenant.getParentId() != null && !"rootTenant".equals(tenant.getParentId())) {
+                parentIdsToCheck.add(tenant.getParentId());
             }
         }
 
@@ -1361,7 +1353,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 检查原父租户是否还有其他子租户，更新 hasChildren 标记
         for (String parentId : parentIdsToCheck) {
             LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
-                    .eq(SysTenant::getParentCode, parentId)
+                    .eq(SysTenant::getParentId, parentId)
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
             long siblingCount = this.count(siblingWrapper);
             if (siblingCount == 0) {
@@ -1402,23 +1394,23 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     public Integer assignSubTenant(SysTenantAssignRTO assignParam) {
 
         // 校验租户编码格式
-        validateTenantCode(assignParam.getParentCode(), "父租户编码");
+        validateTenantCode(assignParam.getParentId(), "父租户编码");
         validateTenantCode(assignParam.getSubCode(), "子租户编码");
 
         // 校验父租户编码和子租户编码不能相同
-        if (assignParam.getSubCode().contains(assignParam.getParentCode())) {
-            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + assignParam.getParentCode());
+        if (assignParam.getSubCode().contains(assignParam.getParentId())) {
+            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + assignParam.getParentId());
         }
 
         // 查询父租户
         LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
-                .eq(SysTenant::getTenantCode, assignParam.getParentCode())
+                .eq(SysTenant::getTenantCode, assignParam.getParentId())
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysTenant parentTenant = this.getOne(parentWrapper);
 
         // 校验父租户是否存在
         if (parentTenant == null) {
-            throw new BusinessException(400, "父租户不存在: " + assignParam.getParentCode());
+            throw new BusinessException(400, "父租户不存在: " + assignParam.getParentId());
         }
 
         // 校验父租户状态（冻结的父租户不能作为父级）
@@ -1528,15 +1520,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 如果子租户原来有父租户，检查原父租户是否还有其他子租户
-            if (subTenant.getParentCode() != null && !"rootTenant".equals(subTenant.getParentCode())) {
+            if (subTenant.getParentId() != null && !"rootTenant".equals(subTenant.getParentId())) {
                 LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
-                        .eq(SysTenant::getParentCode, subTenant.getParentCode())
+                        .eq(SysTenant::getParentId, subTenant.getParentId())
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                         .ne(SysTenant::getId, subTenant.getId());
                 long siblingCount = this.count(siblingWrapper);
                 if (siblingCount == 0) {
                     SysTenant updateOldParent = new SysTenant();
-                    updateOldParent.setId(subTenant.getParentCode());
+                    updateOldParent.setId(subTenant.getParentId());
                     updateOldParent.setHasChildren(false);
                     // 填充审计参数
                     updateOldParent.setUpdateBy(currentUserId);
@@ -1573,23 +1565,23 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     public Integer assignParentTenant(SysTenantAssignRTO assignParam) {
 
         // 校验租户编码格式
-        validateTenantCode(assignParam.getParentCode(), "父租户编码");
+        validateTenantCode(assignParam.getParentId(), "父租户编码");
         validateTenantCode(assignParam.getSubCode(), "子租户编码");
 
         // 校验父租户编码和子租户编码不能相同
-        if (assignParam.getSubCode().contains(assignParam.getParentCode())) {
-            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + assignParam.getParentCode());
+        if (assignParam.getSubCode().contains(assignParam.getParentId())) {
+            throw new BusinessException(400, "父租户编码和子租户编码不能相同: " + assignParam.getParentId());
         }
 
         // 查询新父租户
         LambdaQueryWrapper<SysTenant> parentWrapper = new LambdaQueryWrapper<SysTenant>()
-                .eq(SysTenant::getTenantCode, assignParam.getParentCode())
+                .eq(SysTenant::getTenantCode, assignParam.getParentId())
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysTenant newParent = this.getOne(parentWrapper);
 
         // 校验新父租户是否存在
         if (newParent == null) {
-            throw new BusinessException(400, "父租户不存在: " + assignParam.getParentCode());
+            throw new BusinessException(400, "父租户不存在: " + assignParam.getParentId());
         }
 
         // 查询所有待分配租户
@@ -1697,15 +1689,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 检查原父租户是否还有其他子租户，更新 hasChildren 标记
-            if (subTenant.getParentCode() != null && !"rootTenant".equals(subTenant.getParentCode())) {
+            if (subTenant.getParentId() != null && !"rootTenant".equals(subTenant.getParentId())) {
                 LambdaQueryWrapper<SysTenant> siblingWrapper = new LambdaQueryWrapper<SysTenant>()
-                        .eq(SysTenant::getParentCode, subTenant.getParentCode())
+                        .eq(SysTenant::getParentId, subTenant.getParentId())
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                         .ne(SysTenant::getId, subTenant.getId());
                 long siblingCount = this.count(siblingWrapper);
                 if (siblingCount == 0) {
                     SysTenant updateOldParent = new SysTenant();
-                    updateOldParent.setId(subTenant.getParentCode());
+                    updateOldParent.setId(subTenant.getParentId());
                     updateOldParent.setHasChildren(false);
                     // 填充审计参数
                     updateOldParent.setUpdateBy(currentUserId);
@@ -1738,8 +1730,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 按 parentId 分组，构建父ID到子节点列表的映射
         Map<Long, List<SysTenantTreeVO>> parentMap = treeVOList.stream()
-                .filter(vo -> vo.getParentCode() != null && vo.getParentCode() != 0L)
-                .collect(Collectors.groupingBy(SysTenantTreeVO::getParentCode));
+                .filter(vo -> vo.getParentId() != null && vo.getParentId() != 0L)
+                .collect(Collectors.groupingBy(SysTenantTreeVO::getParentId));
 
         // 递归填充子节点
         for (SysTenantTreeVO vo : treeVOList) {
@@ -1749,7 +1741,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 返回根节点列表（parentId 为 0 或 null）
         return treeVOList.stream()
-                .filter(vo -> vo.getParentCode() == null || vo.getParentCode() == 0L)
+                .filter(vo -> vo.getParentId() == null || vo.getParentId() == 0L)
                 .collect(Collectors.toList());
     }
 
