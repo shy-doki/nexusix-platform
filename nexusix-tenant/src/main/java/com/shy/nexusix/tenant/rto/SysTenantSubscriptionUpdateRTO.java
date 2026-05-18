@@ -53,7 +53,7 @@ public class SysTenantSubscriptionUpdateRTO {
     @NotBlank(message = "套餐产品ID不能为空")
     @Pattern(regexp = SNOWFLAKE_ID, message = "套餐产品ID格式不正确")
     @Schema(description = "套餐产品ID", example = "1001")
-    private String packageId;
+    private String packageCode;
 
     /**
      * 套餐产品名称

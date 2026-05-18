@@ -1,6 +1,8 @@
 package com.shy.nexusix.core.context;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.shy.nexusix.common.constant.GlobalConstant;
 import com.shy.nexusix.core.entity.ColumnPerm;
 import org.apache.commons.lang3.StringUtils;
@@ -284,23 +286,22 @@ public class UserContext {
             return Collections.emptySet();
         }
 
-        // 获取当前用户在指定表上可操作的列名
         Object opsObj = StpUtil.getSession().get(GlobalConstant.RedisKey.OPERABLE_COLUMNS);
         if (opsObj == null) return Collections.emptySet();
 
-        ColumnPerm opsCol = (ColumnPerm) opsObj;
+        ColumnPerm opsCol = convertToColumnPerm(opsObj);
+        if (opsCol == null) return Collections.emptySet();
 
-        // 根据操作类型获取对应的数据
         Set<String> operationCol = new HashSet<>();
         switch (operationType) {
             case "query":
-                operationCol = opsCol.getQuery().get(tableName);
+                operationCol = opsCol.getQuery() != null ? opsCol.getQuery().get(tableName) : null;
                 break;
             case "create":
-                operationCol = opsCol.getCreate().get(tableName);
+                operationCol = opsCol.getCreate() != null ? opsCol.getCreate().get(tableName) : null;
                 break;
             case "update":
-                operationCol = opsCol.getUpdate().get(tableName);
+                operationCol = opsCol.getUpdate() != null ? opsCol.getUpdate().get(tableName) : null;
                 break;
         }
         if (operationCol == null) return Collections.emptySet();
@@ -320,28 +321,54 @@ public class UserContext {
             return Collections.emptySet();
         }
 
-        // 获取当前用户在指定表上不可操作的列名
         Object unOpsObj = StpUtil.getSession().get(GlobalConstant.RedisKey.UN_OPERABLE_COLUMNS);
         if (unOpsObj == null) return Collections.emptySet();
 
-        ColumnPerm unOpsCol = (ColumnPerm) unOpsObj;
+        ColumnPerm unOpsCol = convertToColumnPerm(unOpsObj);
+        if (unOpsCol == null) return Collections.emptySet();
 
-        // 根据操作类型获取对应数据
         Set<String> unOperationCol = new HashSet<>();
         switch (operationType) {
             case "query":
-                unOperationCol = unOpsCol.getQuery().get(tableName);
+                unOperationCol = unOpsCol.getQuery() != null ? unOpsCol.getQuery().get(tableName) : null;
                 break;
             case "create":
-                unOperationCol = unOpsCol.getCreate().get(tableName);
+                unOperationCol = unOpsCol.getCreate() != null ? unOpsCol.getCreate().get(tableName) : null;
                 break;
             case "update":
-                unOperationCol = unOpsCol.getUpdate().get(tableName);
+                unOperationCol = unOpsCol.getUpdate() != null ? unOpsCol.getUpdate().get(tableName) : null;
                 break;
         }
         if (unOperationCol == null) return Collections.emptySet();
 
         return unOperationCol;
+    }
+
+    /**
+     * 将Session中的对象转换为ColumnPerm
+     * Sa-Token使用FastJSON2序列化，从Session取出时可能是JSONObject
+     *
+     * @param obj Session中取出的对象
+     * @return ColumnPerm对象，转换失败返回null
+     */
+    private static ColumnPerm convertToColumnPerm(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        if (obj instanceof ColumnPerm) {
+            return (ColumnPerm) obj;
+        }
+
+        if (obj instanceof JSONObject) {
+            return ((JSONObject) obj).toJavaObject(ColumnPerm.class);
+        }
+
+        try {
+            return JSON.parseObject(JSON.toJSONString(obj), ColumnPerm.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
 }

@@ -27,7 +27,7 @@ public class SysTenantSubscriptionQueryRTO extends PageCommonRTO {
      * 套餐产品ID
      */
     @Schema(description = "套餐产品ID", example = "1001")
-    private String packageId;
+    private String packageCode;
 
     /**
      * 订阅类型

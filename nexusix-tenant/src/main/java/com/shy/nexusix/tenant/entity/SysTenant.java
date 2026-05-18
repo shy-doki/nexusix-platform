@@ -55,8 +55,8 @@ public class SysTenant implements Serializable {
     private String tenantCode;
 
     @Schema(description = "父租户ID", example = "TENANT_006")
-    @TableField(value = "parent_id")
-    private String parentId;
+    @TableField(value = "parent_code")
+    private String parentCode;
 
     @Schema(description = "父租户名称", example = "阿里云")
     @TableField(value = "parent_name")
@@ -84,8 +84,8 @@ public class SysTenant implements Serializable {
     private LocalDateTime expireTime;
 
     @Schema(description = "当前主套餐ID", example = "1001")
-    @TableField(value = "package_id")
-    private String packageId;
+    @TableField(value = "package_code")
+    private String packageCode;
 
     @Schema(description = "当前主套餐名称", example = "标准版")
     @TableField(value = "package_name")

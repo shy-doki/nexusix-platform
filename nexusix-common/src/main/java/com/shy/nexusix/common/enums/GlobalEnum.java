@@ -40,7 +40,7 @@ public final class GlobalEnum {
      * </p>
      */
     public enum Deleted implements BaseEnum {
-        NOT_DELETED("ACTIVE", "未删除"),
+        NOT_DELETED("NOT_DELETED", "未删除"),
         DELETED("DELETED", "已删除");
 
         @EnumValue

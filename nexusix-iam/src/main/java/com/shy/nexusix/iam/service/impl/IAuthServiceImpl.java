@@ -3,14 +3,18 @@ package com.shy.nexusix.iam.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.shy.nexusix.common.constant.GlobalConstant;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
+import com.shy.nexusix.core.entity.ColumnPerm;
 import com.shy.nexusix.iam.entity.*;
 import com.shy.nexusix.iam.mapper.SysUserMapper;
 import com.shy.nexusix.iam.rto.LoginRTO;
 import com.shy.nexusix.iam.rto.RegisterRTO;
 import com.shy.nexusix.iam.service.IAuthService;
-import com.shy.nexusix.iam.service.ISysPermPolicyService;
+import com.shy.nexusix.iam.service.ISysUserPermRelService;
+import com.shy.nexusix.iam.service.ISysUserRoleRelService;
+import com.shy.nexusix.iam.service.ISysUserTenantRelService;
 import com.shy.nexusix.iam.vo.LoginVO;
 import com.shy.nexusix.iam.vo.RegisterVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -36,7 +41,13 @@ import java.util.*;
 public class IAuthServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements IAuthService {
 
     @Autowired
-    private ISysPermPolicyService iSysPermPolicyService;
+    private ISysUserTenantRelService iSysUserTenantRelService;
+
+    @Autowired
+    private ISysUserPermRelService iSysUserPermRelService;
+
+    @Autowired
+    private ISysUserRoleRelService iSysUserRoleRelService;
 
     /**
      * <p>
@@ -60,7 +71,7 @@ public class IAuthServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implem
      * @since 2026-05-17
      */
     @Override
-    public LoginVO login(LoginRTO loginRTO) {
+    public String login(LoginRTO loginRTO) {
         SysUser user = getOne(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUsername, loginRTO.getUsername())
                 .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
@@ -78,14 +89,132 @@ public class IAuthServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implem
 
         StpUtil.login(user.getId());
 
-        // 计算登录用户权限信息 [系统级、租户级、角色级、用户级]  用户和租户绑定值去查sys_user_perm_rel
-        iSysPermPolicyService.
+        // 查询用户默认租户关联关系
+        Optional<SysUserTenantRel> tenantRelOpt = iSysUserTenantRelService.lambdaQuery()
+                .eq(SysUserTenantRel::getUserCode, user.getUserCode())
+                .eq(SysUserTenantRel::getIsDefault, true)
+                .eq(SysUserTenantRel::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .oneOpt();
+
+        // 存入 Session 并获取租户编码
+        String tenantCode = null;
+        if (tenantRelOpt.isPresent()) {
+            SysUserTenantRel rel = tenantRelOpt.get();
+            tenantCode = rel.getTenantCode();
+            StpUtil.getSession().set("tenantId", rel.getTenantCode());
+            StpUtil.getSession().set("tenantName", rel.getTenantName());
+        }
+
+        // 计算登录用户权限信息 [系统级、租户级、角色级、用户级]
+        List<SysUserPermRel> userPermRels = iSysUserPermRelService.lambdaQuery()
+                .eq(SysUserPermRel::getUserCode, user.getUserCode())
+                .eq(SysUserPermRel::getTenantCode, tenantCode)
+                .eq(SysUserPermRel::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .list();
+
+        // 提取所有权限编码并存入 Session
+        Set<String> permCodes = userPermRels.stream()
+                .map(SysUserPermRel::getPermCode)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        StpUtil.getSession().set("permCodes", permCodes);
+
+        // 提前有效权限存入 Session
+        Set<String> validPerms = userPermRels.stream()
+                .filter(rel -> "ALLOW".equals(rel.getAction()))
+                .map(SysUserPermRel::getPermCode)
+                .collect(Collectors.toSet());
+        StpUtil.getSession().set("validPerms", validPerms);
+
+        // 提取无效权限编码并存入 Session
+        Set<String> invalidPerms = userPermRels.stream()
+                .filter(rel -> "DENY".equals(rel.getAction()))
+                .map(SysUserPermRel::getPermCode)
+                .collect(Collectors.toSet());
+        StpUtil.getSession().set("invalidPerms", invalidPerms);
+
+//        // 提取所有有效操作字段并按表名和操作类型分组存入 Session
+//        Map<String, Map<String, Set<String>>> fieldPermissions = userPermRels.stream()
+//                .filter(rel -> rel.getFieldOperates() != null && !rel.getFieldOperates().isEmpty())
+//                .filter(rel -> "ALLOW".equals(rel.getAction()))
+//                .collect(Collectors.groupingBy(
+//                        SysUserPermRel::getTableName,
+//                        Collectors.groupingBy(
+//                                SysUserPermRel::getAccessType,
+//                                Collectors.flatMapping(
+//                                        rel -> Arrays.stream(rel.getFieldOperates().split(",")),
+//                                        Collectors.toSet()
+//                                )
+//                        )
+//                ));
+//
+//        StpUtil.getSession().set("fieldPermissions", fieldPermissions);
+//
+//        // 提取所有禁用字段并按表名和操作类型分组存入 Session
+//        Map<String, Map<String, Set<String>>> unFieldPermissions = userPermRels.stream()
+//                .filter(rel -> rel.getFieldUnOperate() != null && !rel.getFieldUnOperate().isEmpty())
+//                .filter(rel -> "DENY".equals(rel.getAction()))
+//                .collect(Collectors.groupingBy(
+//                        SysUserPermRel::getTableName,
+//                        Collectors.groupingBy(
+//                                SysUserPermRel::getAccessType,
+//                                Collectors.flatMapping(
+//                                        rel -> Arrays.stream(rel.getFieldUnOperate().split(",")),
+//                                        Collectors.toSet()
+//                                )
+//                        )
+//                ));
+//
+//        StpUtil.getSession().set("unFieldPermissions", unFieldPermissions);
+
+        // 提取所有有效操作字段并按表名和操作类型分组
+        Map<String, Map<String, Set<String>>> fieldPermissionsMap = userPermRels.stream()
+                .filter(rel -> rel.getFieldOperates() != null && !rel.getFieldOperates().isEmpty())
+                .filter(rel -> "ALLOW".equals(rel.getAction()))
+                .collect(Collectors.groupingBy(
+                        SysUserPermRel::getTableName,
+                        Collectors.groupingBy(
+                                SysUserPermRel::getAccessType,
+                                Collectors.flatMapping(
+                                        rel -> parseJsonArray(rel.getFieldOperates()).stream(),
+                                        Collectors.toSet()
+                                )
+                        )
+                ));
+
+        ColumnPerm columnPerm = new ColumnPerm();
+        columnPerm.setQuery(extractFieldsByType(fieldPermissionsMap, GlobalConstant.OperableType.QUERY_TYPE));
+        columnPerm.setCreate(extractFieldsByType(fieldPermissionsMap, GlobalConstant.OperableType.CREATE_TYPE));
+        columnPerm.setUpdate(extractFieldsByType(fieldPermissionsMap, GlobalConstant.OperableType.UPDATE_TYPE));
+
+        StpUtil.getSession().set(GlobalConstant.RedisKey.OPERABLE_COLUMNS, columnPerm);
+
+        // 提取所有禁用字段并按表名和操作类型分组
+        Map<String, Map<String, Set<String>>> unFieldPermissionsMap = userPermRels.stream()
+                .filter(rel -> rel.getFieldUnOperate() != null && !rel.getFieldUnOperate().isEmpty())
+                .filter(rel -> "DENY".equals(rel.getAction()))
+                .collect(Collectors.groupingBy(
+                        SysUserPermRel::getTableName,
+                        Collectors.groupingBy(
+                                SysUserPermRel::getAccessType,
+                                Collectors.flatMapping(
+                                        rel -> parseJsonArray(rel.getFieldUnOperate()).stream(),
+                                        Collectors.toSet()
+                                )
+                        )
+                ));
+
+        ColumnPerm unColumnPerm = new ColumnPerm();
+        unColumnPerm.setQuery(extractFieldsByType(unFieldPermissionsMap, GlobalConstant.OperableType.QUERY_TYPE));
+        unColumnPerm.setCreate(extractFieldsByType(unFieldPermissionsMap, GlobalConstant.OperableType.CREATE_TYPE));
+        unColumnPerm.setUpdate(extractFieldsByType(unFieldPermissionsMap, GlobalConstant.OperableType.UPDATE_TYPE));
+
+        StpUtil.getSession().set(GlobalConstant.RedisKey.UN_OPERABLE_COLUMNS, unColumnPerm);
 
         // 计算登录用户角色信息 [系统级、租户级、用户级] 用户和租户绑定值去查sys_user_role_rel
 
-        // 计算登录用户字段操作信息 在权限信息里的字段
-
-        // 存入 Session
+        return "登录成功";
 
     }
 
@@ -127,6 +256,47 @@ public class IAuthServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implem
         vo.setUserId(user.getId());
         vo.setUsername(user.getUsername());
         return vo;
+    }
+
+    /**
+     * 解析JSONB数组字符串为Set集合
+     * PostgreSQL的JSONB字段读取后格式如：["field1","field2","field3"]
+     *
+     * @param jsonArrayStr JSON数组字符串
+     * @return 字段名集合
+     */
+    private Set<String> parseJsonArray(String jsonArrayStr) {
+        if (jsonArrayStr == null || jsonArrayStr.isEmpty()) {
+            return Collections.emptySet();
+        }
+        try {
+            // 清理JSON格式符号
+            String cleaned = jsonArrayStr.replaceAll("[\\[\\]\"]", "").trim();
+            if (cleaned.isEmpty()) {
+                return Collections.emptySet();
+            }
+            // 按逗号分割并去除空白
+            return Arrays.stream(cleaned.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toSet());
+        } catch (Exception e) {
+            return Collections.emptySet();
+        }
+    }
+
+    /**
+     * 从嵌套Map中提取指定操作类型的字段权限
+     * @param permissionsMap 权限Map (表名 -> 操作类型 -> 字段集合)
+     * @param operationType 操作类型 (query/create/update)
+     * @return 表名到字段集合的映射
+     */
+    private Map<String, Set<String>> extractFieldsByType(Map<String, Map<String, Set<String>>> permissionsMap, String operationType) {
+        return permissionsMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().getOrDefault(operationType, Collections.emptySet())
+                ));
     }
 
 }

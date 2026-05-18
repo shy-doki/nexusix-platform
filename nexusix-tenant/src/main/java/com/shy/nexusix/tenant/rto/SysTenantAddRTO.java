@@ -68,8 +68,8 @@ public class SysTenantAddRTO {
      */
     @NotNull(message = "父租户ID不能为空")
     @Pattern(regexp = SNOWFLAKE_ID, message = "父租户ID格式不正确")
-    @Schema(description = "父租户ID", example = "1987654321098765432")
-    private String parentId;
+    @Schema(description = "父租户编码", example = "1987654321098765432")
+    private String parentCode;
 
     /**
      * 父租户名称
@@ -124,7 +124,7 @@ public class SysTenantAddRTO {
     @NotNull(message = "套餐ID不能为空")
     @Pattern(regexp = SNOWFLAKE_ID, message = "套餐ID格式不正确")
     @Schema(description = "套餐ID", example = "1001")
-    private String packageId;
+    private String packageCode;
 
     /**
      * 套餐名称

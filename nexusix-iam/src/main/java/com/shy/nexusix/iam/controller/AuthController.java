@@ -55,7 +55,7 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "验证用户名密码，返回Token及用户权限角色信息")
     public ApiResponse login(@Valid @RequestBody LoginRTO loginRTO) {
-        LoginVO loginVO = iAuthService.login(loginRTO);
+        String loginVO = iAuthService.login(loginRTO);
         return ApiResponse.success("登录成功", loginVO);
     }
 

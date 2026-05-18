@@ -7,8 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -25,51 +24,51 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_user_role_rel")
-@ApiModel(value="SysUserRoleRel对象", description="用户角色关联表 - 用户与角色的绑定关系")
+@Schema(name="SysUserRoleRel对象", description="用户角色关联表 - 用户与角色的绑定关系")
 public class SysUserRoleRel implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @ApiModelProperty(value = "主键ID")
+    @Schema(description = "主键ID")
     @TableId(value = "id", type = IdType.AUTO)
     private String id;
 
-    @ApiModelProperty(value = "用户编码")
+    @Schema(description = "用户编码")
     private String userCode;
 
-    @ApiModelProperty(value = "角色编码")
+    @Schema(description = "角色编码")
     private String roleCode;
 
-    @ApiModelProperty(value = "租户编码")
+    @Schema(description = "租户编码")
     private String tenantCode;
 
-    @ApiModelProperty(value = "角色生效时间")
+    @Schema(description = "角色生效时间")
     private LocalDateTime effectiveTime;
 
-    @ApiModelProperty(value = "角色失效时间")
+    @Schema(description = "角色失效时间")
     private LocalDateTime expireTime;
 
-    @ApiModelProperty(value = "创建人编码")
+    @Schema(description = "创建人编码")
     private String createBy;
 
-    @ApiModelProperty(value = "创建人名称")
+    @Schema(description = "创建人名称")
     private String createByName;
 
-    @ApiModelProperty(value = "更新人编码")
+    @Schema(description = "更新人编码")
     private String updateBy;
 
-    @ApiModelProperty(value = "更新人名称")
+    @Schema(description = "更新人名称")
     private String updateByName;
 
-    @ApiModelProperty(value = "创建时间")
+    @Schema(description = "创建时间")
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @ApiModelProperty(value = "更新时间")
+    @Schema(description = "更新时间")
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @ApiModelProperty(value = "逻辑删除")
+    @Schema(description = "逻辑删除")
     private String isDeleted;
 
 

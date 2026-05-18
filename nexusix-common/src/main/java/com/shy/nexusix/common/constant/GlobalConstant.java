@@ -230,12 +230,12 @@ public class GlobalConstant {
         /**
          * 可操作字段集合
          */
-        public static final String OPERABLE_COLUMNS = "operableColumns";
+        public static final String OPERABLE_COLUMNS = "fieldPermissions";
 
         /**
          * 不可操作字段集合
          */
-        public static final String UN_OPERABLE_COLUMNS = "unOperableColumns";
+        public static final String UN_OPERABLE_COLUMNS = "unFieldPermissions";
 
     }
 

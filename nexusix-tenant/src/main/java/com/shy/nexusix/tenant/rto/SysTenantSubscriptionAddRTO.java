@@ -46,7 +46,7 @@ public class SysTenantSubscriptionAddRTO {
     @NotBlank(message = "套餐产品ID不能为空")
     @Pattern(regexp = SNOWFLAKE_ID, message = "套餐产品ID格式不正确")
     @Schema(description = "套餐产品ID", example = "1001")
-    private String packageId;
+    private String packageCode;
 
     /**
      * 套餐产品名称
@@ -104,7 +104,7 @@ public class SysTenantSubscriptionAddRTO {
      * 父租户分配记录ID
      */
     @Schema(description = "父租户分配记录ID", example = "1987654321098765432")
-    private String parentGrantId;
+    private String parentGrantCode;
 
     /**
      * 父租户名称

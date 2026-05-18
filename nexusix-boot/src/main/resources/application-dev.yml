@@ -110,7 +110,7 @@ sa-token:
   # 是否从Header中读取Token
   is-read-header: false
   # Token前缀 (前端需携带 NexusIX <token>)
-  token-prefix: NexusIX
+#  token-prefix: NexusIX
   # 是否在登录后将Token写入到响应头
   is-write-header: true
   # Same-Token的有效期 (秒), 用于内部服务间调用

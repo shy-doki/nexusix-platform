@@ -34,7 +34,7 @@ public interface IAuthService extends IService<SysUser> {
      * @author shy
      * @since 2026-05-17
      */
-    LoginVO login(LoginRTO loginRTO);
+    String login(LoginRTO loginRTO);
 
     /**
      * <p>

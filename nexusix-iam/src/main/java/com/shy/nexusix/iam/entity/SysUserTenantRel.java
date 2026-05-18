@@ -7,8 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -25,54 +24,60 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_user_tenant_rel")
-@ApiModel(value="SysUserTenantRel对象", description="用户-租户关联表-实现用户与多租户绑定")
+@Schema(name="SysUserTenantRel对象", description="用户-租户关联表-实现用户与多租户绑定")
 public class SysUserTenantRel implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @ApiModelProperty(value = "主键ID")
+    @Schema(description = "主键ID")
     @TableId(value = "id", type = IdType.AUTO)
     private String id;
 
-    @ApiModelProperty(value = "用户编码")
+    @Schema(description = "用户编码")
     private String userCode;
 
-    @ApiModelProperty(value = "租户编码")
+    @Schema(description = "用户名称")
+    private String userName;
+
+    @Schema(description = "租户编码")
     private String tenantCode;
 
-    @ApiModelProperty(value = "主部门编码")
+    @Schema(description = "租户名称")
+    private String tenantName;
+
+    @Schema(description = "主部门编码")
     private String deptCode;
 
-    @ApiModelProperty(value = "是否租户管理员")
+    @Schema(description = "是否租户管理员")
     private Boolean isAdmin;
 
-    @ApiModelProperty(value = "加入时间")
+    @Schema(description = "加入时间")
     private LocalDateTime joinTime;
 
-    @ApiModelProperty(value = "是否默认租户")
+    @Schema(description = "是否默认租户")
     private Boolean isDefault;
 
-    @ApiModelProperty(value = "创建人编码")
+    @Schema(description = "创建人编码")
     private String createBy;
 
-    @ApiModelProperty(value = "创建人名称")
+    @Schema(description = "创建人名称")
     private String createByName;
 
-    @ApiModelProperty(value = "更新人编码")
+    @Schema(description = "更新人编码")
     private String updateBy;
 
-    @ApiModelProperty(value = "更新人名称")
+    @Schema(description = "更新人名称")
     private String updateByName;
 
-    @ApiModelProperty(value = "创建时间")
+    @Schema(description = "创建时间")
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @ApiModelProperty(value = "更新时间")
+    @Schema(description = "更新时间")
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    @ApiModelProperty(value = "逻辑删除")
+    @Schema(description = "逻辑删除")
     private String isDeleted;
 
 

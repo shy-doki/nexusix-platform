@@ -67,8 +67,8 @@ public interface SysTenantConverter {
     @Named("toEntityAdd")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
-    @Mapping(target = "parentId", source = "parentId", qualifiedByName = "stringToLong")
-    @Mapping(target = "packageId", source = "packageId", qualifiedByName = "stringToLong")
+    @Mapping(target = "parentCode", source = "parentCode", qualifiedByName = "stringToLong")
+    @Mapping(target = "packageCode", source = "packageCode", qualifiedByName = "stringToLong")
     SysTenant toEntityAdd(SysTenantAddRTO rto);
 
     /**
@@ -84,8 +84,8 @@ public interface SysTenantConverter {
     @Named("toEntityUpdate")
     @Mapping(target = "status", qualifiedByName = "statusToCode")
     @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
-    @Mapping(target = "parentId", source = "parentId", qualifiedByName = "stringToLong")
-    @Mapping(target = "packageId", source = "packageId", qualifiedByName = "stringToLong")
+    @Mapping(target = "parentCode", source = "parentCode", qualifiedByName = "stringToLong")
+    @Mapping(target = "packageCode", source = "packageCode", qualifiedByName = "stringToLong")
     SysTenant toEntityUpdate(SysTenantUpdateRTO rto);
 
     /**

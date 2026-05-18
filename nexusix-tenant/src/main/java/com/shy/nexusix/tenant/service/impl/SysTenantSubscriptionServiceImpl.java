@@ -76,8 +76,8 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
             wrapper.eq(SysTenantSubscription::getTenantId, Long.parseLong(queryParam.getTenantId()));
         }
 
-        if (StringUtils.isNotBlank(queryParam.getPackageId())) {
-            wrapper.eq(SysTenantSubscription::getPackageId, Long.parseLong(queryParam.getPackageId()));
+        if (StringUtils.isNotBlank(queryParam.getPackageCode())) {
+            wrapper.eq(SysTenantSubscription::getPackageId, Long.parseLong(queryParam.getPackageCode()));
         }
 
         // 订阅类型条件查询：通过parse方法支持多种输入格式
@@ -187,7 +187,7 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         // 校验同一租户不能重复订阅同一套餐
         LambdaQueryWrapper<SysTenantSubscription> wrapper = new LambdaQueryWrapper<SysTenantSubscription>()
                 .eq(SysTenantSubscription::getTenantId, Long.parseLong(addParam.getTenantId()))
-                .eq(SysTenantSubscription::getPackageId, Long.parseLong(addParam.getPackageId()))
+                .eq(SysTenantSubscription::getPackageId, Long.parseLong(addParam.getPackageCode()))
                 .eq(SysTenantSubscription::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         long count = this.count(wrapper);
         if (count > 0) {
@@ -219,11 +219,11 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         }
         // 校验租户和套餐组合是否重复（排除自身）
         boolean tenantChanged = !existSubscription.getTenantId().equals(Long.parseLong(updateParam.getTenantId()));
-        boolean packageChanged = !existSubscription.getPackageId().equals(Long.parseLong(updateParam.getPackageId()));
+        boolean packageChanged = !existSubscription.getPackageId().equals(Long.parseLong(updateParam.getPackageCode()));
         if (tenantChanged || packageChanged) {
             LambdaQueryWrapper<SysTenantSubscription> dupWrapper = new LambdaQueryWrapper<SysTenantSubscription>()
                     .eq(SysTenantSubscription::getTenantId, Long.parseLong(updateParam.getTenantId()))
-                    .eq(SysTenantSubscription::getPackageId, Long.parseLong(updateParam.getPackageId()))
+                    .eq(SysTenantSubscription::getPackageId, Long.parseLong(updateParam.getPackageCode()))
                     .eq(SysTenantSubscription::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .ne(SysTenantSubscription::getId, updateParam.getId());
             long dupCount = this.count(dupWrapper);
@@ -313,9 +313,9 @@ public class SysTenantSubscriptionServiceImpl extends ServiceImpl<SysTenantSubsc
         // 校验批量新增中是否存在重复的租户+套餐组合
         Set<String> combinationSet = new HashSet<>();
         for (SysTenantSubscriptionAddRTO param : addParamList) {
-            String combination = param.getTenantId() + ":" + param.getPackageId();
+            String combination = param.getTenantId() + ":" + param.getPackageCode();
             if (combinationSet.contains(combination)) {
-                throw new BusinessException(400, "批量新增中存在重复的租户+套餐组合: 租户=" + param.getTenantId() + ", 套餐=" + param.getPackageId());
+                throw new BusinessException(400, "批量新增中存在重复的租户+套餐组合: 租户=" + param.getTenantId() + ", 套餐=" + param.getPackageCode());
             }
             combinationSet.add(combination);
         }

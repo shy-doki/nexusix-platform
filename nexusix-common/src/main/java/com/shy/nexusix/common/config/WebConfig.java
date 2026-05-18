@@ -58,29 +58,29 @@ public class WebConfig implements WebMvcConfigurer {
      * 注册拦截器
      * 用于请求拦截和处理
      */
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        // 注册 Sa-Token 拦截器，校验规则为 StpUtil.checkLogin() 登录校验。
-        registry.addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
-                // 拦截所有业务接口路径
-                .addPathPatterns(
-                        "/tenant/**",
-                        "/sys-tenant-subscription/**",
-                        "/sys-user/**",
-                        "/sys-role/**",
-                        "/sys-permission/**",
-                        "/sys-permission-policy/**",
-                        "/sys-user-token/**",
-                        "/sys-user-role-rel/**",
-                        "/sys-user-tenant-rel/**"
-                )
-                // 白名单路径：不需要登录即可访问
-                .excludePathPatterns(
-                        "/auth/login",
-                        "/auth/register",
-                        "/doc.html#/**",
-                        "/favicon.ico"
-                );
-    }
+//    @Override
+//    public void addInterceptors(InterceptorRegistry registry) {
+//        // 注册 Sa-Token 拦截器，校验规则为 StpUtil.checkLogin() 登录校验。
+//        registry.addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
+//                // 拦截所有业务接口路径
+//                .addPathPatterns(
+//                        "/tenant/**",
+//                        "/sys-tenant-subscription/**",
+//                        "/sys-user/**",
+//                        "/sys-role/**",
+//                        "/sys-permission/**",
+//                        "/sys-permission-policy/**",
+//                        "/sys-user-token/**",
+//                        "/sys-user-role-rel/**",
+//                        "/sys-user-tenant-rel/**"
+//                )
+//                // 白名单路径：不需要登录即可访问
+//                .excludePathPatterns(
+//                        "/auth/login",
+//                        "/auth/register",
+//                        "/doc.html#/**",
+//                        "/favicon.ico"
+//                );
+//    }
 
 }
