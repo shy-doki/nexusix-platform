@@ -12,7 +12,6 @@ import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
 import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
 import jakarta.validation.Valid;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 
 import java.util.List;
 
@@ -330,7 +329,6 @@ public interface ISysTenantService extends IService<SysTenant> {
      * @author shy
      * @since 2026-04-20
      */
-    @RabbitListener(queues = "nexusix.tenant.queue")
     SysTenantCommonVO queryTenantById(Long tenantId);
 
 }

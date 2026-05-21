@@ -1,9 +1,8 @@
 package com.shy.nexusix.iam.service.Impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.result.ApiResponse;
@@ -11,9 +10,10 @@ import com.shy.nexusix.iam.dto.UserContextDTO;
 import com.shy.nexusix.iam.entity.*;
 import com.shy.nexusix.iam.rto.LoginRTO;
 import com.shy.nexusix.iam.service.*;
+import com.shy.nexusix.tenant.converter.SysTenantConverter;
+import com.shy.nexusix.tenant.entity.SysTenant;
 import com.shy.nexusix.tenant.service.ISysTenantService;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +22,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
-
-    @Autowired
-    private RabbitTemplate rabbitmqTemplate;
 
     @Autowired
     private ISysUserService iSysUserService;
@@ -75,13 +72,23 @@ public class AuthServiceImpl implements IAuthService {
 
         StpUtil.login(loginUserInfo.getId());
 
-        SysTenantCommonVO tenantJson = iSysTenantService.queryTenantById(userTenantRelInfo.getTenantId());
+        LambdaQueryWrapper<SysTenant> tenantWrapper = new LambdaQueryWrapper<SysTenant>()
+                .eq(SysTenant::getId, userTenantRelInfo.getTenantId())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        SysTenant tenant = iSysTenantService.getOne(tenantWrapper);
+
+        if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(tenant.getStatus())) {
+            throw new BusinessException("所属租户已停用");
+        }
+        if (GlobalEnum.TenantStatus.EXPIRED.getCode().equals(tenant.getStatus())) {
+            throw new BusinessException("所属租户已过期");
+        }
 
         UserContextDTO.TenantInfo tenantInfo = new UserContextDTO.TenantInfo();
-        tenantInfo.setTenantName(tenantJson.getTenantName());
-        tenantInfo.setTenantCode(tenantJson.getTenantCode());
+        tenantInfo.setTenantName(tenant.getTenantName());
+        tenantInfo.setTenantCode(tenant.getTenantCode());
 
-        // 查询用户当前租户下权限信息
+        // 查询用户当前租户下权限信息[有效+无效]
         LambdaQueryWrapper<SysUserPermRel> userPermRelWrapper = new LambdaQueryWrapper<SysUserPermRel>()
                 .eq(SysUserPermRel::getUserId, userTenantRelInfo.getId())
                 .eq(SysUserPermRel::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -91,24 +98,17 @@ public class AuthServiceImpl implements IAuthService {
                 .map(SysUserPermRel::getPolicyId)
                 .toList();
 
-        // 查询权限策略信息 分为两部分 1. 生效 2. 失效
-        List<SysPermPolicy> permPolicyList = iSysPermPolicyService.listByIds(policyIdList);
-        // 提取生效权限策略
-        List<SysPermPolicy> validPermPolicyList = permPolicyList.stream()
-                .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.ACTIVE.getCode()))
-                .toList();
-        // 提取失效权限策略
-        List<SysPermPolicy> invalidPermPolicyList = permPolicyList.stream()
-                .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.INACTIVE.getCode()))
-                .toList();
-        // TODO 查询角色信息
+        // 查询权限策略信息[有效+无效]
+        LambdaQueryWrapper<SysPermPolicy> permPolicyWrapper = new LambdaQueryWrapper<SysPermPolicy>()
+                .in(SysPermPolicy::getId, policyIdList)
+                .eq(SysPermPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysPermPolicy> permPolicyList = iSysPermPolicyService.list(permPolicyWrapper);
 
         // 权限信息
         UserContextDTO.PermInfo permInfo = new UserContextDTO.PermInfo();
         // 查询权限信息
         List<Long> permIdList = permPolicyList.stream()
                 .map(SysPermPolicy::getPermId)
-                .distinct()
                 .toList();
         LambdaQueryWrapper<SysPerm> permWrapper = new LambdaQueryWrapper<SysPerm>()
                 .in(SysPerm::getId, permIdList)
@@ -120,180 +120,90 @@ public class AuthServiceImpl implements IAuthService {
                 .toList();
         // 存入权限编码列表 [有效/无效]
         permInfo.setPerms(permCodeList);
+        // 根据权限策略状态提取有效/无效的 permId
+        Set<Long> activePolicyPermIds = permPolicyList.stream()
+                .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.ACTIVE.getCode()))
+                .map(SysPermPolicy::getPermId)
+                .collect(Collectors.toSet());
+        Set<Long> inactivePolicyPermIds = permPolicyList.stream()
+                .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.INACTIVE.getCode()))
+                .map(SysPermPolicy::getPermId)
+                .collect(Collectors.toSet());
+
         // 提取有效权限编码
         List<String> validPermCodeList = permList.stream()
-                .filter(item -> item.getStatus().equals(GlobalEnum.PermStatus.ENABLED.getCode()))
+                .filter(item -> activePolicyPermIds.contains(item.getId()))
                 .map(SysPerm::getPermCode)
                 .toList();
         // 存入权限编码列表 [有效]
         permInfo.setValidPerms(validPermCodeList);
         // 提取失效权限编码
         List<String> invalidPermCodeList = permList.stream()
-                .filter(item -> item.getStatus().equals(GlobalEnum.PermStatus.DISABLED.getCode()))
+                .filter(item -> inactivePolicyPermIds.contains(item.getId()))
                 .map(SysPerm::getPermCode)
                 .toList();
         // 存入权限编码列表 [无效]
         permInfo.setInvalidPerm(invalidPermCodeList);
 
-        // 查询类型字段
-        Map<String, List<SysPermPolicy>> queryField = validPermPolicyList.stream()
+        // 查询类 可访问字段权限信息[有效+无效]
+        Map<String, UserContextDTO.EntityFieldPerm> queryPermMap = new HashMap<>();
+        permPolicyList.stream()
                 .filter(item -> item.getAccessType().equals(GlobalEnum.PermPolicyAccessType.QUERY.getCode()))
-                .collect(Collectors.groupingBy(SysPermPolicy::getTableName));
-        // 转换结构
-        Map<String, UserContextDTO.EntityFieldPerm> queryPermField = queryField.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> {
-                            // 根据权限策略状态判断字段可访问性
-                            List<String> visibleFields = entry.getValue().stream()
-                                    .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.ACTIVE.getCode()))
-                                    .map(SysPermPolicy::getFieldOperates)
-                                    .flatMap(item -> {
-                                        try {
-                                            return new ObjectMapper()
-                                                    .readValue(item, new TypeReference<List<String>>() {})
-                                                    .stream();
-                                        } catch (Exception e) {
-                                            // 降级：按逗号分割并清理符号
-                                            return Arrays.stream(item.replaceAll("[\\[\\]\"\\s]", "").split(","))
-                                                    .map(String::trim)
-                                                    .filter(s -> !s.isEmpty());
-                                        }
-                                    })
-                                    .distinct()
-                                    .toList();
-                            List<String> invisibleFields = entry.getValue().stream()
-                                    .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.INACTIVE.getCode()))
-                                    .map(SysPermPolicy::getFieldOperates)
-                                    .flatMap(item -> {
-                                        try {
-                                            return new ObjectMapper()
-                                                    .readValue(item, new TypeReference<List<String>>() {})
-                                                    .stream();
-                                        } catch (Exception e) {
-                                            // 降级：按逗号分割并清理符号
-                                            return Arrays.stream(item.replaceAll("[\\[\\]\"\\s]", "").split(","))
-                                                    .map(String::trim)
-                                                    .filter(s -> !s.isEmpty());
-                                        }
-                                    })
-                                    .distinct()
-                                    .toList();
-                            UserContextDTO.EntityFieldPerm fieldPerm = new UserContextDTO.EntityFieldPerm();
-                            fieldPerm.setVisibleFields(visibleFields);
-                            fieldPerm.setInvisibleFields(invisibleFields);
-                            return fieldPerm;
-                        }
-                ));
-        permInfo.setQuery(queryPermField);
+                .forEach(policy -> {
+                    queryPermMap.computeIfAbsent(policy.getTableName(), k -> new UserContextDTO.EntityFieldPerm());
+                    UserContextDTO.EntityFieldPerm fieldPerm = queryPermMap.get(policy.getTableName());
+                    // 解析 fieldOperates JSON 字符串
+                    List<String> fields = JSON.parseArray(policy.getFieldOperates(), String.class);
+                    // 根据策略状态区分有效和无效字段
+                    if (policy.getStatus().equals(GlobalEnum.PermPolicyStatus.ACTIVE.getCode())) {
+                        fieldPerm.setVisibleFields(fields);
+                    } else if (policy.getStatus().equals(GlobalEnum.PermPolicyStatus.INACTIVE.getCode())) {
+                        fieldPerm.setInvisibleFields(fields);
+                    }
+                });
+        permInfo.setQuery(queryPermMap);
 
-        // 新增类型字段
-        Map<String, List<SysPermPolicy>> createField = validPermPolicyList.stream()
+        // 新增类 字段权限信息[有效+无效]
+        Map<String, UserContextDTO.EntityFieldPerm> createPermMap = new HashMap<>();
+        permPolicyList.stream()
                 .filter(item -> item.getAccessType().equals(GlobalEnum.PermPolicyAccessType.CREATE.getCode()))
-                .collect(Collectors.groupingBy(SysPermPolicy::getTableName));
-        // 转换结构
-        Map<String, UserContextDTO.EntityFieldPerm> createPermField = createField.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> {
-                            // 根据权限策略状态判断字段可访问性
-                            List<String> visibleFields = entry.getValue().stream()
-                                    .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.ACTIVE.getCode()))
-                                    .map(SysPermPolicy::getFieldOperates)
-                                    .flatMap(item -> {
-                                        try {
-                                            return new ObjectMapper()
-                                                    .readValue(item, new TypeReference<List<String>>() {})
-                                                    .stream();
-                                        } catch (Exception e) {
-                                            // 降级：按逗号分割并清理符号
-                                            return Arrays.stream(item.replaceAll("[\\[\\]\"\\s]", "").split(","))
-                                                    .map(String::trim)
-                                                    .filter(s -> !s.isEmpty());
-                                        }
-                                    })
-                                    .distinct()
-                                    .toList();
-                            List<String> invisibleFields = entry.getValue().stream()
-                                    .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.INACTIVE.getCode()))
-                                    .map(SysPermPolicy::getFieldOperates)
-                                    .flatMap(item -> {
-                                        try {
-                                            return new ObjectMapper()
-                                                    .readValue(item, new TypeReference<List<String>>() {})
-                                                    .stream();
-                                        } catch (Exception e) {
-                                            // 降级：按逗号分割并清理符号
-                                            return Arrays.stream(item.replaceAll("[\\[\\]\"\\s]", "").split(","))
-                                                    .map(String::trim)
-                                                    .filter(s -> !s.isEmpty());
-                                        }
-                                    })
-                                    .distinct()
-                                    .toList();
-                            UserContextDTO.EntityFieldPerm fieldPerm = new UserContextDTO.EntityFieldPerm();
-                            fieldPerm.setVisibleFields(visibleFields);
-                            fieldPerm.setInvisibleFields(invisibleFields);
-                            return fieldPerm;
-                        }
-                ));
-        permInfo.setCreate(createPermField);
+                .forEach(policy -> {
+                    createPermMap.computeIfAbsent(policy.getTableName(), k -> new UserContextDTO.EntityFieldPerm());
+                    UserContextDTO.EntityFieldPerm fieldPerm = createPermMap.get(policy.getTableName());
+                    // 解析 fieldOperates JSON 字符串
+                    List<String> fields = JSON.parseArray(policy.getFieldOperates(), String.class);
+                    // 根据策略状态区分有效和无效字段
+                    if (policy.getStatus().equals(GlobalEnum.PermPolicyStatus.ACTIVE.getCode())) {
+                        fieldPerm.setVisibleFields(fields);
+                    } else if (policy.getStatus().equals(GlobalEnum.PermPolicyStatus.INACTIVE.getCode())) {
+                        fieldPerm.setInvisibleFields(fields);
+                    }
+                });
+        permInfo.setCreate(createPermMap);
 
-        // 更新类型字段
-        Map<String, List<SysPermPolicy>> updateField = validPermPolicyList.stream()
+        // 更新类 字段权限信息[有效+无效]
+        Map<String, UserContextDTO.EntityFieldPerm> updatePermMap = new HashMap<>();
+        permPolicyList.stream()
                 .filter(item -> item.getAccessType().equals(GlobalEnum.PermPolicyAccessType.UPDATE.getCode()))
-                .collect(Collectors.groupingBy(SysPermPolicy::getTableName));
-        // 转换结构
-        Map<String, UserContextDTO.EntityFieldPerm> updatePermField = updateField.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> {
-                            // 根据权限策略状态判断字段可访问性
-                            List<String> visibleFields = entry.getValue().stream()
-                                    .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.ACTIVE.getCode()))
-                                    .map(SysPermPolicy::getFieldOperates)
-                                    .flatMap(item -> {
-                                        try {
-                                            return new ObjectMapper()
-                                                    .readValue(item, new TypeReference<List<String>>() {})
-                                                    .stream();
-                                        } catch (Exception e) {
-                                            // 降级：按逗号分割并清理符号
-                                            return Arrays.stream(item.replaceAll("[\\[\\]\"\\s]", "").split(","))
-                                                    .map(String::trim)
-                                                    .filter(s -> !s.isEmpty());
-                                        }
-                                    })
-                                    .distinct()
-                                    .toList();
-                            List<String> invisibleFields = entry.getValue().stream()
-                                    .filter(item -> item.getStatus().equals(GlobalEnum.PermPolicyStatus.INACTIVE.getCode()))
-                                    .map(SysPermPolicy::getFieldOperates)
-                                    .flatMap(item -> {
-                                        try {
-                                            return new ObjectMapper()
-                                                    .readValue(item, new TypeReference<List<String>>() {})
-                                                    .stream();
-                                        } catch (Exception e) {
-                                            // 降级：按逗号分割并清理符号
-                                            return Arrays.stream(item.replaceAll("[\\[\\]\"\\s]", "").split(","))
-                                                    .map(String::trim)
-                                                    .filter(s -> !s.isEmpty());
-                                        }
-                                    })
-                                    .distinct()
-                                    .toList();
-                            UserContextDTO.EntityFieldPerm fieldPerm = new UserContextDTO.EntityFieldPerm();
-                            fieldPerm.setVisibleFields(visibleFields);
-                            fieldPerm.setInvisibleFields(invisibleFields);
-                            return fieldPerm;
-                        }
-                ));
-        permInfo.setUpdate(updatePermField);
+                .forEach(policy -> {
+                    updatePermMap.computeIfAbsent(policy.getTableName(), k -> new UserContextDTO.EntityFieldPerm());
+                    UserContextDTO.EntityFieldPerm fieldPerm = updatePermMap.get(policy.getTableName());
+                    // 解析 fieldOperates JSON 字符串
+                    List<String> fields = JSON.parseArray(policy.getFieldOperates(), String.class);
+                    // 根据策略状态区分有效和无效字段
+                    if (policy.getStatus().equals(GlobalEnum.PermPolicyStatus.ACTIVE.getCode())) {
+                        fieldPerm.setVisibleFields(fields);
+                    } else if (policy.getStatus().equals(GlobalEnum.PermPolicyStatus.INACTIVE.getCode())) {
+                        fieldPerm.setInvisibleFields(fields);
+                    }
+                });
+        permInfo.setUpdate(updatePermMap);
 
         UserContextDTO userContext = new UserContextDTO();
         userContext.setTenantInfo(tenantInfo);
         userContext.setPermInfo(permInfo);
+
+        // TODO 查询角色信息
 
         // 存入用户上下文
         StpUtil.getSession().set("userContext", userContext);
