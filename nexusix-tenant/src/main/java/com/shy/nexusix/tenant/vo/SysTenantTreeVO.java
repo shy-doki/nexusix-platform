@@ -26,7 +26,6 @@ public class SysTenantTreeVO extends SysTenantCommonVO {
     @Schema(description = "父租户编码", example = "1987654321098765432")
     private String parentCode;
 
-
     /**
      * 子租户
      */

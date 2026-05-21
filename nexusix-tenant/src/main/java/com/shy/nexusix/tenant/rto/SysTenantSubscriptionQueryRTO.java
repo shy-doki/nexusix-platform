@@ -1,9 +1,12 @@
 package com.shy.nexusix.tenant.rto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 /**
  * <p>
@@ -75,13 +78,13 @@ public class SysTenantSubscriptionQueryRTO extends PageCommonRTO {
      * 订阅开始时间范围
      */
     @Schema(description = "订阅开始时间范围", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
-    private TimeRangeCommonRTO startTime;
+    private TimeRangeCommonRTO startTimeRange;
 
     /**
      * 订阅结束时间范围
      */
     @Schema(description = "订阅结束时间范围", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
-    private TimeRangeCommonRTO endTime;
+    private TimeRangeCommonRTO endTimeRange;
 
     /**
      * 创建人编码
@@ -99,7 +102,7 @@ public class SysTenantSubscriptionQueryRTO extends PageCommonRTO {
      * 创建时间范围
      */
     @Schema(description = "创建时间范围", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
-    private TimeRangeCommonRTO createTime;
+    private TimeRangeCommonRTO createTimeRange;
 
     /**
      * 更新人编码
@@ -117,7 +120,7 @@ public class SysTenantSubscriptionQueryRTO extends PageCommonRTO {
      * 更新时间范围
      */
     @Schema(description = "更新时间范围", example = "{\"startTime\":\"2026-01-01 00:00:00\",\"endTime\":\"2026-12-31 23:59:59\"}")
-    private TimeRangeCommonRTO updateTime;
+    private TimeRangeCommonRTO updateTimeRange;
 
     /**
      * 逻辑删除
@@ -125,5 +128,13 @@ public class SysTenantSubscriptionQueryRTO extends PageCommonRTO {
      */
     @Schema(description = "逻辑删除", example = "0")
     private String isDeleted;
+
+    /**
+     * 删除时间
+     * 超级管理员可填
+     */
+    @Schema(description = "删除时间", example = "2026-04-07 15:45:30")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime deleteTime;
 
 }

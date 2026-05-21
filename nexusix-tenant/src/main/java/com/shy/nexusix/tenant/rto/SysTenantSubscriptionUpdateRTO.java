@@ -25,13 +25,6 @@ import static com.shy.nexusix.common.constant.RegexConstant.Code.SNOWFLAKE_ID;
 public class SysTenantSubscriptionUpdateRTO {
 
     /**
-     * 主键Id
-     */
-    @NotNull(message = "Id不能为空")
-    @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
-    private String id;
-
-    /**
      * 租户编码
      */
     @NotBlank(message = "租户编码不能为空")
@@ -168,5 +161,13 @@ public class SysTenantSubscriptionUpdateRTO {
     @Schema(description = "逻辑删除", example = "未删除")
     @EnumField
     private GlobalEnum.Deleted isDeleted;
+
+    /**
+     * 删除人时间
+     * 超级管理员可填
+     */
+    @Schema(description = "删除人时间", example = "2026-04-07 15:45:30")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime deleteTime;
 
 }

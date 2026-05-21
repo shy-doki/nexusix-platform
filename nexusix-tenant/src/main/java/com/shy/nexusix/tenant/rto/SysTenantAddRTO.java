@@ -27,19 +27,19 @@ import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 public class SysTenantAddRTO {
 
     /**
+     * 租户编码
+     */
+    @NotBlank(message = "租户编码不能为空")
+    @Schema(description = "租户编码", example = "TEN0000001")
+    private String tenantCode;
+
+    /**
      * 租户名称
      */
     @NotBlank(message = "租户名称不能为空")
     @Size(min = 2, max = 100, message = "租户名称必须在2-100字符之间")
     @Schema(description = "租户名称", example = "某某科技有限公司")
     private String tenantName;
-
-    /**
-     * 租户编码
-     */
-    @NotBlank(message = "租户编码不能为空")
-    @Schema(description = "租户编码", example = "TEN0000001")
-    private String tenantCode;
 
     /**
      * 租户类型
@@ -50,12 +50,6 @@ public class SysTenantAddRTO {
     private String tenantType;
 
     /**
-     * 租户logo路径
-     */
-    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
-    private String tenantLogoUrl;
-
-    /**
      * 租户描述
      */
     @Size(max = 500, message = "租户描述不能超过500字符")
@@ -63,7 +57,13 @@ public class SysTenantAddRTO {
     private String tenantDesc;
 
     /**
-     * 父租户ID
+     * 租户logo路径
+     */
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    private String tenantLogoUrl;
+
+    /**
+     * 父租户编码
      */
     @NotNull(message = "父租户编码不能为空")
     @Schema(description = "父租户编码", example = "1987654321098765432")
@@ -82,7 +82,7 @@ public class SysTenantAddRTO {
      * 超级管理员可填
      */
     @Schema(description = "祖级列表", example = "0/100/200")
-    private String ancestors;
+    private String path;
 
     /**
      * 联系人姓名
@@ -190,5 +190,13 @@ public class SysTenantAddRTO {
     @Schema(description = "逻辑删除", example = "0")
     @EnumField
     private GlobalEnum.Deleted isDeleted;
+
+    /**
+     * 删除人编码
+     * 超级管理员可填
+     */
+    @Schema(description = "删除时间", example = "2026-04-07 15:45:30")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime deleteTime;
 
 }

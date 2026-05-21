@@ -94,7 +94,7 @@ sa-token:
   # Token有效期 (秒), 默认30天
   timeout: 2592000
   # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
-  active-timeout: 7200
+  active-timeout: -1 #7200
   # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
   is-concurrent: false
   # 多人登录同一账号时是否共用一个Token

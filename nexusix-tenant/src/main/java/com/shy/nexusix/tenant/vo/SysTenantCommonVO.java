@@ -104,4 +104,12 @@ public class SysTenantCommonVO {
     @Schema(description = "逻辑删除", example = "0")
     private String isDeleted;
 
+    /**
+     * 删除时间
+     * 超级管理员可见
+     */
+    @Schema(description = "删除时间", example = "2026-04-07 15:45:30")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime deleteTime;
+
 }

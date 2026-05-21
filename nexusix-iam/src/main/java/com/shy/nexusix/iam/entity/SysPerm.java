@@ -4,9 +4,10 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
 import java.io.Serializable;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,89 +15,84 @@ import lombok.experimental.Accessors;
 
 /**
  * <p>
- * 权限/资源表-定义系统所有可授权资源（含字段级权限）
+ * 系统权限资源表
  * </p>
  *
  * @author shy
- * @since 2026-05-17
+ * @since 2026-05-19
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_perm")
-@Schema(name="SysPerm对象", description="权限/资源表-定义系统所有可授权资源（含字段级权限）")
+@Schema(name="SysPerm对象", description="系统权限资源表")
 public class SysPerm implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "主键ID")
-    @TableId(value = "id", type = IdType.AUTO)
-    private String id;
+    @Schema(description = "主键ID", example = "1987654321098765432")
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    private Long id;
 
-    @Schema(description = "权限名称")
+    @Schema(description = "权限名称", example = "用户管理")
+    @TableField(value = "perm_name")
     private String permName;
 
-    @Schema(description = "权限描述")
+    @Schema(description = "权限描述", example = "管理系统用户信息")
+    @TableField(value = "perm_desc")
     private String permDesc;
 
-    @Schema(description = "权限标识")
+    @Schema(description = "权限编码", example = "SYS_USER")
+    @TableField(value = "perm_code")
     private String permCode;
 
-    @Schema(description = "权限键值(只可超级管理员变更，且变更后需要重启服务并修改相关常量)")
+    @Schema(description = "权限标识", example = "user:list")
+    @TableField(value = "perm_key")
     private String permKey;
 
-    @Schema(description = "权限类型：MENU-菜单 / BUTTON-按钮 / API-接口 / FIELD_GROUP-字段组 / FIELD-字段")
+    @Schema(description = "权限类型", example = "MENU")
+    @TableField(value = "perm_type")
     private String permType;
 
-    @Schema(description = "父权限编码")
-    private String parentCode;
+    @Schema(description = "父权限ID", example = "1")
+    @TableField(value = "parent_id")
+    private Long parentId;
 
-    @Schema(description = "父权限名称")
+    @Schema(description = "父权限名称", example = "系统管理")
+    @TableField(value = "parent_name")
     private String parentName;
 
-    @Schema(description = "资源路径")
+    @Schema(description = "权限路径", example = "/system/user")
+    @TableField(value = "path")
     private String path;
 
-    @Schema(description = "关联数据库表名")
-    private String tableName;
-
-    @Schema(description = "关联数据库表描述")
-    private String tableDesc;
-
-    @Schema(description = "关联数据库字段名")
-    private String fieldName;
-
-    @Schema(description = "关联数据库字段描述")
-    private String fieldDesc;
-
-    @Schema(description = "操作类型")
-    private String operateType;
-
-    @Schema(description = "状态")
+    @Schema(description = "权限状态", example = "ENABLED")
+    @TableField(value = "status")
     private String status;
 
-    @Schema(description = "创建人编码")
+    @Schema(description = "创建人ID", example = "100")
+    @TableField(value = "create_by")
     private String createBy;
 
-    @Schema(description = "创建人名称")
-    private String createByName;
+    @Schema(description = "创建时间", format = "date-time", example = "2026-05-19 15:45:30")
+    @TableField(value = "create_at")
+    private LocalDateTime createAt;
 
-    @Schema(description = "更新人编码")
+    @Schema(description = "更新人ID", example = "100")
+    @TableField(value = "update_by")
     private String updateBy;
 
-    @Schema(description = "更新人名称")
-    private String updateByName;
+    @Schema(description = "更新时间", format = "date-time", example = "2026-05-19 15:45:30")
+    @TableField(value = "update_at")
+    private LocalDateTime updateAt;
 
-    @Schema(description = "创建时间")
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
-
-    @Schema(description = "更新时间")
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
-
-    @Schema(description = "逻辑删除")
+    @Schema(description = "逻辑删除", example = "NOT_DELETED")
+    @TableField(value = "is_deleted")
     private String isDeleted;
+
+    @Schema(description = "删除时间", example = "2026-05-19 15:45:30")
+    @TableField(value = "deleted_at")
+    private LocalDateTime deletedAt;
 
 
 }

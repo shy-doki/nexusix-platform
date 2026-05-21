@@ -5,11 +5,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * <p>
- * 用户-租户关联表-实现用户与多租户绑定 服务类
+ * 用户与租户的关联关系 服务类
  * </p>
  *
  * @author shy
- * @since 2026-05-17
+ * @since 2026-05-19
  */
 public interface ISysUserTenantRelService extends IService<SysUserTenantRel> {
 

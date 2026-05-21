@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 
 /**
  * <p>
- * 用户生效权限表(策略计算结果快照) 服务实现类
+ * 用户与权限策略直接关联表 服务实现类
  * </p>
  *
  * @author shy
- * @since 2026-05-17
+ * @since 2026-05-19
  */
 @Service
 public class SysUserPermRelServiceImpl extends ServiceImpl<SysUserPermRelMapper, SysUserPermRel> implements ISysUserPermRelService {

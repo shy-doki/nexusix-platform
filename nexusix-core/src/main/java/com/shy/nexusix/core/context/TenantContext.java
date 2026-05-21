@@ -27,17 +27,7 @@ public class TenantContext {
      * @throws BusinessException 当前会话未绑定租户时抛出
      */
     public static Long getCurrentTenantId() {
-        SaSession session = StpUtil.getSession(false);
-        if (session == null) {
-            throw new BusinessException(401, "当前会话不存在");
-        }
-
-        Object tenantId = session.get(GlobalConstant.Session.TENANT_ID);
-        if (tenantId == null) {
-            throw new BusinessException(401, "当前会话未绑定租户");
-        }
-
-        return parseLongSafely(tenantId);
+        return null;
     }
 
     /**
@@ -46,70 +36,8 @@ public class TenantContext {
      * @return 租户名称，未设置时返回"未知租户"
      */
     public static String getCurrentTenantName() {
-        SaSession session = StpUtil.getSession(false);
-        if (session == null) {
-            return "未知租户";
-        }
-
-        Object tenantName = session.get(GlobalConstant.Session.TENANT_NAME);
-
-        return tenantName != null ? tenantName.toString() : "未知租户";
+        return null;
     }
 
-    /**
-     * 安全获取租户ID（不抛异常）
-     * 适用于允许匿名访问或需要默认租户的场景
-     *
-     * @return 当前租户ID，未登录或未绑定时返回默认值1L
-     */
-    public static Long getCurrentTenantIdOrDefault() {
-        if (!StpUtil.isLogin()) {
-            return 1L;
-        }
-
-        SaSession session = StpUtil.getSession(false);
-        if (session == null) {
-            return 1L;
-        }
-
-        Object tenantId = session.get(GlobalConstant.Session.TENANT_ID);
-        if (tenantId == null) {
-            return 1L;
-        }
-
-        return parseLongSafely(tenantId);
-    }
-
-    /**
-     * 检查当前用户是否已绑定租户
-     *
-     * @return true-已绑定租户
-     */
-    public static boolean hasTenant() {
-        if (!StpUtil.isLogin()) {
-            throw new BusinessException(10010, "未登录");
-        }
-
-        SaSession session = StpUtil.getSession(false);
-        if (session == null) {
-            throw new BusinessException(401, "当前会话不存在");
-        }
-
-        return session.get(GlobalConstant.Session.TENANT_ID) != null;
-    }
-
-    /**
-     * 安全解析Long值
-     */
-    private static Long parseLongSafely(Object value) {
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
-        }
-        try {
-            return Long.parseLong(String.valueOf(value));
-        } catch (NumberFormatException e) {
-            return 1L;
-        }
-    }
 
 }

@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 
 /**
  * <p>
- * 用户基础表-存储全局用户信息 (不区分租户) 服务实现类
+ * 系统用户基础信息表 服务实现类
  * </p>
  *
  * @author shy
- * @since 2026-05-17
+ * @since 2026-05-19
  */
 @Service
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements ISysUserService {

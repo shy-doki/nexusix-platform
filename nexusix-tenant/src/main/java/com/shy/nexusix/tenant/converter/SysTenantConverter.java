@@ -29,6 +29,9 @@ public interface SysTenantConverter {
      * <p>
      * 将租户实体转换为通用视图对象
      * </p>
+     * <p>
+     * 说明：将数据库实体中的状态码和删除标记码转换为中文描述，供列表展示使用
+     * </p>
      *
      * @param tenant 租户实体
      * @return 租户通用视图对象
@@ -44,6 +47,9 @@ public interface SysTenantConverter {
      * <p>
      * 将租户实体转换为详情视图对象
      * </p>
+     * <p>
+     * 说明：详情视图继承自通用视图，额外包含租户描述、logo路径、祖级路径、扩展属性等字段
+     * </p>
      *
      * @param tenant 租户实体
      * @return 租户详情视图对象
@@ -58,6 +64,14 @@ public interface SysTenantConverter {
      * <p>
      * 将新增租户请求对象转换为租户实体
      * </p>
+     * <p>
+     * 说明：
+     * 1. 枚举字段（status、isDeleted）转换为对应的code值存储到数据库
+     * 2. parentCode映射为parentId，packageCode映射为packageId（仅字段名映射，非数值转换）
+     * 3. createByCode映射为createBy，updateCode映射为updateBy
+     * 4. createTime映射为createAt，updateTime映射为updateAt，deleteTime映射为deleteAt
+     * 5. id、hasChildren等字段由系统自动生成，忽略映射
+     * </p>
      *
      * @param rto 新增租户请求对象
      * @return 租户实体
@@ -65,16 +79,30 @@ public interface SysTenantConverter {
      * @since 2026-04-27
      */
     @Named("toEntityAdd")
-    @Mapping(target = "status", qualifiedByName = "statusToCode")
-    @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
-    @Mapping(target = "parentId", ignore = true)
-    @Mapping(target = "createById", ignore = true)
-    @Mapping(target = "updateById", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "hasChildren", ignore = true)
+    @Mapping(target = "parentId", source = "parentCode")
+    @Mapping(target = "packageId", source = "packageCode")
+    @Mapping(target = "createBy", source = "createByCode")
+    @Mapping(target = "createAt", source = "createTime")
+    @Mapping(target = "updateBy", source = "updateCode")
+    @Mapping(target = "updateAt", source = "updateTime")
+    @Mapping(target = "deleteAt", source = "deleteTime")
+    @Mapping(target = "status", source = "status", qualifiedByName = "statusToCode")
+    @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "isDeletedToCode")
     SysTenant toEntityAdd(SysTenantAddRTO rto);
 
     /**
      * <p>
      * 将更新租户请求对象转换为租户实体
+     * </p>
+     * <p>
+     * 说明：
+     * 1. 枚举字段（status、isDeleted）转换为对应的code值存储到数据库
+     * 2. parentCode映射为parentId，packageCode映射为packageId（仅字段名映射，非数值转换）
+     * 3. createByCode映射为createBy，updateByCode映射为updateBy
+     * 4. createTime映射为createAt，updateTime映射为updateAt，deleteTime映射为deleteAt
+     * 5. id、parentId、hasChildren等字段由系统维护，忽略映射
      * </p>
      *
      * @param rto 更新租户请求对象
@@ -83,16 +111,25 @@ public interface SysTenantConverter {
      * @since 2026-04-27
      */
     @Named("toEntityUpdate")
-    @Mapping(target = "status", qualifiedByName = "statusToCode")
-    @Mapping(target = "isDeleted", qualifiedByName = "isDeletedToCode", source = "isDeleted")
-    @Mapping(target = "parentId", ignore = true)
-    @Mapping(target = "createById", ignore = true)
-    @Mapping(target = "updateById", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "hasChildren", ignore = true)
+    @Mapping(target = "parentId", source = "parentCode")
+    @Mapping(target = "packageId", source = "packageCode")
+    @Mapping(target = "createBy", source = "createByCode")
+    @Mapping(target = "createAt", source = "createTime")
+    @Mapping(target = "updateBy", source = "updateByCode")
+    @Mapping(target = "updateAt", source = "updateTime")
+    @Mapping(target = "deleteAt", source = "deleteTime")
+    @Mapping(target = "status", source = "status", qualifiedByName = "statusToCode")
+    @Mapping(target = "isDeleted", source = "isDeleted", qualifiedByName = "isDeletedToCode")
     SysTenant toEntityUpdate(SysTenantUpdateRTO rto);
 
     /**
      * <p>
      * 将租户实体转换为树形视图对象
+     * </p>
+     * <p>
+     * 说明：树形视图继承自通用视图，额外包含parentCode和childTenant字段，用于树形结构展示
      * </p>
      *
      * @param tenant 租户实体
@@ -239,7 +276,7 @@ public interface SysTenantConverter {
 
     /**
      * <p>
-     * 将整数状态码转换为状态描述字符串
+     * 将状态码转换为租户状态描述字符串
      * </p>
      *
      * @param code 状态码
@@ -301,4 +338,4 @@ public interface SysTenantConverter {
         return deleted != null ? deleted.getDesc() : null;
     }
 
-} 
+}

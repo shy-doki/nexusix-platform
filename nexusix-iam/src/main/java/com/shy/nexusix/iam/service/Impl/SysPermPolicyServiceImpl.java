@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 
 /**
  * <p>
- * 权限策略控制表-实现四层权限及禁用继承逻辑 服务实现类
+ * 权限策略表 服务实现类
  * </p>
  *
  * @author shy
- * @since 2026-05-17
+ * @since 2026-05-19
  */
 @Service
 public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, SysPermPolicy> implements ISysPermPolicyService {

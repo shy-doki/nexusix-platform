@@ -7,11 +7,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * <p>
- * 用户基础表-存储全局用户信息 (不区分租户) 前端控制器
+ * 系统用户基础信息表 前端控制器
  * </p>
  *
  * @author shy
- * @since 2026-05-17
+ * @since 2026-05-19
  */
 @RestController
 @RequestMapping("/sys-user")

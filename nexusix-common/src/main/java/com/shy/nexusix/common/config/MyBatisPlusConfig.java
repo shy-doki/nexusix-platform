@@ -44,77 +44,77 @@ public class MyBatisPlusConfig {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
         // 创建多租户插件拦截器实例，用于实现数据的多租户隔离
-        TenantLineInnerInterceptor tenantInterceptor = new TenantLineInnerInterceptor();
-        // 设置租户ID处理器，定义如何获取租户ID和哪些表需要忽略租户过滤
-        tenantInterceptor.setTenantLineHandler(new com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler() {
-            @Override
-            public String getTenantIdColumn() {
-                // 租户ID字段名
-                return "tenant_id";
-            }
-
-            @Override
-            public boolean ignoreTable(String tableName) {
-                // 定义需要忽略租户过滤的表名列表，这些表通常是系统级别的公共表
-                List<String> ignoreTables = Arrays.asList(
-                        "sys_tenant",
-                        "prod_package",
-                        "prod_package_quota",
-                        "sys_user",
-                        "sys_permission",
-                        "sys_permission_policy",
-                        "sys_user_role_rel",
-                        "sys_user_group_rel",
-                        "sys_menu",
-                        "sys_dict_item",
-                        "sys_user_tenant_rel",
-                        "sys_role",
-                        "sys_tenant_security",
-                        "sys_login_log",
-                        "sys_oper_log",
-                        "sys_perm_policy",
-                        "sys_role_policy",
-                        "sys_user_perm_rel"
-                );
-                // 判断当前表是否在忽略列表中
-                boolean ignore = ignoreTables.contains(tableName);
-                if (ignore) {
-                    logger.debug("租户过滤忽略表: {}", tableName);
-                }
-                // 返回是否需要忽略该表的租户过滤
-                return ignore;
-            }
-
-            @Override
-            public Expression getTenantId() {
-                // 未登录 直接返回默认租户ID（系统内部调用或白名单接口）
-                if (!StpUtil.isLogin()) {
-                    logger.debug("未登录状态，使用默认租户ID: 1");
-                    return new LongValue(1L);
-                }
-
-                // 获取会话（不创建新会话）
-                SaSession session = StpUtil.getSession(false);
-                if (session == null) {
-                    logger.warn("已登录但会话不存在，使用默认租户ID: 1");
-                    return new LongValue(1L);
-                }
-
-                // 获取租户ID
-                Object tenantIdObj = session.get("tenantId");
-                if (tenantIdObj == null) {
-                    logger.warn("用户已登录但未绑定租户，使用默认租户ID: 1");
-                    return new LongValue(1L);
-                }
-
-                // 转换为Long类型并返回
-                long tenantId = parseLongSafely(tenantIdObj);
-                logger.debug("当前租户ID: {}（来自Redis会话）", tenantId);
-                return new LongValue(tenantId);
-            }
-        });
-        // 将配置好的多租户拦截器添加到拦截器链中
-        interceptor.addInnerInterceptor(tenantInterceptor);
+//        TenantLineInnerInterceptor tenantInterceptor = new TenantLineInnerInterceptor();
+//        // 设置租户ID处理器，定义如何获取租户ID和哪些表需要忽略租户过滤
+//        tenantInterceptor.setTenantLineHandler(new com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler() {
+//            @Override
+//            public String getTenantIdColumn() {
+//                // 租户ID字段名
+//                return "tenant_id";
+//            }
+//
+//            @Override
+//            public boolean ignoreTable(String tableName) {
+//                // 定义需要忽略租户过滤的表名列表，这些表通常是系统级别的公共表
+//                List<String> ignoreTables = Arrays.asList(
+//                        "sys_tenant",
+//                        "prod_package",
+//                        "prod_package_quota",
+//                        "sys_user",
+//                        "sys_permission",
+//                        "sys_permission_policy",
+//                        "sys_user_role_rel",
+//                        "sys_user_group_rel",
+//                        "sys_menu",
+//                        "sys_dict_item",
+//                        "sys_user_tenant_rel",
+//                        "sys_role",
+//                        "sys_tenant_security",
+//                        "sys_login_log",
+//                        "sys_oper_log",
+//                        "sys_perm_policy",
+//                        "sys_role_policy",
+//                        "sys_user_perm_rel"
+//                );
+//                // 判断当前表是否在忽略列表中
+//                boolean ignore = ignoreTables.contains(tableName);
+//                if (ignore) {
+//                    logger.debug("租户过滤忽略表: {}", tableName);
+//                }
+//                // 返回是否需要忽略该表的租户过滤
+//                return ignore;
+//            }
+//
+//            @Override
+//            public Expression getTenantId() {
+//                // 未登录 直接返回默认租户ID（系统内部调用或白名单接口）
+//                if (!StpUtil.isLogin()) {
+//                    logger.debug("未登录状态，使用默认租户ID: 1");
+//                    return new LongValue(1L);
+//                }
+//
+//                // 获取会话（不创建新会话）
+//                SaSession session = StpUtil.getSession(false);
+//                if (session == null) {
+//                    logger.warn("已登录但会话不存在，使用默认租户ID: 1");
+//                    return new LongValue(1L);
+//                }
+//
+//                // 获取租户ID
+//                Object tenantIdObj = session.get("tenantId");
+//                if (tenantIdObj == null) {
+//                    logger.warn("用户已登录但未绑定租户，使用默认租户ID: 1");
+//                    return new LongValue(1L);
+//                }
+//
+//                // 转换为Long类型并返回
+//                long tenantId = parseLongSafely(tenantIdObj);
+//                logger.debug("当前租户ID: {}（来自Redis会话）", tenantId);
+//                return new LongValue(tenantId);
+//            }
+//        });
+//        // 将配置好的多租户拦截器添加到拦截器链中
+//        interceptor.addInnerInterceptor(tenantInterceptor);
         logger.info("多租户插件配置完成");
 
         // 创建分页插件拦截器实例，用于支持SQL分页查询

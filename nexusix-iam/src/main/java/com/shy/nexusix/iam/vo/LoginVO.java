@@ -20,25 +20,13 @@ public class LoginVO {
     @Schema(description = "Token令牌", example = "eyJhbGciOiJIUzI1NiJ9...")
     private String token;
 
-    @Schema(description = "用户ID", example = "1987654321098765432")
-    private String userId;
-
     @Schema(description = "用户名", example = "admin")
     private String username;
 
     @Schema(description = "昵称", example = "管理员")
     private String nickname;
 
-    @Schema(description = "当前租户ID", example = "1")
-    private String tenantId;
-
     @Schema(description = "当前租户名称", example = "默认租户")
     private String tenantName;
-
-    @Schema(description = "有效权限编码集合")
-    private Set<String> validPerms;
-
-    @Schema(description = "有效角色编码集合")
-    private Set<String> validRoles;
 
 }

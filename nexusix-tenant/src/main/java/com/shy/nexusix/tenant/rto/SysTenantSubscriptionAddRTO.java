@@ -25,9 +25,10 @@ import static com.shy.nexusix.common.constant.RegexConstant.Code.SNOWFLAKE_ID;
 public class SysTenantSubscriptionAddRTO {
 
     /**
-     * 租户ID
+     * 租户编码
      */
     @NotBlank(message = "租户编码不能为空")
+    @Size(min = 2, max = 100, message = "租户编码必须在2-100字符之间")
     @Schema(description = "租户编码", example = "1987654321098765432")
     private String tenantCode;
 
@@ -40,7 +41,7 @@ public class SysTenantSubscriptionAddRTO {
     private String tenantName;
 
     /**
-     * 套餐产品ID
+     * 套餐产品编码
      */
     @NotBlank(message = "套餐产品编码不能为空")
     @Schema(description = "套餐产品编码", example = "1001")
@@ -130,7 +131,7 @@ public class SysTenantSubscriptionAddRTO {
      */
     @Schema(description = "创建时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-    private LocalDateTime createTime;
+    private LocalDateTime createAt;
 
     /**
      * 更新人编码
@@ -152,7 +153,7 @@ public class SysTenantSubscriptionAddRTO {
      */
     @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-    private LocalDateTime updateTime;
+    private LocalDateTime updateAt;
 
     /**
      * 逻辑删除
@@ -161,5 +162,9 @@ public class SysTenantSubscriptionAddRTO {
     @Schema(description = "逻辑删除", example = "0")
     @EnumField
     private GlobalEnum.Deleted isDeleted;
+
+    @Schema(description = "删除时间", example = "2026-04-07 15:45:30")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime deleteAt;
 
 }

@@ -27,13 +27,6 @@ import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 public class SysTenantUpdateRTO {
 
     /**
-     * 主键Id
-     */
-    @NotNull(message = "Id不能为空")
-    @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
-    private String id;
-
-    /**
      * 租户名称
      */
     @NotBlank(message = "租户名称不能为空")
@@ -43,7 +36,6 @@ public class SysTenantUpdateRTO {
 
     /**
      * 租户编码
-     * 超级管理员可填
      */
     @NotBlank(message = "租户编码不能为空")
     @Schema(description = "租户编码", example = "TEN0000001")
@@ -58,12 +50,6 @@ public class SysTenantUpdateRTO {
     private String tenantType;
 
     /**
-     * 租户logo路径
-     */
-    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
-    private String tenantLogoUrl;
-
-    /**
      * 租户描述
      */
     @Size(max = 500, message = "租户描述不能超过500字符")
@@ -71,7 +57,13 @@ public class SysTenantUpdateRTO {
     private String tenantDesc;
 
     /**
-     * 父租户ID
+     * 租户logo路径
+     */
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    private String tenantLogoUrl;
+
+    /**
+     * 父租户编码
      */
     @NotNull(message = "父租户编码不能为空")
     @Schema(description = "父租户编码", example = "1987654321098765432")
@@ -90,7 +82,7 @@ public class SysTenantUpdateRTO {
      * 超级管理员可填
      */
     @Schema(description = "祖级列表", hidden = true)
-    private String ancestors;
+    private String path;
 
     /**
      * 联系人姓名
@@ -198,5 +190,13 @@ public class SysTenantUpdateRTO {
     @Schema(description = "逻辑删除", example = "未删除")
     @EnumField
     private GlobalEnum.Deleted isDeleted;
+
+    /**
+     * 删除人编码
+     * 超级管理员可填
+     */
+    @Schema(description = "删除时间", example = "2026-04-07 15:45:30")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private LocalDateTime deleteTime;
 
 }

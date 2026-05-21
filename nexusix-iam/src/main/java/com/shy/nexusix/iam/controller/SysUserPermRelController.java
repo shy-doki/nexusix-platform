@@ -7,11 +7,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * <p>
- * 用户生效权限表(策略计算结果快照) 前端控制器
+ * 用户与权限策略直接关联表 前端控制器
  * </p>
  *
  * @author shy
- * @since 2026-05-17
+ * @since 2026-05-19
  */
 @RestController
 @RequestMapping("/sys-user-perm-rel")

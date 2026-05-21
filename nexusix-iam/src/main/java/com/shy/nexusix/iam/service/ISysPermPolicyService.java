@@ -5,11 +5,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * <p>
- * 权限策略控制表-实现四层权限及禁用继承逻辑 服务类
+ * 权限策略表 服务类
  * </p>
  *
  * @author shy
- * @since 2026-05-17
+ * @since 2026-05-19
  */
 public interface ISysPermPolicyService extends IService<SysPermPolicy> {
 

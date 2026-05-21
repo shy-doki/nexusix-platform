@@ -1,84 +1,100 @@
 package com.shy.nexusix.iam.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.shy.nexusix.common.result.ApiResponse;
+import com.shy.nexusix.core.context.UserContext;
+import com.shy.nexusix.iam.dto.UserContextDTO;
 import com.shy.nexusix.iam.rto.LoginRTO;
-import com.shy.nexusix.iam.rto.RegisterRTO;
 import com.shy.nexusix.iam.service.IAuthService;
-import com.shy.nexusix.iam.vo.LoginVO;
-import com.shy.nexusix.iam.vo.RegisterVO;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * <p>
- * 认证控制器 - 提供登录、注册等认证接口
- * </p>
- * <p>
- * 该控制器下的接口路径已在WebConfig中配置为白名单，
- * 无需登录即可访问。
- * </p>
- *
- * @author shy
- * @since 2026-05-17
- */
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
-@Tag(name = "认证管理", description = "用户登录、注册等认证相关接口")
-@Validated
+@Tag(name = "认证管理", description = "认证服务相关接口")
+
 public class AuthController {
 
     @Autowired
     private IAuthService iAuthService;
 
-    /**
-     * <p>
-     * 用户登录
-     * </p>
-     * <p>
-     * 验证用户名密码，登录成功后返回Token及用户权限角色信息。
-     * 系统会自动加载用户权限到缓存，并选择默认租户。
-     * </p>
-     *
-     * @param loginRTO 登录请求参数（用户名+密码）
-     * @return 登录响应结果，包含Token、用户信息、权限和角色
-     * @throws com.shy.nexusix.common.exception.BusinessException 用户不存在、密码错误、用户被禁用
-     * @author shy
-     * @since 2026-05-17
-     */
     @PostMapping("/login")
-    @Operation(summary = "用户登录", description = "验证用户名密码，返回Token及用户权限角色信息")
-    public ApiResponse login(@Valid @RequestBody LoginRTO loginRTO) {
-        String loginVO = iAuthService.login(loginRTO);
-        return ApiResponse.success("登录成功", loginVO);
+    public ApiResponse login(@RequestBody LoginRTO param) {
+        return iAuthService.login(param);
     }
 
-    /**
-     * <p>
-     * 用户注册
-     * </p>
-     * <p>
-     * 创建新用户账号，密码使用BCrypt加密存储。
-     * 注册成功后用户状态默认为启用，需重新登录获取Token。
-     * </p>
-     *
-     * @param registerRTO 注册请求参数（用户名+密码+可选信息）
-     * @return 注册响应结果，包含用户ID和用户名
-     * @throws com.shy.nexusix.common.exception.BusinessException 用户名已存在、参数校验失败
-     * @author shy
-     * @since 2026-05-17
-     */
-    @PostMapping("/register")
-    @Operation(summary = "用户注册", description = "创建新用户账号，密码BCrypt加密存储")
-    public ApiResponse register(@Valid @RequestBody RegisterRTO registerRTO) {
-        RegisterVO registerVO = iAuthService.register(registerRTO);
-        return ApiResponse.success("注册成功", registerVO);
+    @GetMapping("/ceshi")
+    public void ceshi() {
+        UserContextDTO dto = new UserContextDTO();
+        // 1. 租户信息
+        UserContextDTO.TenantInfo tenant = new UserContextDTO.TenantInfo();
+        tenant.setTenantCode("T2024001");
+        tenant.setTenantName("测试科技有限公司");
+        dto.setTenantInfo(tenant);
+
+        // 2. 权限信息
+        UserContextDTO.PermInfo perm = new UserContextDTO.PermInfo();
+        perm.setPerms(Arrays.asList("user:view", "user:edit", "order:view", "system:admin"));
+        perm.setValidPerms(Arrays.asList("user:view", "user:edit", "order:view"));
+        perm.setInvalidPerm(Arrays.asList("system:admin")); // 过期或被禁用的权限
+        dto.setPermInfo(perm);
+
+        // 3. 字段权限 - query 操作
+        Map<String, UserContextDTO.EntityFieldPerm> queryMap = new HashMap<>();
+
+        UserContextDTO.EntityFieldPerm userQuery = new UserContextDTO.EntityFieldPerm();
+        userQuery.setVisibleFields(Arrays.asList("id", "username", "realName", "phone", "email", "status", "createTime"));
+        userQuery.setInvisibleFields(Arrays.asList("password", "idCard", "salary", "address"));
+        queryMap.put("sys_user", userQuery);
+
+        UserContextDTO.EntityFieldPerm orderQuery = new UserContextDTO.EntityFieldPerm();
+        orderQuery.setVisibleFields(Arrays.asList("id", "orderNo", "amount", "status", "createTime"));
+        orderQuery.setInvisibleFields(Arrays.asList("userId", "payToken", "clientIp"));
+        queryMap.put("sys_order", orderQuery);
+
+        // 动态加一张表，不用改 DTO 代码
+        UserContextDTO.EntityFieldPerm productQuery = new UserContextDTO.EntityFieldPerm();
+        productQuery.setVisibleFields(Arrays.asList("id", "productName", "price"));
+        productQuery.setInvisibleFields(Arrays.asList("costPrice", "supplierInfo"));
+        queryMap.put("sys_product", productQuery);
+
+        perm.setQuery(queryMap);
+
+        // 4. 字段权限 - create 操作
+        Map<String, UserContextDTO.EntityFieldPerm> createMap = new HashMap<>();
+
+        UserContextDTO.EntityFieldPerm userCreate = new UserContextDTO.EntityFieldPerm();
+        userCreate.setVisibleFields(Arrays.asList("username", "realName", "phone", "email", "status"));
+        userCreate.setInvisibleFields(Arrays.asList("id", "password", "createTime", "updateTime"));
+        createMap.put("sys_user", userCreate);
+
+        UserContextDTO.EntityFieldPerm orderCreate = new UserContextDTO.EntityFieldPerm();
+        orderCreate.setVisibleFields(Arrays.asList("orderNo", "amount", "status"));
+        orderCreate.setInvisibleFields(Arrays.asList("id", "payTime", "finishTime"));
+        createMap.put("sys_order", orderCreate);
+
+        perm.setCreate(createMap);
+
+        // 5. 字段权限 - update 操作
+        Map<String, UserContextDTO.EntityFieldPerm> updateMap = new HashMap<>();
+
+        UserContextDTO.EntityFieldPerm userUpdate = new UserContextDTO.EntityFieldPerm();
+        userUpdate.setVisibleFields(Arrays.asList("realName", "phone", "email", "status"));
+        userUpdate.setInvisibleFields(Arrays.asList("id", "username", "password", "createTime"));
+        updateMap.put("sys_user", userUpdate);
+
+        UserContextDTO.EntityFieldPerm orderUpdate = new UserContextDTO.EntityFieldPerm();
+        orderUpdate.setVisibleFields(Arrays.asList("status"));
+        orderUpdate.setInvisibleFields(Arrays.asList("id", "orderNo", "amount", "payToken"));
+        updateMap.put("sys_order", orderUpdate);
+
+        perm.setUpdate(updateMap);
+        StpUtil.getSession().set("userContext", dto);
     }
 
 }

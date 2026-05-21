@@ -5,11 +5,11 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * <p>
- * 用户基础表-存储全局用户信息 (不区分租户) Mapper 接口
+ * 系统用户基础信息表 Mapper 接口
  * </p>
  *
  * @author shy
- * @since 2026-05-17
+ * @since 2026-05-19
  */
 public interface SysUserMapper extends BaseMapper<SysUser> {
 

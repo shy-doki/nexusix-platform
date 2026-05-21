@@ -110,112 +110,9 @@ public class GlobalConstant {
         }
 
         /**
-         * Session键：用户ID
-         * <p>使用场景：Sa-Token Session中存储当前用户的ID</p>
+         * 用户上下文信息
          */
-        public static final String USER_ID = "userId";
-
-        /**
-         * Session键：用户昵称
-         * <p>使用场景：Sa-Token Session中存储当前用户的昵称</p>
-         */
-        public static final String NICK_NAME = "nickName";
-
-        /**
-         * Session键：用户名称
-         * <p>使用场景：Sa-Token Session中存储当前用户的名称</p>
-         */
-        public static final String USER_NAME = "userName";
-
-        /**
-         * Session键：用户权限
-         * <p>使用场景：Sa-Token Session中存储当前用户的权限</p>
-         */
-        public static final String USER_PERM = "userPerm";
-
-        /**
-         * Session键：用户角色
-         * <p>使用场景：Sa-Token Session中存储当前用户的角色</p>
-         */
-        public static final String USER_ROLE = "userRole";
-
-        /**
-         * Session键：租户ID
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户ID</p>
-         */
-        public static final String TENANT_ID = "tenantId";
-
-        /**
-         * Session键：租户名称
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户名称</p>
-         */
-        public static final String TENANT_NAME = "tenantName";
-
-        /**
-         * Session键：有效权限[系统级]
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的系统级有效权限</p>
-         */
-        public static final String VALID_PERM_SYSTEM = "validPermSystem";
-
-        /**
-         * Session键：有效权限[租户级]
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户级有效权限</p>
-         */
-        public static final String VALID_PERM_TENANT = "validPermTenant";
-
-        /**
-         * Session键：有效权限[角色级]
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的角色级有效权限</p>
-         */
-        public static final String VALID_PERM_ROLE = "validPermRole";
-
-        /**
-         * Session键：有效权限[用户级]
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的用户级有效权限</p>
-         */
-        public static final String VALID_PERM_USER = "validPermUser";
-
-        /**
-         * Session键：禁用权限[租户级]
-         * <p>使用场景：Sa-Token Session中存储当前用户被禁用的租户级权限</p>
-         */
-        public static final String INVALID_PERM_TENANT = "invalidPermTenant";
-
-        /**
-         * Session键：禁用权限[角色级]
-         * <p>使用场景：Sa-Token Session中存储当前用户被禁用的角色级权限</p>
-         */
-        public static final String INVALID_PERM_ROLE = "invalidPermRole";
-
-        /**
-         * Session键：禁用权限[用户级]
-         * <p>使用场景：Sa-Token Session中存储当前用户被禁用的用户级权限</p>
-         */
-        public static final String INVALID_PERM_USER = "invalidPermUser";
-
-        /**
-         * Session键：有效角色[租户级]
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的租户级有效角色</p>
-         */
-        public static final String VALID_ROLE_TENANT = "validRoleTenant";
-
-        /**
-         * Session键：有效角色[用户级]
-         * <p>使用场景：Sa-Token Session中存储当前用户绑定的用户级有效角色</p>
-         */
-        public static final String VALID_ROLE_USER = "validRoleUser";
-
-        /**
-         * Session键：禁用角色[租户级]
-         * <p>使用场景：Sa-Token Session中存储当前用户被禁用的租户级角色</p>
-         */
-        public static final String INVALID_ROLE_TENANT = "invalidRoleTenant";
-
-        /**
-         * Session键：禁用角色[用户级]
-         * <p>使用场景：Sa-Token Session中存储当前用户被禁用的用户级角色</p>
-         */
-        public static final String INVALID_ROLE_USER = "invalidRoleUser";
+        public static final String USER_CONTEXT = "userContext";
 
     }
 
@@ -226,16 +123,6 @@ public class GlobalConstant {
 
         private RedisKey() {
         }
-
-        /**
-         * 可操作字段集合
-         */
-        public static final String OPERABLE_COLUMNS = "fieldPermissions";
-
-        /**
-         * 不可操作字段集合
-         */
-        public static final String UN_OPERABLE_COLUMNS = "unFieldPermissions";
 
     }
 
@@ -251,31 +138,6 @@ public class GlobalConstant {
          * 租户表
          */
         public static final String TENANT = "sys_tenant";
-
-    }
-
-    /**
-     *  字段操作
-     */
-    public static final class OperableType {
-
-        private OperableType() {
-        }
-
-        /**
-         * 查询类型
-         */
-        public static final String QUERY_TYPE = "query";
-
-        /**
-         * 新增类型
-         */
-        public static final String CREATE_TYPE = "create";
-
-        /**
-         * 修改类型
-         */
-        public static final String UPDATE_TYPE = "update";
 
     }
 

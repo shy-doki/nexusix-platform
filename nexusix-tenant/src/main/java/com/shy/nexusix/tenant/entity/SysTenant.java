@@ -34,6 +34,10 @@ public class SysTenant implements Serializable {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
+    @Schema(description = "租户唯一编码", example = "TENANT_001")
+    @TableField(value = "tenant_code")
+    private String tenantCode;
+
     @Schema(description = "租户名称", example = "某某科技有限公司")
     @TableField(value = "tenant_name")
     private String tenantName;
@@ -42,33 +46,25 @@ public class SysTenant implements Serializable {
     @TableField(value = "tenant_type")
     private String tenantType;
 
-    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
-    @TableField(value = "tenant_logo_url")
-    private String tenantLogoUrl;
-
     @Schema(description = "租户描述", example = "这是...类型公司")
     @TableField(value = "tenant_desc")
     private String tenantDesc;
 
-    @Schema(description = "租户唯一编码", example = "TENANT_001")
-    @TableField(value = "tenant_code")
-    private String tenantCode;
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    @TableField(value = "tenant_logo_url")
+    private String tenantLogoUrl;
 
     @Schema(description = "父租户ID", example = "1")
     @TableField(value = "parent_id")
     private String parentId;
-
-    @Schema(description = "父租户编码", example = "GROUP001")
-    @TableField(value = "parent_code")
-    private String parentCode;
 
     @Schema(description = "父租户名称", example = "阿里云")
     @TableField(value = "parent_name")
     private String parentName;
 
     @Schema(description = "祖级列表", example = "rootTenant/GROUP001/EAST001")
-    @TableField(value = "ancestors")
-    private String ancestors;
+    @TableField(value = "path")
+    private String path;
 
     @Schema(description = "联系人姓名", example = "张三")
     @TableField(value = "contact_name")
@@ -87,9 +83,9 @@ public class SysTenant implements Serializable {
     @TableField(value = "expire_time")
     private LocalDateTime expireTime;
 
-    @Schema(description = "当前主套餐编码", example = "PKG_PREMIUM")
-    @TableField(value = "package_code")
-    private String packageCode;
+    @Schema(description = "当前主套餐ID", example = "PKG_PREMIUM")
+    @TableField(value = "package_id")
+    private Long packageId;
 
     @Schema(description = "当前主套餐名称", example = "标准版")
     @TableField(value = "package_name")
@@ -104,40 +100,28 @@ public class SysTenant implements Serializable {
     private Boolean hasChildren;
 
     @Schema(description = "创建人ID", example = "100")
-    @TableField(value = "create_by_id")
-    private String createById;
-
-    @Schema(description = "创建人编码", example = "USER_ADMIN")
-    @TableField(value = "create_by_code")
-    private String createByCode;
-
-    @Schema(description = "创建人姓名", example = "张三")
-    @TableField(value = "create_by_name")
-    private String createByName;
-
-    @Schema(description = "更新人ID", example = "100")
-    @TableField(value = "update_by_id")
-    private String updateById;
-
-    @Schema(description = "更新人编码", example = "USER_ADMIN")
-    @TableField(value = "update_by_code")
-    private String updateByCode;
-
-    @Schema(description = "更新人姓名", example = "张三")
-    @TableField(value = "update_by_name")
-    private String updateByName;
+    @TableField(value = "create_by")
+    private String createBy;
 
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
-    @TableField(value = "create_time")
-    private LocalDateTime createTime;
+    @TableField(value = "create_at")
+    private LocalDateTime createAt;
+
+    @Schema(description = "更新人ID", example = "100")
+    @TableField(value = "update_by")
+    private String updateBy;
 
     @Schema(description = "更新时间", format = "date-time", example = "2026-04-07 15:45:30")
-    @TableField(value = "update_time")
-    private LocalDateTime updateTime;
+    @TableField(value = "update_at")
+    private LocalDateTime updateAt;
 
     @Schema(description = "逻辑删除", example = "NOT_DELETED")
     @TableField(value = "is_deleted")
     private String isDeleted;
+
+    @Schema(description = "删除时间", example = "2026-04-07 15:45:30")
+    @TableField(value = "deleted_at")
+    private LocalDateTime deletedAt;
 
 
 }

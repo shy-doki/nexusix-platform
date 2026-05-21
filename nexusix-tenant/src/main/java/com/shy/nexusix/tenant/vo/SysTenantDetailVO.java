@@ -22,22 +22,22 @@ import java.time.LocalDateTime;
 public class SysTenantDetailVO extends SysTenantCommonVO {
 
     /**
-     * 租户logo路径
-     */
-    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
-    private String tenantLogoUrl;
-
-    /**
      * 租户描述
      */
     @Schema(description = "租户描述", example = "这是...类型公司")
     private String tenantDesc;
 
     /**
+     * 租户logo路径
+     */
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    private String tenantLogoUrl;
+
+    /**
      * 祖级列表 (物化路径，如 0/100/200)
      */
     @Schema(description = "祖级列表 (物化路径，如 0/100/200)", example = "0/100/200")
-    private String ancestors;
+    private String path;
 
     /**
      * 扩展属性 (JSONB，存储行业特定配置)
