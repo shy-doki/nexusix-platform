@@ -12,6 +12,7 @@ import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
 import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
 import jakarta.validation.Valid;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 
 import java.util.List;
 
@@ -314,5 +315,22 @@ public interface ISysTenantService extends IService<SysTenant> {
      * @since 2026-05-04
      */
     Integer assignParentTenant(SysTenantAssignRTO assignParam);
+
+    /**
+     * <p>
+     * 根据租户ID查询租户信息
+     * </p>
+     * <p>
+     * 查询指定租户信息，需要登录并具备租户查询权限才能访问。
+     * </p>
+     *
+     * @param tenantId 租户ID
+     * @return 租户信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在时抛出
+     * @author shy
+     * @since 2026-04-20
+     */
+    @RabbitListener(queues = "nexusix.tenant.queue")
+    SysTenantCommonVO queryTenantById(Long tenantId);
 
 }

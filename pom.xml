@@ -34,7 +34,6 @@
         <module>nexusix-audit</module>
         <module>nexusix-boot</module>
         <module>nexusix-system</module>
-        <module>nexusix-mq</module>
     </modules>
 
     <!-- 全局属性配置 统一管理版本号、编码、编译参数，方便后续修改维护 -->

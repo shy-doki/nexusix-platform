@@ -1,14 +1,7 @@
 package com.shy.nexusix.tenant.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.shy.nexusix.common.constant.GlobalConstant;
-import com.shy.nexusix.common.enums.GlobalEnum;
-import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
-import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
-import com.shy.nexusix.core.context.UserContext;
 import com.shy.nexusix.tenant.converter.SysTenantConverter;
 import com.shy.nexusix.tenant.entity.SysTenant;
 import com.shy.nexusix.tenant.mapper.SysTenantMapper;
@@ -21,15 +14,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
 import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Field;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -42,16 +29,15 @@ import java.util.stream.Collectors;
 @Service
 public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant> implements ISysTenantService {
 
-    @Autowired
-    private SysTenantConverter sysTenantConverter;
+    private final SysTenantConverter sysTenantConverter;
+
+    public SysTenantServiceImpl(SysTenantConverter sysTenantConverter) {
+        this.sysTenantConverter = sysTenantConverter;
+    }
 
     @Override
     public List<SysTenantCommonVO> queryTenantList() {
-
-        List<SysTenant> tenantList = this.list();
-
-        return sysTenantConverter.toVoList(tenantList);
-
+        return null;
     }
 
     @Override
@@ -132,5 +118,14 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public Integer assignParentTenant(SysTenantAssignRTO assignParam) {
         return 0;
+    }
+
+    @Override
+    public SysTenantCommonVO queryTenantById(Long tenantId) {
+        SysTenant sysTenant = this.getById(tenantId);
+        if (sysTenant == null) {
+            return null;
+        }
+        return sysTenantConverter.toCommonVO(sysTenant);
     }
 }

@@ -74,10 +74,6 @@ public class SysPermPolicy implements Serializable {
     @TableField(value = "field_operates")
     private String fieldOperates;
 
-    @Schema(description = "禁止操作的字段，JSON格式", example = "[\"password\", \"create_by\"]")
-    @TableField(value = "field_un_operates")
-    private String fieldUnOperates;
-
     @Schema(description = "策略状态", example = "ACTIVE")
     @TableField(value = "status")
     private String status;
