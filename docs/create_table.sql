@@ -149,3 +149,70 @@ CREATE TABLE sys_user_perm_rel (
                                    delete_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                    PRIMARY KEY (id)
 );
+
+-- 角色表
+CREATE TABLE sys_role (
+                          id BIGINT NOT NULL,
+                          role_name VARCHAR(100) NOT NULL,
+                          role_desc VARCHAR(200) NOT NULL,
+                          role_code VARCHAR(100) NOT NULL,
+                          data_scope VARCHAR(20) NOT NULL,
+                          status VARCHAR(20) NOT NULL,
+                          create_by_id BIGINT NOT NULL,
+                          create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          update_by_id BIGINT NOT NULL,
+                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted VARCHAR(20) NOT NULL,
+                          deleted_at TIMESTAMP DEFAULT NULL,
+                          PRIMARY KEY (id)
+);
+
+-- 角色策略控制表
+CREATE TABLE sys_role_policy (
+                                 id BIGINT NOT NULL,
+                                 policy_code VARCHAR(100) NOT NULL,
+                                 policy_name VARCHAR(100) NOT NULL,
+                                 target_id BIGINT NOT NULL,
+                                 target_type VARCHAR(20) NOT NULL,
+                                 role_id BIGINT NOT NULL,
+                                 tenant_id BIGINT NOT NULL,
+                                 status VARCHAR(20) NOT NULL,
+                                 create_by_id BIGINT NOT NULL,
+                                 create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                 update_by_id BIGINT NOT NULL,
+                                 update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                 is_deleted VARCHAR(20) NOT NULL,
+                                 deleted_at TIMESTAMP DEFAULT NULL,
+                                 PRIMARY KEY (id)
+);
+
+-- 用户角色关联表
+CREATE TABLE sys_user_role_rel (
+                                   id BIGINT NOT NULL,
+                                   user_id BIGINT NOT NULL,
+                                   role_id BIGINT NOT NULL,
+                                   policy_id BIGINT NOT NULL,
+                                   create_by_id BIGINT NOT NULL,
+                                   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                   update_by_id BIGINT NOT NULL,
+                                   update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                   is_deleted VARCHAR(20) NOT NULL,
+                                   delete_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                   PRIMARY KEY (id)
+);
+
+-- 用户 Token 记录表
+CREATE TABLE sys_user_token (
+                                id BIGINT NOT NULL,
+                                user_id BIGINT NOT NULL,
+                                tenant_id BIGINT NOT NULL,
+                                token VARCHAR(500) NOT NULL,
+                                device_info VARCHAR(200) DEFAULT '',
+                                login_ip VARCHAR(45) DEFAULT '',
+                                login_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                expire_time TIMESTAMP NOT NULL,
+                                status VARCHAR(20) NOT NULL,
+                                is_deleted VARCHAR(20) NOT NULL,
+                                deleted_at TIMESTAMP DEFAULT NULL,
+                                PRIMARY KEY (id)
+);
