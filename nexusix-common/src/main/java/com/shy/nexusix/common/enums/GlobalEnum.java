@@ -242,7 +242,10 @@ public final class GlobalEnum {
      */
     public enum PermPolicyStatus implements BaseEnum {
         ACTIVE("ACTIVE", "生效"),
-        INACTIVE("INACTIVE", "失效");
+        DISABLED_SYSTEM_LEVEL("DISABLED_SYSTEM_LEVEL", "系统级禁用"),
+        DISABLED_TENANT_LEVEL("DISABLED_TENANT_LEVEL", "租户级禁用"),
+        DISABLED_ROLE_LEVEL("DISABLED_ROLE_LEVEL", "角色级禁用"),
+        DISABLED_USER_LEVEL("DISABLED_USER_LEVEL", "用户级禁用");
 
         @EnumValue
         @JSONField(value = true)

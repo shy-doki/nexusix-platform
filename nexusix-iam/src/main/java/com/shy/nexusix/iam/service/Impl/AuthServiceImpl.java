@@ -127,30 +127,42 @@ public class AuthServiceImpl implements IAuthService {
             permIdToCodeMap.put(perm.getId(), perm.getPermCode());
         }
 
-        // 11. 单次遍历分离有效/无效策略的permId
+        // 11. 禁用层级优先级（系统 > 租户 > 角色 > 用户），遍历分离有效/无效策略的permId
+        Map<String, Integer> disablePriorityMap = new HashMap<>(4);
+        disablePriorityMap.put(GlobalEnum.PermPolicyStatus.DISABLED_SYSTEM_LEVEL.getCode(), 4);
+        disablePriorityMap.put(GlobalEnum.PermPolicyStatus.DISABLED_TENANT_LEVEL.getCode(), 3);
+        disablePriorityMap.put(GlobalEnum.PermPolicyStatus.DISABLED_ROLE_LEVEL.getCode(), 2);
+        disablePriorityMap.put(GlobalEnum.PermPolicyStatus.DISABLED_USER_LEVEL.getCode(), 1);
+
         Set<Long> activePolicyPermIdSet = new HashSet<>();
-        Set<Long> inactivePolicyPermIdSet = new HashSet<>();
+        Map<Long, String> disabledPermIdLevelMap = new HashMap<>();
         for (SysPermPolicy policy : permPolicyList) {
-            if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(policy.getStatus())) {
+            String status = policy.getStatus();
+            if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(status)) {
                 activePolicyPermIdSet.add(policy.getPermId());
-            } else if (GlobalEnum.PermPolicyStatus.INACTIVE.getCode().equals(policy.getStatus())) {
-                inactivePolicyPermIdSet.add(policy.getPermId());
+            } else {
+                String existingLevel = disabledPermIdLevelMap.get(policy.getPermId());
+                int newPriority = disablePriorityMap.getOrDefault(status, 0);
+                int existingPriority = existingLevel == null ? -1 : disablePriorityMap.getOrDefault(existingLevel, 0);
+                if (newPriority > existingPriority) {
+                    disabledPermIdLevelMap.put(policy.getPermId(), status);
+                }
             }
         }
 
-        // 12. 根据策略状态提取有效/无效权限编码
+        // 12. 根据策略状态提取有效/无效权限编码（无效权限携带禁用层级）
         List<String> allPermCodeList = new ArrayList<>(permList.size());
         List<String> validPermCodeList = new ArrayList<>();
-        List<String> invalidPermCodeList = new ArrayList<>();
-        
+        Map<String, String> invalidPermMap = new HashMap<>();
+
         for (SysPerm perm : permList) {
             String permCode = perm.getPermCode();
             allPermCodeList.add(permCode);
-            
-            if (activePolicyPermIdSet.contains(perm.getId())) {
+
+            if (disabledPermIdLevelMap.containsKey(perm.getId())) {
+                invalidPermMap.put(permCode, disabledPermIdLevelMap.get(perm.getId()));
+            } else if (activePolicyPermIdSet.contains(perm.getId())) {
                 validPermCodeList.add(permCode);
-            } else if (inactivePolicyPermIdSet.contains(perm.getId())) {
-                invalidPermCodeList.add(permCode);
             }
         }
 
@@ -197,12 +209,20 @@ public class AuthServiceImpl implements IAuthService {
                 } else {
                     visibleFields.addAll(fields);
                 }
-            } else if (GlobalEnum.PermPolicyStatus.INACTIVE.getCode().equals(policy.getStatus())) {
-                List<String> invisibleFields = fieldPerm.getInvisibleFields();
+            } else {
+                String disableLevel = policy.getStatus();
+                int newPriority = disablePriorityMap.getOrDefault(disableLevel, 0);
+                Map<String, String> invisibleFields = fieldPerm.getInvisibleFields();
                 if (invisibleFields == null) {
-                    fieldPerm.setInvisibleFields(new ArrayList<>(fields));
-                } else {
-                    invisibleFields.addAll(fields);
+                    invisibleFields = new HashMap<>();
+                    fieldPerm.setInvisibleFields(invisibleFields);
+                }
+                for (String field : fields) {
+                    String existingLevel = invisibleFields.get(field);
+                    int existingPriority = existingLevel == null ? -1 : disablePriorityMap.getOrDefault(existingLevel, 0);
+                    if (newPriority > existingPriority) {
+                        invisibleFields.put(field, disableLevel);
+                    }
                 }
             }
         }
@@ -211,7 +231,7 @@ public class AuthServiceImpl implements IAuthService {
         UserContextDTO.PermInfo permInfo = new UserContextDTO.PermInfo();
         permInfo.setPerms(allPermCodeList);
         permInfo.setValidPerms(validPermCodeList);
-        permInfo.setInvalidPerm(invalidPermCodeList);
+        permInfo.setInvalidPerms(invalidPermMap);
         permInfo.setQuery(queryPermMap);
         permInfo.setCreate(createPermMap);
         permInfo.setUpdate(updatePermMap);

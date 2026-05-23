@@ -41,9 +41,9 @@ public class UserContextDTO {
          */
         private List<String> validPerms;
         /**
-         * 无效权限列表
+         * 无效权限映射（permCode → 禁用层级状态码，如 DISABLED_SYSTEM_LEVEL）
          */
-        private List<String> invalidPerm;
+        private Map<String, String> invalidPerms;
         /**
          * 可查询的字段
          */
@@ -65,9 +65,9 @@ public class UserContextDTO {
          */
         private List<String> visibleFields;
         /**
-         * 不可访问字段列表
+         * 不可访问字段映射（fieldName → 禁用层级状态码，如 DISABLED_TENANT_LEVEL）
          */
-        private List<String> invisibleFields;
+        private Map<String, String> invisibleFields;
     }
 
 }
