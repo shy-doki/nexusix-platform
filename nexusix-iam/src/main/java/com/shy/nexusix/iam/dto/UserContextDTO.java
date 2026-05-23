@@ -32,42 +32,32 @@ public class UserContextDTO {
 
     @Data
     public static class PermInfo {
-        /**
-         * 权限列表
-         */
         private List<String> perms;
-        /**
-         * 有效权限列表
-         */
         private List<String> validPerms;
-        /**
-         * 无效权限映射（permCode → 禁用层级状态码，如 DISABLED_SYSTEM_LEVEL）
-         */
-        private Map<String, String> invalidPerms;
-        /**
-         * 可查询的字段
-         */
+        private List<String> invalidPerms;
+        private CascadeDisabled cascadeDisabled;
+        private FieldPerm fieldPerm;
+    }
+
+    @Data
+    public static class CascadeDisabled {
+        private List<String> systemDisabled;
+        private List<String> tenantDisabled;
+        private List<String> roleDisabled;
+        private List<String> userDisabled;
+    }
+
+    @Data
+    public static class FieldPerm {
         private Map<String, EntityFieldPerm> query;
-        /**
-         * 可创建的字段
-         */
         private Map<String, EntityFieldPerm> create;
-        /**
-         * 可修改的字段
-         */
         private Map<String, EntityFieldPerm> update;
     }
 
     @Data
     public static class EntityFieldPerm {
-        /**
-         * 可访问字段列表
-         */
         private List<String> visibleFields;
-        /**
-         * 不可访问字段映射（fieldName → 禁用层级状态码，如 DISABLED_TENANT_LEVEL）
-         */
-        private Map<String, String> invisibleFields;
+        private List<String> invisibleFields;
     }
 
 }
