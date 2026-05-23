@@ -136,7 +136,9 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 11. 遍历分离有效/无效策略的permId，按四级禁用层级归类
+        // 禁用层级：系统级 > 租户级 > 角色级 > 用户级，同一permId可能同时存在于多个禁用层级
         Set<Long> activePolicyPermIdSet = new HashSet<>();
+        // 四级禁用permId集合，用于后续构建级联禁用列表
         Set<Long> systemDisabledPermIdSet = new HashSet<>();
         Set<Long> tenantDisabledPermIdSet = new HashSet<>();
         Set<Long> roleDisabledPermIdSet = new HashSet<>();
@@ -144,22 +146,30 @@ public class AuthServiceImpl implements IAuthService {
         for (SysPermPolicy policy : permPolicyList) {
             String status = policy.getStatus();
             if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(status)) {
+                // 策略生效，记录permId
                 activePolicyPermIdSet.add(policy.getPermId());
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_SYSTEM_LEVEL.getCode().equals(status)) {
+                // 系统级禁用
                 systemDisabledPermIdSet.add(policy.getPermId());
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_TENANT_LEVEL.getCode().equals(status)) {
+                // 租户级禁用
                 tenantDisabledPermIdSet.add(policy.getPermId());
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_ROLE_LEVEL.getCode().equals(status)) {
+                // 角色级禁用
                 roleDisabledPermIdSet.add(policy.getPermId());
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_USER_LEVEL.getCode().equals(status)) {
+                // 用户级禁用
                 userDisabledPermIdSet.add(policy.getPermId());
             }
         }
 
         // 12. 根据策略状态提取权限编码列表和四级禁用分类
         List<String> allPermCodeList = new ArrayList<>(permList.size());
+        // 有效权限编码列表，用于接口鉴权
         List<String> validPermCodeList = new ArrayList<>();
+        // 无效权限编码列表（被任一层级禁用即视为无效）
         List<String> invalidPermCodeList = new ArrayList<>();
+        // 四级禁用权限编码列表，用于前端级联禁用控制
         List<String> systemDisabledList = new ArrayList<>();
         List<String> tenantDisabledList = new ArrayList<>();
         List<String> roleDisabledList = new ArrayList<>();
@@ -170,6 +180,7 @@ public class AuthServiceImpl implements IAuthService {
             Long permId = perm.getId();
             allPermCodeList.add(permCode);
 
+            // 检查该权限在各禁用层级的状态（同一权限可能被多层同时禁用）
             boolean isDisabled = false;
             if (systemDisabledPermIdSet.contains(permId)) {
                 systemDisabledList.add(permCode);
@@ -189,22 +200,27 @@ public class AuthServiceImpl implements IAuthService {
             }
 
             if (isDisabled) {
+                // 被任一层级禁用，归入无效列表
                 invalidPermCodeList.add(permCode);
             } else if (activePolicyPermIdSet.contains(permId)) {
+                // 未被禁用且策略生效，归入有效列表
                 validPermCodeList.add(permCode);
             }
         }
 
         // 13. 单次遍历构建三种类型的字段权限Map（支持同表多策略字段合并）
+        // queryPermMap：查询可见/不可见字段；createPermMap：创建可见/不可见字段；updatePermMap：更新可见/不可见字段
         Map<String, UserContextDTO.EntityFieldPerm> queryPermMap = new HashMap<>();
         Map<String, UserContextDTO.EntityFieldPerm> createPermMap = new HashMap<>();
         Map<String, UserContextDTO.EntityFieldPerm> updatePermMap = new HashMap<>();
 
         for (SysPermPolicy policy : permPolicyList) {
+            // 跳过字段操作为空的策略
             if (policy.getFieldOperates() == null || policy.getFieldOperates().isEmpty()) {
                 continue;
             }
 
+            // 根据访问类型选择对应的Map
             Map<String, UserContextDTO.EntityFieldPerm> targetMap = null;
             String accessType = policy.getAccessType();
             if (GlobalEnum.PermPolicyAccessType.QUERY.getCode().equals(accessType)) {
@@ -214,47 +230,58 @@ public class AuthServiceImpl implements IAuthService {
             } else if (GlobalEnum.PermPolicyAccessType.UPDATE.getCode().equals(accessType)) {
                 targetMap = updatePermMap;
             } else {
+                // 未知访问类型，跳过
                 continue;
             }
 
+            // 获取或创建该表的字段权限对象（key为表名）
             String tableName = policy.getTableName();
             UserContextDTO.EntityFieldPerm fieldPerm = targetMap.computeIfAbsent(tableName,
                     k -> new UserContextDTO.EntityFieldPerm());
 
+            // 解析字段列表（JSON数组格式）
             List<String> fields = JSON.parseArray(policy.getFieldOperates(), String.class);
             if (fields == null || fields.isEmpty()) {
                 continue;
             }
 
+            // 根据策略状态合并到可见或不可见字段列表
             if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(policy.getStatus())) {
+                // 生效策略：字段加入可见列表
                 List<String> visibleFields = fieldPerm.getVisibleFields();
                 if (visibleFields == null) {
                     fieldPerm.setVisibleFields(new ArrayList<>(fields));
                 } else {
+                    // 同表多策略字段合并
                     visibleFields.addAll(fields);
                 }
             } else {
+                // 禁用策略：字段加入不可见列表
                 List<String> invisibleFields = fieldPerm.getInvisibleFields();
                 if (invisibleFields == null) {
                     fieldPerm.setInvisibleFields(new ArrayList<>(fields));
                 } else {
+                    // 同表多策略字段合并
                     invisibleFields.addAll(fields);
                 }
             }
         }
 
         // 14. 组装用户权限上下文
+        // 级联禁用信息：按系统/租户/角色/用户四级分类的禁用权限编码
         UserContextDTO.CascadeDisabled cascadeDisabled = new UserContextDTO.CascadeDisabled();
         cascadeDisabled.setSystemDisabled(systemDisabledList);
         cascadeDisabled.setTenantDisabled(tenantDisabledList);
         cascadeDisabled.setRoleDisabled(roleDisabledList);
         cascadeDisabled.setUserDisabled(userDisabledList);
 
+        // 字段级权限信息：按查询/创建/更新三种操作类型分组的字段可见性
         UserContextDTO.FieldPerm fieldPerm = new UserContextDTO.FieldPerm();
         fieldPerm.setQuery(queryPermMap);
         fieldPerm.setCreate(createPermMap);
         fieldPerm.setUpdate(updatePermMap);
 
+        // 权限信息：全量权限编码、有效权限编码、无效权限编码、级联禁用、字段级权限
         UserContextDTO.PermInfo permInfo = new UserContextDTO.PermInfo();
         permInfo.setPerms(allPermCodeList);
         permInfo.setValidPerms(validPermCodeList);
