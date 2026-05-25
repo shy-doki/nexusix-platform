@@ -41,67 +41,66 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public ApiResponse login(LoginRTO param) {
 
-        // 1. 根据用户名查询用户基本信息
+        // 优先从缓存获取用户权限上下文
+        UserContextDTO cachedContext = (UserContextDTO) StpUtil.getSession().get("userContext");
+        // 缓存命中 权限上下文已存在 该用户已经登录过 直接返回登录成功
+        if (cachedContext != null) {
+            return ApiResponse.success();
+        }
+
+        // 根据用户名查询用户基本信息
         LambdaQueryWrapper<SysUser> userWrapper = new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUserName, param.getUsername())
                 .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysUser loginUserInfo = iSysUserService.getOne(userWrapper);
 
+        // 不区分用户名不存在还是密码错误，防止用户名枚举攻击
         if (loginUserInfo == null) {
-            // 不区分用户名不存在还是密码错误，防止用户名枚举攻击
             throw new BusinessException("用户名或密码不正确");
         }
 
-        // 2. 验证密码
+        // 验证密码
         if (!loginUserInfo.getPassword().equals(param.getPassword())) {
-            // 不区分用户名不存在还是密码错误，防止用户名枚举攻击
             throw new BusinessException("用户名或密码不正确");
         }
 
-        // 3. 查询用户默认租户关系
+        // 查询用户默认租户关系
         LambdaQueryWrapper<SysUserTenantRel> userTenantRelWrapper = new LambdaQueryWrapper<SysUserTenantRel>()
                 .eq(SysUserTenantRel::getUserId, loginUserInfo.getId())
                 .eq(SysUserTenantRel::getIsDefault, GlobalEnum.DefaultTenant.DEFAULT.getCode())
                 .eq(SysUserTenantRel::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysUserTenantRel userTenantRelInfo = iSysUserTenantRelService.getOne(userTenantRelWrapper);
 
+        // 用户未绑定默认租户，无法确定登录上下文
         if (userTenantRelInfo == null) {
-            // 用户未绑定默认租户，无法确定登录上下文
-            throw new BusinessException("用户未加入任何租户");
+            throw new BusinessException("用户未设置任何默认租户，请联系租户管理员");
         }
 
-        // 4. 查询租户信息并校验状态
+        // 查询租户信息并校验状态
         LambdaQueryWrapper<SysTenant> tenantWrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getId, userTenantRelInfo.getTenantId())
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
-        SysTenant tenant = iSysTenantService.getOne(tenantWrapper);
+        SysTenant tenantInfo = iSysTenantService.getOne(tenantWrapper);
 
-        if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(tenant.getStatus())) {
-            // 租户被管理员停用，禁止登录
+        // 租户被管理员停用，禁止登录
+        if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(tenantInfo.getStatus())) {
             throw new BusinessException("所属租户已停用");
         }
-        if (GlobalEnum.TenantStatus.EXPIRED.getCode().equals(tenant.getStatus())) {
-            // 租户已超过有效期，禁止登录
+        // 租户已超过有效期，禁止登录
+        if (GlobalEnum.TenantStatus.EXPIRED.getCode().equals(tenantInfo.getStatus())) {
             throw new BusinessException("所属租户已过期");
         }
 
-        // 5. Sa-Token登录
+        // Sa-Token登录 有无权限都可以登录 登录要校验的只是用户名密码是否正确 有无有效租户
         StpUtil.login(loginUserInfo.getId());
 
-        // 6. 优先从缓存获取用户权限上下文
-        UserContextDTO cachedContext = (UserContextDTO) StpUtil.getSession().get("userContext");
-        if (cachedContext != null) {
-            // 缓存命中，权限上下文已存在，直接返回登录成功
-            return ApiResponse.success();
-        }
-
-        // 7. 查询用户权限策略关联（基于用户-租户关系ID）
+        // 查询用户权限策略关联（基于用户-租户关系ID）
         LambdaQueryWrapper<SysUserPermRel> userPermRelWrapper = new LambdaQueryWrapper<SysUserPermRel>()
                 .eq(SysUserPermRel::getUserId, userTenantRelInfo.getId())
                 .eq(SysUserPermRel::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         List<SysUserPermRel> userPermRelList = iSysUserPermRelService.list(userPermRelWrapper);
 
-        // 8. 批量查询权限策略详情
+        // 批量查询权限策略详情
         List<SysPermPolicy> permPolicyList = new ArrayList<>();
         if (!userPermRelList.isEmpty()) {
             // 收集所有策略ID，用于批量查询策略详情
@@ -115,7 +114,7 @@ public class AuthServiceImpl implements IAuthService {
             permPolicyList = iSysPermPolicyService.list(permPolicyWrapper);
         }
 
-        // 9. 批量查询权限资源详情
+        // 批量查询权限资源详情
         List<SysPerm> permList = new ArrayList<>();
         if (!permPolicyList.isEmpty()) {
             // 使用Set去重，同一权限资源可能被多个策略引用
@@ -129,13 +128,13 @@ public class AuthServiceImpl implements IAuthService {
             permList = iSysPermService.list(permWrapper);
         }
 
-        // 10. 构建权限编码映射（permId -> permCode）
+        // 构建权限编码映射（permId -> permCode）
         Map<Long, String> permIdToCodeMap = new HashMap<>(permList.size());
         for (SysPerm perm : permList) {
             permIdToCodeMap.put(perm.getId(), perm.getPermCode());
         }
 
-        // 11. 遍历分离有效/无效策略的permId，按四级禁用层级归类
+        // 遍历分离有效/无效策略的permId，按四级禁用层级归类
         // 禁用层级：系统级 > 租户级 > 角色级 > 用户级，同一permId可能同时存在于多个禁用层级
         Set<Long> activePolicyPermIdSet = new HashSet<>();
         // 四级禁用permId集合，用于后续构建级联禁用列表
@@ -163,7 +162,7 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
 
-        // 12. 根据策略状态提取权限编码列表和四级禁用分类
+        // 根据策略状态提取权限编码列表和四级禁用分类
         List<String> allPermCodeList = new ArrayList<>(permList.size());
         // 有效权限编码列表，用于接口鉴权
         List<String> validPermCodeList = new ArrayList<>();
@@ -208,7 +207,7 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
 
-        // 13. 单次遍历构建三种类型的字段权限Map（支持同表多策略字段合并）
+        // 单次遍历构建三种类型的字段权限Map（支持同表多策略字段合并）
         // queryPermMap：查询可见/不可见字段；createPermMap：创建可见/不可见字段；updatePermMap：更新可见/不可见字段
         Map<String, UserContextDTO.EntityFieldPerm> queryPermMap = new HashMap<>();
         Map<String, UserContextDTO.EntityFieldPerm> createPermMap = new HashMap<>();
@@ -267,7 +266,7 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
 
-        // 14. 组装用户权限上下文
+        // 组装用户权限上下文
         // 级联禁用信息：按系统/租户/角色/用户四级分类的禁用权限编码
         UserContextDTO.CascadeDisabled cascadeDisabled = new UserContextDTO.CascadeDisabled();
         cascadeDisabled.setSystemDisabled(systemDisabledList);
@@ -290,18 +289,18 @@ public class AuthServiceImpl implements IAuthService {
         permInfo.setFieldPerm(fieldPerm);
 
         // 租户信息：当前默认租户名称和编码
-        UserContextDTO.TenantInfo tenantInfo = new UserContextDTO.TenantInfo();
-        tenantInfo.setTenantName(tenant.getTenantName());
-        tenantInfo.setTenantCode(tenant.getTenantCode());
+        UserContextDTO.TenantInfo tenantInfoCache = new UserContextDTO.TenantInfo();
+        tenantInfoCache.setTenantName(tenantInfo.getTenantName());
+        tenantInfoCache.setTenantCode(tenantInfo.getTenantCode());
 
         // 组装完整的用户上下文
         UserContextDTO userContext = new UserContextDTO();
-        userContext.setTenantInfo(tenantInfo);
+        userContext.setTenantInfo(tenantInfoCache);
         userContext.setPermInfo(permInfo);
 
         // TODO 查询角色信息
 
-        // 15. 缓存到Sa-Token Session（Redis持久化），后续请求可直接从缓存读取权限上下文
+        // 缓存到Sa-Token Session（Redis持久化），后续请求可直接从缓存读取权限上下文
         StpUtil.getSession().set("userContext", userContext);
 
         return ApiResponse.success();
