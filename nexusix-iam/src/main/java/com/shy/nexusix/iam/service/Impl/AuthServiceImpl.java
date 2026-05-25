@@ -109,24 +109,28 @@ public class AuthServiceImpl implements IAuthService {
                     .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
         }
 
-        // 构建 permId -> permCode 映射
-        Map<Long, String> permIdToCodeMap = permList.stream()
-                .collect(Collectors.toMap(SysPerm::getId, SysPerm::getPermCode));
-
-        // 初始化禁用层级集合和字段权限Map
+        // 有效权限
         Set<Long> activePolicyPermIdSet = new HashSet<>();
+        // 失效权限[系统级]
         Set<Long> systemDisabledPermIdSet = new HashSet<>();
+        // 失效权限[租户级]
         Set<Long> tenantDisabledPermIdSet = new HashSet<>();
+        // 角色级禁用权限
         Set<Long> roleDisabledPermIdSet = new HashSet<>();
+        // 用户级禁用权限
         Set<Long> userDisabledPermIdSet = new HashSet<>();
-
+        // 字段权限[查询类]
         Map<String, UserContextDTO.EntityFieldPerm> queryPermMap = new HashMap<>();
+        // 字段权限[创建类]
         Map<String, UserContextDTO.EntityFieldPerm> createPermMap = new HashMap<>();
+        // 字段权限[更新类]
         Map<String, UserContextDTO.EntityFieldPerm> updatePermMap = new HashMap<>();
 
         // 一次流式遍历策略列表：收集禁用层级 + 构建字段权限
         permPolicyList.stream().forEach(policy -> {
+            // 获取权限ID
             Long permId = policy.getPermId();
+            // 获取权限状态
             String status = policy.getStatus();
             // 更新禁用层级集合
             if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(status)) {
@@ -141,7 +145,7 @@ public class AuthServiceImpl implements IAuthService {
                 userDisabledPermIdSet.add(permId);
             }
 
-            // 构建字段权限 Map（fieldOperates 为空则跳过）
+            // 构建字段权限
             String fieldOperates = policy.getFieldOperates();
             if (fieldOperates == null || fieldOperates.isEmpty()) return;
 
@@ -177,13 +181,19 @@ public class AuthServiceImpl implements IAuthService {
             }
         });
 
-        // 初始化权限编码列表和四级禁用列表
+        // 所有权限编码
         List<String> allPermCodeList = new ArrayList<>(permList.size());
+        // 有效权限编码
         List<String> validPermCodeList = new ArrayList<>();
+        // 失效权限编码
         List<String> invalidPermCodeList = new ArrayList<>();
+        // 失效权限编码[系统级]
         List<String> systemDisabledList = new ArrayList<>();
+        // 失效权限编码[租户级]
         List<String> tenantDisabledList = new ArrayList<>();
+        // 失效权限编码[角色级]
         List<String> roleDisabledList = new ArrayList<>();
+        // 失效权限编码[用户级]
         List<String> userDisabledList = new ArrayList<>();
 
         // 流式遍历权限资源，填充上述列表
@@ -192,16 +202,25 @@ public class AuthServiceImpl implements IAuthService {
             String permCode = perm.getPermCode();
             allPermCodeList.add(permCode);
 
+            // 获取失效权限[系统级]
             boolean isSystemDisabled = systemDisabledPermIdSet.contains(permId);
+            // 获取失效权限[租户级]
             boolean isTenantDisabled = tenantDisabledPermIdSet.contains(permId);
+            // 获取失效权限[角色级]
             boolean isRoleDisabled = roleDisabledPermIdSet.contains(permId);
+            // 获取失效权限[用户级]
             boolean isUserDisabled = userDisabledPermIdSet.contains(permId);
 
+            // 填充失效权限[系统级]
             if (isSystemDisabled) systemDisabledList.add(permCode);
+            // 填充失效权限[租户级]
             if (isTenantDisabled) tenantDisabledList.add(permCode);
+            // 填充失效权限[角色级]
             if (isRoleDisabled) roleDisabledList.add(permCode);
+            // 填充失效权限[用户级]
             if (isUserDisabled) userDisabledList.add(permCode);
 
+            // 填充四层级失效权限
             if (isSystemDisabled || isTenantDisabled || isRoleDisabled || isUserDisabled) {
                 invalidPermCodeList.add(permCode);
             } else if (activePolicyPermIdSet.contains(permId)) {
@@ -209,27 +228,44 @@ public class AuthServiceImpl implements IAuthService {
             }
         });
 
-        // 组装 UserContextDTO（与原逻辑完全一致）
+        // 构建失效权限层级
         UserContextDTO.CascadeDisabled cascadeDisabled = new UserContextDTO.CascadeDisabled();
+        // 填充失效权限层级[系统级]
         cascadeDisabled.setSystemDisabled(systemDisabledList);
+        // 填充失效权限层级[租户级]
         cascadeDisabled.setTenantDisabled(tenantDisabledList);
+        // 填充失效权限层级[角色级]
         cascadeDisabled.setRoleDisabled(roleDisabledList);
+        // 填充失效权限层级[用户级]
         cascadeDisabled.setUserDisabled(userDisabledList);
 
+        // 构建字段权限
         UserContextDTO.FieldPerm fieldPerm = new UserContextDTO.FieldPerm();
+        // 填充字段权限[查询类]
         fieldPerm.setQuery(queryPermMap);
+        // 填充字段权限[创建类]
         fieldPerm.setCreate(createPermMap);
+        // 填充字段权限[更新类]
         fieldPerm.setUpdate(updatePermMap);
 
+        // 构建权限信息
         UserContextDTO.PermInfo permInfo = new UserContextDTO.PermInfo();
+        // 填充所有权限编码
         permInfo.setPerms(allPermCodeList);
+        // 填充有效权限编码
         permInfo.setValidPerms(validPermCodeList);
+        // 填充失效权限编码
         permInfo.setInvalidPerms(invalidPermCodeList);
+        // 填充四层级失效权限
         permInfo.setCascadeDisabled(cascadeDisabled);
+        // 填充字段权限
         permInfo.setFieldPerm(fieldPerm);
 
+        // 构建租户信息
         UserContextDTO.TenantInfo tenantInfoCache = new UserContextDTO.TenantInfo();
+        // 填充租户名称
         tenantInfoCache.setTenantName(tenantInfo.getTenantName());
+        // 填充租户编码
         tenantInfoCache.setTenantCode(tenantInfo.getTenantCode());
 
         UserContextDTO userContext = new UserContextDTO();
@@ -238,6 +274,7 @@ public class AuthServiceImpl implements IAuthService {
 
         // TODO 查询角色信息
 
+        // 缓存用户上下文信息
         StpUtil.getSession().set("userContext", userContext);
         return ApiResponse.success();
 
