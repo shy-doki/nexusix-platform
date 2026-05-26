@@ -120,12 +120,4 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         return 0;
     }
 
-    @Override
-    public SysTenantCommonVO queryTenantById(Long tenantId) {
-        SysTenant sysTenant = this.getById(tenantId);
-        if (sysTenant == null) {
-            return null;
-        }
-        return sysTenantConverter.toCommonVO(sysTenant);
-    }
 }

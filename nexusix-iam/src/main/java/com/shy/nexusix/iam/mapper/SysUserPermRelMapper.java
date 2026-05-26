@@ -1,7 +1,7 @@
 package com.shy.nexusix.iam.mapper;
 
+import com.github.yulichang.base.MPJBaseMapper;
 import com.shy.nexusix.iam.entity.SysUserPermRel;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * <p>
@@ -11,6 +11,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @author shy
  * @since 2026-05-19
  */
-public interface SysUserPermRelMapper extends BaseMapper<SysUserPermRel> {
+public interface SysUserPermRelMapper extends MPJBaseMapper<SysUserPermRel> {
 
 }

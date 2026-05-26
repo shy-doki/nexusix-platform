@@ -315,20 +315,4 @@ public interface ISysTenantService extends IService<SysTenant> {
      */
     Integer assignParentTenant(SysTenantAssignRTO assignParam);
 
-    /**
-     * <p>
-     * 根据租户ID查询租户信息
-     * </p>
-     * <p>
-     * 查询指定租户信息，需要登录并具备租户查询权限才能访问。
-     * </p>
-     *
-     * @param tenantId 租户ID
-     * @return 租户信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在时抛出
-     * @author shy
-     * @since 2026-04-20
-     */
-    SysTenantCommonVO queryTenantById(Long tenantId);
-
 }
