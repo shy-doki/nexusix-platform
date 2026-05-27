@@ -16,9 +16,9 @@ spring:
     # HikariCP 连接池配置
     hikari:
       # 最小空闲连接数
-      minimum-idle: 5
+      minimum-idle: 10
       # 最大连接池大小
-      maximum-pool-size: 20
+      maximum-pool-size: 50
       # 连接超时时间(毫秒)
       connection-timeout: 30000
       # 空闲连接超时时间(毫秒)

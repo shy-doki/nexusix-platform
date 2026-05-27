@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
 public class AuthServiceImpl implements IAuthService {
 
     @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
     private SysUserMapper sysUserMapper;
 
     @Autowired
@@ -35,6 +38,11 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public ApiResponse login(LoginRTO param) {
+
+        // ========== 缓存检查 ==========
+        if (StpUtil.isLogin(param.getUsername())) {
+            return ApiResponse.success();
+        }
 
         // ========== 第一段：用户 + 租户 三表 JOIN 查询（原 3 次查询 → 1 次） ==========
         LoginUserTenantDTO loginData = sysUserMapper.selectJoinOne(LoginUserTenantDTO.class,
@@ -80,7 +88,7 @@ public class AuthServiceImpl implements IAuthService {
             throw new BusinessException("所属租户已过期");
         }
 
-        StpUtil.login(loginData.getUserId());
+        StpUtil.login(loginData.getUserName());
 
         // ========== 第二段：权限 三表 JOIN 查询（原 3 次查询 → 1 次） ==========
         List<UserPermDetailDTO> permDetails = sysUserPermRelMapper.selectJoinList(UserPermDetailDTO.class,
