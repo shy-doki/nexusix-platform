@@ -37,13 +37,13 @@ public class Fastjson2Config implements WebMvcConfigurer {
                 // 空列表输出 []
                 JSONWriter.Feature.WriteNullListAsEmpty,
                 // 空字符串输出 ""
-                JSONWriter.Feature.WriteNullStringAsEmpty,
+                // JSONWriter.Feature.WriteNullStringAsEmpty,
                 // 空数字输出 0
                 JSONWriter.Feature.WriteNullNumberAsZero,
                 // 空布尔值输出 false
-                JSONWriter.Feature.WriteNullBooleanAsFalse,
+                // JSONWriter.Feature.WriteNullBooleanAsFalse,
                 // 输出 null 值
-                JSONWriter.Feature.WriteMapNullValue,
+                // JSONWriter.Feature.WriteMapNullValue,
                 // 美化输出
                 JSONWriter.Feature.PrettyFormat
         );

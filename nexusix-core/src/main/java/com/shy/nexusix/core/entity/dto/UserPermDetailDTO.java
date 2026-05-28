@@ -1,4 +1,4 @@
-package com.shy.nexusix.iam.dto;
+package com.shy.nexusix.core.entity.dto;
 
 import lombok.Data;
 

@@ -22,7 +22,7 @@ import java.time.Duration;
  * <p>
  * Key使用StringRedisSerializer（可读性好，便于Redis客户端查看）
  * Value使用Fastjson2序列化（与项目全局JSON框架统一，避免引入Jackson依赖冲突）
- * Sa-Token会话数据使用自带的sa-token-redis-jackson序列化，与业务RedisTemplate互不干扰
+ * Sa-Token会话数据使用sa-token-fastjson2序列化，与业务RedisTemplate互不干扰
  * </p>
  *
  * @author shy

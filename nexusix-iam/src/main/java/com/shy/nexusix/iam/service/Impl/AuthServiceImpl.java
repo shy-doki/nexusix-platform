@@ -2,23 +2,21 @@ package com.shy.nexusix.iam.service.Impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
+import com.shy.nexusix.common.constant.GlobalConstant;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.iam.dto.LoginUserTenantDTO;
-import com.shy.nexusix.iam.dto.UserContextDTO;
-import com.shy.nexusix.iam.dto.UserPermDetailDTO;
+import com.shy.nexusix.core.entity.dto.UserContextDTO;
+import com.shy.nexusix.core.entity.dto.UserPermDetailDTO;
 import com.shy.nexusix.iam.entity.*;
 import com.shy.nexusix.iam.mapper.SysUserMapper;
 import com.shy.nexusix.iam.mapper.SysUserPermRelMapper;
 import com.shy.nexusix.iam.rto.LoginRTO;
 import com.shy.nexusix.iam.service.*;
 import com.shy.nexusix.tenant.entity.SysTenant;
-import com.shy.nexusix.tenant.service.ISysTenantService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -26,9 +24,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
-
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
     private SysUserMapper sysUserMapper;
@@ -227,7 +222,7 @@ public class AuthServiceImpl implements IAuthService {
         userContext.setTenantInfo(tenantInfoCache);
         userContext.setPermInfo(permInfo);
 
-        StpUtil.getSession().set("userContext", userContext);
+        StpUtil.getSession().set(GlobalConstant.Session.USER_CONTEXT, userContext);
         return ApiResponse.success();
 
     }

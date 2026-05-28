@@ -1,7 +1,11 @@
 package com.shy.nexusix.tenant.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.rto.PageCommonRTO;
+import com.shy.nexusix.core.context.UserContext;
+import com.shy.nexusix.core.entity.dto.UserContextDTO;
 import com.shy.nexusix.tenant.converter.SysTenantConverter;
 import com.shy.nexusix.tenant.entity.SysTenant;
 import com.shy.nexusix.tenant.mapper.SysTenantMapper;
@@ -14,6 +18,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
 import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -29,15 +34,26 @@ import java.util.*;
 @Service
 public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant> implements ISysTenantService {
 
-    private final SysTenantConverter sysTenantConverter;
-
-    public SysTenantServiceImpl(SysTenantConverter sysTenantConverter) {
-        this.sysTenantConverter = sysTenantConverter;
-    }
+    @Autowired
+    private SysTenantConverter sysTenantConverter;
 
     @Override
     public List<SysTenantCommonVO> queryTenantList() {
-        return null;
+
+        UserContextDTO userContext = UserContext.getUserContext();
+
+        // 获取当前用户对租户表的访问权限
+        UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
+        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get("sys_tenant");
+
+        List<String> visibleFields = tenantQueryPerm.getVisibleFields();
+
+        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
+                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        List<SysTenant> tenantList = this.list(wrapper);
+        return sysTenantConverter.entityListToCommonVoList(tenantList);
+
     }
 
     @Override
