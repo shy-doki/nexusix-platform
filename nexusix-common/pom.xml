@@ -69,6 +69,7 @@
             <artifactId>fastjson2</artifactId>
         </dependency>
 
+        <!-- Fastjson2 适配 SpringBoot3 依赖 -->
         <dependency>
             <groupId>com.alibaba.fastjson2</groupId>
             <artifactId>fastjson2-extension-spring6</artifactId>

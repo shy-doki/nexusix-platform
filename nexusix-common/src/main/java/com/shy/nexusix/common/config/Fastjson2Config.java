@@ -34,24 +34,24 @@ public class Fastjson2Config implements WebMvcConfigurer {
 
         // 设置序列化特性
         config.setWriterFeatures(
-                // 空列表输出 []
-                JSONWriter.Feature.WriteNullListAsEmpty,
-                // 空字符串输出 ""
-                // JSONWriter.Feature.WriteNullStringAsEmpty,
-                // 空数字输出 0
-                JSONWriter.Feature.WriteNullNumberAsZero,
+                // 美化输出
+                JSONWriter.Feature.PrettyFormat
                 // 空布尔值输出 false
                 // JSONWriter.Feature.WriteNullBooleanAsFalse,
                 // 输出 null 值
                 // JSONWriter.Feature.WriteMapNullValue,
-                // 美化输出
-                JSONWriter.Feature.PrettyFormat
+                // 空字符串输出 ""
+                // JSONWriter.Feature.WriteNullStringAsEmpty,
+                // 空数字输出 0
+                // JSONWriter.Feature.WriteNullNumberAsZero,
+                // 空列表输出 []
+                // JSONWriter.Feature.WriteNullListAsEmpty,
         );
 
         // 设置反序列化特性
         config.setReaderFeatures(
-                // 对读取到的字符串值做去空格处理
-                JSONReader.Feature.TrimString,
+                // 智能匹配字段
+                JSONReader.Feature.SupportSmartMatch,
                 // 忽略输入为null的字段
                 JSONReader.Feature.IgnoreSetNullValue
         );

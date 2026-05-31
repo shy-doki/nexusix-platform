@@ -1,17 +1,14 @@
 package com.shy.nexusix.common.config;
 
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONReader;
-import com.alibaba.fastjson2.JSONWriter;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import com.alibaba.fastjson2.support.spring6.data.redis.Fastjson2RedisSerializer;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
 
@@ -38,36 +35,22 @@ public class RedisConfig {
      * Value: Fastjson2序列化（带类型信息，反序列化时自动还原为原始类型）
      */
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(redisConnectionFactory);
+        template.setConnectionFactory(factory);
 
-        StringRedisSerializer stringSerializer = new StringRedisSerializer();
-        // Key序列化：String
+        // Key 序列化使用 String
+        RedisSerializer<String> stringSerializer = RedisSerializer.string();
         template.setKeySerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
 
-        // Value序列化：Fastjson2（与项目全局JSON框架统一）
-        RedisSerializer<Object> fastjson2Serializer = new RedisSerializer<Object>() {
-            @Override
-            public byte[] serialize(Object object) {
-                if (object == null) {
-                    return new byte[0];
-                }
-                return JSON.toJSONBytes(object, JSONWriter.Feature.WriteClassName);
-            }
+        // Value 序列化使用 Fastjson2（带类型信息，支持反序列化恢复原始类型）
+        Fastjson2RedisSerializer<Object> valueSerializer =
+                new Fastjson2RedisSerializer<>(Object.class);
+        template.setValueSerializer(valueSerializer);
+        template.setHashValueSerializer(valueSerializer);
 
-            @Override
-            public Object deserialize(byte[] bytes) {
-                if (bytes == null || bytes.length == 0) {
-                    return null;
-                }
-                return JSON.parseObject(bytes, Object.class, JSONReader.Feature.SupportAutoType);
-            }
-        };
-        template.setValueSerializer(fastjson2Serializer);
-        template.setHashValueSerializer(fastjson2Serializer);
-
+        // 初始化
         template.afterPropertiesSet();
         return template;
     }
