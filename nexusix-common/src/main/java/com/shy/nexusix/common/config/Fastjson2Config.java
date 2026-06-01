@@ -24,8 +24,15 @@ import java.util.List;
 @Configuration
 public class Fastjson2Config implements WebMvcConfigurer {
 
+    /**
+     * 在 Spring 容器初始化完成后，替换默认的 HttpMessageConverter
+     * 由于 fastjson2-extension-spring6 已自动注册，此处为增强配置（非必须，但强烈推荐）
+     */
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+        // 清除所有默认转换器（避免 Jackson 残留）
+        converters.clear();
+
         // 创建 Fastjson2 消息转换器
         FastJsonHttpMessageConverter converter = new FastJsonHttpMessageConverter();
 
@@ -78,8 +85,9 @@ public class Fastjson2Config implements WebMvcConfigurer {
         // 设置字符集 确保中文等多字节字符正确处理
         converter.setDefaultCharset(StandardCharsets.UTF_8);
 
-        // 将 Fastjson2 消息转换器添加到列表开头（优先级最高）
-        converters.add(0, converter);
+        // 手动注册 FastJSON2 转换器（推荐：显式控制，确保唯一）
+        // fastjson2-extension-spring6 会自动注册，但手动注册可确保优先级和配置生效
+        converters.add(converter);
     }
 
 }
