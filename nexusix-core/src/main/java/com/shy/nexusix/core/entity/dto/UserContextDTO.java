@@ -5,37 +5,6 @@ import lombok.Data;
 import java.util.List;
 import java.util.Map;
 
-/**
- * <p>
- * 用户上下文数据传输对象，封装当前登录用户的租户信息与权限信息。
- * </p>
- *
- * <p><b>设计意图：</b></p>
- * <p>本 DTO 在用户登录成功后由认证服务构建，并缓存至 Sa-Token Session 中，
- * 作为后续请求中获取用户上下文的核心数据结构。通过将租户信息和权限信息
- * 聚合在单一对象中，避免业务代码频繁访问 Session 或数据库。</p>
- *
- * <p><b>数据生命周期：</b></p>
- * <ol>
- *   <li>登录时由 AuthServiceImpl 构建并写入 Sa-Token Session</li>
- *   <li>请求处理时由 UserContext 工具类从 Session 中读取</li>
- *   <li>登出或 Session 过期时自动销毁</li>
- * </ol>
- *
- * <p><b>内部类结构：</b></p>
- * <ul>
- *   <li>{@link TenantInfo} - 租户基础信息</li>
- *   <li>{@link PermInfo} - 权限汇总信息</li>
- *   <li>{@link CascadeDisabled} - 级联禁用详情（系统/租户/角色/用户四级）</li>
- *   <li>{@link FieldPerm} - 字段级权限配置（查询/创建/更新三种操作）</li>
- *   <li>{@link EntityFieldPerm} - 单个实体的字段可见/不可见配置</li>
- * </ul>
- *
- * @author shy
- * @since 2026-04-07
- * @see com.shy.nexusix.core.context.UserContext
- * @see com.shy.nexusix.iam.service.Impl.AuthServiceImpl
- */
 @Data
 public class UserContextDTO {
 

@@ -2,4 +2,26 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shy.nexusix.iam.mapper.SysUserTenantRelMapper">
 
+    <select id="queryUserLoginJoin" resultType="com.shy.nexusix.iam.dto.UserLoginJoinDTO">
+        SELECT
+        u.id          AS userId,
+        u.password    AS password,
+        utr.id        AS userTenantRelId,
+        utr.tenant_id AS tenantId,
+        t.tenant_name AS tenantName,
+        t.tenant_code AS tenantCode,
+        t.status      AS tenantStatus
+        FROM sys_user u
+        LEFT JOIN sys_user_tenant_rel utr
+        ON u.id = utr.user_id
+        AND utr.is_default = true          <!-- Boolean 字段直接用 true -->
+        AND utr.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_tenant t
+        ON utr.tenant_id = t.id
+        AND t.is_deleted = 'NOT_DELETED'
+        WHERE u.user_name = #{username}
+        AND u.is_deleted = 'NOT_DELETED'
+        LIMIT 1
+    </select>
+
 </mapper>
