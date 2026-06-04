@@ -1,7 +1,11 @@
 package com.shy.nexusix.iam.mapper;
 
 import com.github.yulichang.base.MPJBaseMapper;
+import com.shy.nexusix.iam.dto.UserPermJoinDTO;
 import com.shy.nexusix.iam.entity.SysUserPermRel;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * <p>
@@ -12,5 +16,7 @@ import com.shy.nexusix.iam.entity.SysUserPermRel;
  * @since 2026-05-19
  */
 public interface SysUserPermRelMapper extends MPJBaseMapper<SysUserPermRel> {
+
+    List<UserPermJoinDTO> queryUserPermJoin(@Param("userTenantRelId") Long userTenantRelId);
 
 }
