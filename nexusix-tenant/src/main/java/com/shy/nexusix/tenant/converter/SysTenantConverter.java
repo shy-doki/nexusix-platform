@@ -3,6 +3,8 @@ package com.shy.nexusix.tenant.converter;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.tenant.entity.SysTenant;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
+import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
+import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
 import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -47,6 +49,53 @@ public interface SysTenantConverter {
      */
     @IterableMapping(qualifiedByName  = "toCommonVO")
     List<SysTenantCommonVO> entityListToCommonVoList(List<SysTenant> entityList);
+
+    /**
+     * 租户实体转换为详情VO对象
+     * <p>在公共VO映射基础上，额外映射详情字段和创建/更新人编码</p>
+     *
+     * @param entity 租户数据库实体
+     * @return 租户详情VO
+     */
+    @Named("toDetailVO")
+    @Mapping(source = "createBy", target = "createByName")
+    @Mapping(source = "createAt", target = "createTime")
+    @Mapping(source = "updateBy", target = "updateByName")
+    @Mapping(source = "updateAt", target = "updateTime")
+    @Mapping(source = "deletedAt", target = "deleteTime")
+    @Mapping(source = "status", target = "status", qualifiedByName = "intStatusToDesc")
+    @Mapping(source = "isDeleted", target = "isDeleted", qualifiedByName = "intDeletedToDesc")
+    @Mapping(source = "createBy", target = "createByCode")
+    @Mapping(source = "updateBy", target = "updateByCode")
+    SysTenantDetailVO toDetailVO(SysTenant entity);
+
+    /**
+     * 租户实体转换为树形VO对象
+     * <p>在公共VO映射基础上，额外映射父租户编码字段</p>
+     *
+     * @param entity 租户数据库实体
+     * @return 租户树形VO
+     */
+    @Named("toTreeVO")
+    @Mapping(source = "createBy", target = "createByName")
+    @Mapping(source = "createAt", target = "createTime")
+    @Mapping(source = "updateBy", target = "updateByName")
+    @Mapping(source = "updateAt", target = "updateTime")
+    @Mapping(source = "deletedAt", target = "deleteTime")
+    @Mapping(source = "status", target = "status", qualifiedByName = "intStatusToDesc")
+    @Mapping(source = "isDeleted", target = "isDeleted", qualifiedByName = "intDeletedToDesc")
+    @Mapping(source = "parentId", target = "parentCode")
+    SysTenantTreeVO toTreeVO(SysTenant entity);
+
+    /**
+     * 租户实体列表批量转换为树形VO列表
+     * <p>复用单对象转换规则，实现批量映射</p>
+     *
+     * @param entityList 租户实体集合
+     * @return 租户树形VO集合
+     */
+    @IterableMapping(qualifiedByName = "toTreeVO")
+    List<SysTenantTreeVO> entityListToTreeVoList(List<SysTenant> entityList);
 
     /**
      * 租户状态枚举转换为描述文本

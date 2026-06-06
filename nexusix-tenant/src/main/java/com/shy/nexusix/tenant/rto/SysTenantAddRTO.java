@@ -166,7 +166,7 @@ public class SysTenantAddRTO {
      * 超级管理员可填
      */
     @Schema(description = "更新人编码", example = "100")
-    private String updateCode;
+    private String updateByCode;
 
     /**
      * 更新人姓名
