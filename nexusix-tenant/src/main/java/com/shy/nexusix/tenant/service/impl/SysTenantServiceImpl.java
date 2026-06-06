@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.shy.nexusix.common.constant.GlobalConstant;
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
@@ -43,12 +44,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     private SysTenantConverter sysTenantConverter;
 
     /**
-     * <p>超级管理员角色标识</p>
-     * <p>用于Sa-Token角色判断，判断当前用户是否为超级管理员</p>
-     */
-    private static final String SUPER_ADMIN_ROLE = "SUPER_ADMIN";
-
-    /**
      * <p>查询租户列表</p>
      *
      * @return 租户通用VO列表，封装用户有权查看的租户信息
@@ -63,7 +58,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于动态列选择
         List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
@@ -95,7 +90,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于动态列选择
         List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
@@ -132,7 +127,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于动态列选择
         List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
@@ -202,7 +197,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于动态列选择
         List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
@@ -312,7 +307,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于动态列选择
         List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
@@ -393,7 +388,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于动态列选择
         List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
@@ -485,7 +480,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于动态列选择
         List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
@@ -523,7 +518,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的新增操作字段权限
-        UserContextDTO.EntityFieldPerm tenantCreatePerm = fieldPerm.getCreate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantCreatePerm = fieldPerm.getCreate().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于字段权限校验
         List<String> invisibleFields = tenantCreatePerm.getInvisibleFields();
@@ -564,7 +559,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 新增租户默认无子租户
         entity.setHasChildren(false);
 
-        boolean isSuperAdmin = StpUtil.hasRole(SUPER_ADMIN_ROLE);
+        boolean isSuperAdmin = StpUtil.hasRole(GlobalConstant.Role.SUPER_ADMIN_ROLE);
         if (isSuperAdmin) {
             // 超级管理员：若明确填写了审核字段值则以填写值为准，若未填写则自动应用默认值
             if (entity.getCreateBy() == null) {
@@ -637,7 +632,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于字段权限校验
         List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
@@ -656,7 +651,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 设置实体ID用于更新条件
         entity.setId(existingTenant.getId());
 
-        boolean isSuperAdmin = StpUtil.hasRole(SUPER_ADMIN_ROLE);
+        boolean isSuperAdmin = StpUtil.hasRole(GlobalConstant.Role.SUPER_ADMIN_ROLE);
         if (isSuperAdmin) {
             // 超级管理员：若明确填写了审核字段值则以填写值为准，若未填写则自动应用默认值
             if (entity.getCreateBy() == null) {
@@ -730,7 +725,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改status字段
         List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
@@ -793,7 +788,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的更新操作字段权限（删除属于更新操作范畴）
-        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改is_deleted字段
         List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
@@ -861,13 +856,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的新增操作字段权限
-        UserContextDTO.EntityFieldPerm tenantCreatePerm = fieldPerm.getCreate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantCreatePerm = fieldPerm.getCreate().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于字段权限校验
         List<String> invisibleFields = tenantCreatePerm.getInvisibleFields();
 
         // 审核字段权限控制 通过Sa-Token判断当前用户是否为超级管理员
-        boolean isSuperAdmin = StpUtil.hasRole(SUPER_ADMIN_ROLE);
+        boolean isSuperAdmin = StpUtil.hasRole(GlobalConstant.Role.SUPER_ADMIN_ROLE);
 
         // 通过 MapStruct 转换器批量将RTO列表转换为实体列表
         List<SysTenant> entityList = sysTenantConverter.addRTOListToEntityList(addParamList);
@@ -980,13 +975,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 提取用户不可操作的字段列表 用于字段权限校验
         List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
 
         // 审核字段权限控制 通过Sa-Token判断当前用户是否为超级管理员
-        boolean isSuperAdmin = StpUtil.hasRole(SUPER_ADMIN_ROLE);
+        boolean isSuperAdmin = StpUtil.hasRole(GlobalConstant.Role.SUPER_ADMIN_ROLE);
 
         // 遍历处理每个租户更新
         for (SysTenantUpdateRTO updateParam : updateParamList) {
@@ -1075,7 +1070,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改status字段
         List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
@@ -1142,7 +1137,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的更新操作字段权限（删除属于更新操作范畴）
-        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改is_deleted字段
         List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
@@ -1216,7 +1211,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改parentId和path字段
         List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
@@ -1303,7 +1298,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 从权限上下文中提取字段级权限配置
         UserContextDTO.FieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm();
         // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get("sys_tenant");
+        UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改parentId和path字段
         List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();

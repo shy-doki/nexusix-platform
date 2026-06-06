@@ -141,4 +141,18 @@ public class GlobalConstant {
 
     }
 
+    /**
+     *  角色常量
+     */
+    public static final  class Role {
+
+        private Role() {
+        }
+
+        /**
+         * 租户表
+         */
+        public static final String SUPER_ADMIN_ROLE = "SUPER_ADMIN";
+
+    }
 }
