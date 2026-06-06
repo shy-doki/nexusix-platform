@@ -1,4 +1,4 @@
-package com.shy.nexusix.iam.service.Impl;
+package com.shy.nexusix.iam.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
@@ -17,6 +17,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
+/**
+ * <p>认证服务实现类</p>
+ *
+ * @author shy
+ * @since 2026-06-07
+ */
 @Service
 public class AuthServiceImpl implements IAuthService {
 
@@ -26,6 +32,13 @@ public class AuthServiceImpl implements IAuthService {
     @Autowired
     private SysUserPermRelMapper iSysUserPermRelMapper;
 
+    /**
+     * <p>用户登录认证</p>
+     *
+     * @param param 登录入参对象 封装用户名、明文密码等登录参数
+     * @return ApiResponse 统一返回成功结果 用户信息存放于Sa-Token Session中
+     * @throws BusinessException 账号密码错误、无默认租户、租户停用/过期时抛出业务异常
+     */
     @Override
     public ApiResponse login(LoginRTO param) {
 

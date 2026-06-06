@@ -20,7 +20,7 @@ import com.shy.nexusix.iam.rto.LoginRTO;
  *
  * @author shy
  * @since 2026-04-07
- * @see com.shy.nexusix.iam.service.Impl.AuthServiceImpl
+ * @see com.shy.nexusix.iam.service.impl.AuthServiceImpl
  */
 public interface IAuthService {
 
