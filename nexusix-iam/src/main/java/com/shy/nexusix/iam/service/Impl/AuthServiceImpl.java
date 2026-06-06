@@ -29,22 +29,22 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public ApiResponse login(LoginRTO param) {
 
-        // 检查当前用户是否已经登录，若已登录则直接返回成功，避免重复登录
+        // 检查当前用户是否已经登录 若已登录则返回缓存中该用户信息
         if (StpUtil.isLogin(param.getUsername())) {
             return ApiResponse.success();
         }
 
-        // 根据用户名查询用户与租户的关联登录信息（包含密码、租户状态等）
+        // 根据用户名查询用户与租户的关联登录信息
         UserLoginJoinDTO loginJoinInfo = iSysUserTenantRelService.queryUserLoginJoin(param.getUsername());
 
-        // 校验用户名是否存在以及密码是否匹配
+        // 校验用户名是否存在以及密码是否匹配 TODO 后续使用加密对比
         if (loginJoinInfo == null || !loginJoinInfo.getPassword().equals(param.getPassword())) {
             throw new BusinessException("用户名或密码不正确");
         }
 
-        // 校验用户是否已关联默认租户，无租户关联则不允许登录
+        // 校验用户是否已关联默认租户 无租户关联则不允许登录
         if (loginJoinInfo.getUserTenantRelId() == null) {
-            throw new BusinessException("用户未设置任何默认租户，请联系租户管理员");
+            throw new BusinessException("用户未设置任何默认租户，请联系相关租户管理员进行设置");
         }
 
         // 校验租户是否处于停用状态
@@ -57,22 +57,28 @@ public class AuthServiceImpl implements IAuthService {
             throw new BusinessException("所属租户已过期");
         }
 
-        // 所有前置校验通过后，执行登录操作，将用户标记为已登录状态
+        // 所有前置校验通过后 执行登录操作
         StpUtil.login(param.getUsername());
 
-        // 查询当前用户租户关系下的所有权限策略关联数据（一条策略对应一行，可能重复）
+        // 查询当前用户租户关系下的所有权限策略关联数据
         List<UserPermJoinDTO> permJoinList = iSysUserPermRelMapper.queryUserPermJoin(loginJoinInfo.getUserTenantRelId());
 
-        // 初始化权限编码分类容器：分别存放全部、有效、失效以及各级别禁用的权限编码
+        // 所有权限编码[有效+失效]
         List<String> allPermCodeList = new ArrayList<>();
+        // 所有有效权限编码
         List<String> validPermCodeList = new ArrayList<>();
+        // 所有无效权限编码
         List<String> invalidPermCodeList = new ArrayList<>();
+        // 无效权限编码[系统级]
         List<String> systemDisabledList = new ArrayList<>();
+        // 无效权限编码[租户级]
         List<String> tenantDisabledList = new ArrayList<>();
+        // 无效权限编码[角色级]
         List<String> roleDisabledList = new ArrayList<>();
+        // 无效权限编码[用户级]
         List<String> userDisabledList = new ArrayList<>();
 
-        // 用于去重：同一个权限ID只需记录一次编码
+        // 用于去重 同一个权限ID只需记录一次编码
         Set<Long> seenPermIdSet = new HashSet<>();
 
         // 记录每个权限ID在各层级是否存在禁用状态
@@ -82,21 +88,21 @@ public class AuthServiceImpl implements IAuthService {
         Map<Long, Boolean> hasUserDisabledMap = new HashMap<>();
         Map<Long, Boolean> hasActiveMap = new HashMap<>();
 
-        // 权限ID到权限编码的映射，方便后续按ID查找
+        // 权限ID到权限编码的映射 方便后续按ID查找
         Map<Long, String> permIdToCodeMap = new HashMap<>();
 
-        // 按操作类型分类的字段权限Map：key为表名，value为该表的字段权限配置
+        // 按操作类型分类的字段权限  Map：key为表名 value为该表的字段权限配置
         Map<String, UserContextDTO.EntityFieldPerm> queryPermMap = new HashMap<>();
         Map<String, UserContextDTO.EntityFieldPerm> createPermMap = new HashMap<>();
         Map<String, UserContextDTO.EntityFieldPerm> updatePermMap = new HashMap<>();
 
-        // 第一轮遍历：收集所有权限编码，记录各权限在不同层级的禁用状态，解析字段级权限
+        // 第一轮遍历 收集所有权限编码 记录各权限在不同层级的禁用状态 解析字段级权限
         for (UserPermJoinDTO row : permJoinList) {
             Long permId = row.getPermId();
             String permCode = row.getPermCode();
             String status = row.getPolicyStatus();
 
-            // 对同一权限ID进行去重，确保每个权限编码只在全量列表中出现一次
+            // 对同一权限ID进行去重 确保每个权限编码只在全量列表中出现一次
             if (permId != null && permCode != null && !seenPermIdSet.contains(permId)) {
                 seenPermIdSet.add(permId);
                 permIdToCodeMap.put(permId, permCode);
