@@ -1,5 +1,6 @@
 package com.shy.nexusix.tenant.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -40,6 +41,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     @Autowired
     private SysTenantConverter sysTenantConverter;
+
+    /**
+     * <p>超级管理员角色标识</p>
+     * <p>用于Sa-Token角色判断，判断当前用户是否为超级管理员</p>
+     */
+    private static final String SUPER_ADMIN_ROLE = "SUPER_ADMIN";
 
     /**
      * <p>查询租户列表</p>
@@ -293,6 +300,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
      */
     @Override
     public SysTenantTreeVO queryTenantTree(String id) {
+
+        // 安全校验 租户ID合法性
+        if (id == null || id.trim().isEmpty()) {
+            throw new BusinessException("租户ID不能为空");
+        }
 
         // 获取当前登录用户的上下文信息，包含权限配置
         UserContextDTO userContext = UserContext.getUserContext();
@@ -552,15 +564,32 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 新增租户默认无子租户
         entity.setHasChildren(false);
 
-        // 设置默认创建和更新信息
-        if (entity.getCreateAt() == null) {
+        boolean isSuperAdmin = StpUtil.hasRole(SUPER_ADMIN_ROLE);
+        if (isSuperAdmin) {
+            // 超级管理员：若明确填写了审核字段值则以填写值为准，若未填写则自动应用默认值
+            if (entity.getCreateBy() == null) {
+                entity.setCreateBy(StpUtil.getLoginIdAsString());
+            }
+            if (entity.getCreateAt() == null) {
+                entity.setCreateAt(LocalDateTime.now());
+            }
+            if (entity.getUpdateBy() == null) {
+                entity.setUpdateBy(StpUtil.getLoginIdAsString());
+            }
+            if (entity.getUpdateAt() == null) {
+                entity.setUpdateAt(LocalDateTime.now());
+            }
+            if (entity.getIsDeleted() == null) {
+                entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+            }
+        } else {
+            // 非超级管理员：严格禁止设置审核字段，系统自动填充默认值，忽略前端传递的审核字段参数
+            entity.setCreateBy(StpUtil.getLoginIdAsString());
             entity.setCreateAt(LocalDateTime.now());
-        }
-        if (entity.getUpdateAt() == null) {
+            entity.setUpdateBy(StpUtil.getLoginIdAsString());
             entity.setUpdateAt(LocalDateTime.now());
-        }
-        if (entity.getIsDeleted() == null) {
             entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+            entity.setDeletedAt(null);
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能设置有权限的字段
@@ -627,8 +656,34 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 设置实体ID用于更新条件
         entity.setId(existingTenant.getId());
 
-        // 更新时间自动刷新
-        entity.setUpdateAt(LocalDateTime.now());
+        boolean isSuperAdmin = StpUtil.hasRole(SUPER_ADMIN_ROLE);
+        if (isSuperAdmin) {
+            // 超级管理员：若明确填写了审核字段值则以填写值为准，若未填写则自动应用默认值
+            if (entity.getCreateBy() == null) {
+                entity.setCreateBy(existingTenant.getCreateBy());
+            }
+            if (entity.getCreateAt() == null) {
+                entity.setCreateAt(existingTenant.getCreateAt());
+            }
+            if (entity.getUpdateBy() == null) {
+                entity.setUpdateBy(StpUtil.getLoginIdAsString());
+            }
+            if (entity.getUpdateAt() == null) {
+                entity.setUpdateAt(LocalDateTime.now());
+            }
+            // isDeleted和deletedAt未填写时保留原值
+            if (entity.getIsDeleted() == null) {
+                entity.setIsDeleted(existingTenant.getIsDeleted());
+            }
+        } else {
+            // 非超级管理员：严格禁止修改审核字段，系统自动填充更新人信息和更新时间，保留原创建信息
+            entity.setCreateBy(null);
+            entity.setCreateAt(null);
+            entity.setUpdateBy(StpUtil.getLoginIdAsString());
+            entity.setUpdateAt(LocalDateTime.now());
+            entity.setIsDeleted(null);
+            entity.setDeletedAt(null);
+        }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能更新有权限的字段
         // 将不可见字段设为null MyBatis-Plus更新时将跳过null字段
@@ -696,11 +751,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("租户不存在");
         }
 
-        // 更新当前租户状态
+        // 更新当前租户状态 审核字段updateBy和updateAt由系统自动设置
         this.update(new LambdaUpdateWrapper<SysTenant>()
                 .eq(SysTenant::getId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .set(SysTenant::getStatus, status)
+                .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                 .set(SysTenant::getUpdateAt, LocalDateTime.now()));
 
         int updatedCount = 1;
@@ -712,6 +768,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .ne(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
                     .set(SysTenant::getStatus, status)
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now());
             updatedCount += this.update(childUpdateWrapper) ? 1 : 0;
         }
@@ -762,12 +819,14 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
         }
 
-        // 执行逻辑删除
+        // 执行逻辑删除 审核字段isDeleted和deletedAt由系统自动设置
         this.update(new LambdaUpdateWrapper<SysTenant>()
                 .eq(SysTenant::getId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .set(SysTenant::getIsDeleted, GlobalEnum.Deleted.DELETED.getCode())
-                .set(SysTenant::getDeletedAt, LocalDateTime.now()));
+                .set(SysTenant::getDeletedAt, LocalDateTime.now())
+                .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                .set(SysTenant::getUpdateAt, LocalDateTime.now()));
 
         // 更新父租户的hasChildren标记 检查父租户是否还有其他子租户
         if (tenant.getParentId() != null && !"0".equals(tenant.getParentId())) {
@@ -806,6 +865,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 提取用户不可操作的字段列表 用于字段权限校验
         List<String> invisibleFields = tenantCreatePerm.getInvisibleFields();
+
+        // 审核字段权限控制 通过Sa-Token判断当前用户是否为超级管理员
+        boolean isSuperAdmin = StpUtil.hasRole(SUPER_ADMIN_ROLE);
 
         // 通过 MapStruct 转换器批量将RTO列表转换为实体列表
         List<SysTenant> entityList = sysTenantConverter.addRTOListToEntityList(addParamList);
@@ -850,14 +912,33 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
             // 设置默认值
             entity.setHasChildren(false);
-            if (entity.getCreateAt() == null) {
+
+            // 审核字段权限控制
+            if (isSuperAdmin) {
+                // 超级管理员：若明确填写了审核字段值则以填写值为准，若未填写则自动应用默认值
+                if (entity.getCreateBy() == null) {
+                    entity.setCreateBy(StpUtil.getLoginIdAsString());
+                }
+                if (entity.getCreateAt() == null) {
+                    entity.setCreateAt(LocalDateTime.now());
+                }
+                if (entity.getUpdateBy() == null) {
+                    entity.setUpdateBy(StpUtil.getLoginIdAsString());
+                }
+                if (entity.getUpdateAt() == null) {
+                    entity.setUpdateAt(LocalDateTime.now());
+                }
+                if (entity.getIsDeleted() == null) {
+                    entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+                }
+            } else {
+                // 非超级管理员：严格禁止设置审核字段，系统自动填充默认值
+                entity.setCreateBy(StpUtil.getLoginIdAsString());
                 entity.setCreateAt(LocalDateTime.now());
-            }
-            if (entity.getUpdateAt() == null) {
+                entity.setUpdateBy(StpUtil.getLoginIdAsString());
                 entity.setUpdateAt(LocalDateTime.now());
-            }
-            if (entity.getIsDeleted() == null) {
                 entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+                entity.setDeletedAt(null);
             }
 
             // 根据字段权限清除不可操作的字段值
@@ -904,6 +985,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 提取用户不可操作的字段列表 用于字段权限校验
         List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
 
+        // 审核字段权限控制 通过Sa-Token判断当前用户是否为超级管理员
+        boolean isSuperAdmin = StpUtil.hasRole(SUPER_ADMIN_ROLE);
+
         // 遍历处理每个租户更新
         for (SysTenantUpdateRTO updateParam : updateParamList) {
             // 查询待更新的租户 确保租户存在且未删除
@@ -917,7 +1001,34 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 通过 MapStruct 转换器将RTO转换为实体
             SysTenant entity = sysTenantConverter.toEntityFromUpdate(updateParam);
             entity.setId(existingTenant.getId());
-            entity.setUpdateAt(LocalDateTime.now());
+
+            // 审核字段权限控制
+            if (isSuperAdmin) {
+                // 超级管理员：若明确填写了审核字段值则以填写值为准，若未填写则保留原值或自动应用默认值
+                if (entity.getCreateBy() == null) {
+                    entity.setCreateBy(existingTenant.getCreateBy());
+                }
+                if (entity.getCreateAt() == null) {
+                    entity.setCreateAt(existingTenant.getCreateAt());
+                }
+                if (entity.getUpdateBy() == null) {
+                    entity.setUpdateBy(StpUtil.getLoginIdAsString());
+                }
+                if (entity.getUpdateAt() == null) {
+                    entity.setUpdateAt(LocalDateTime.now());
+                }
+                if (entity.getIsDeleted() == null) {
+                    entity.setIsDeleted(existingTenant.getIsDeleted());
+                }
+            } else {
+                // 非超级管理员：严格禁止修改审核字段，系统自动填充更新人信息和更新时间
+                entity.setCreateBy(null);
+                entity.setCreateAt(null);
+                entity.setUpdateBy(StpUtil.getLoginIdAsString());
+                entity.setUpdateAt(LocalDateTime.now());
+                entity.setIsDeleted(null);
+                entity.setDeletedAt(null);
+            }
 
             // 根据字段权限清除不可操作的字段值
             if (invisibleFields != null) {
@@ -989,11 +1100,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 continue;
             }
 
-            // 更新当前租户状态
+            // 更新当前租户状态 审核字段updateBy和updateAt由系统自动设置
             this.update(new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, id)
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .set(SysTenant::getStatus, status)
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             totalUpdated++;
 
@@ -1004,6 +1116,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                         .ne(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
                         .set(SysTenant::getStatus, status)
+                        .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                         .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             }
         }
@@ -1059,12 +1172,14 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 }
             }
 
-            // 执行逻辑删除
+            // 执行逻辑删除 审核字段isDeleted和deletedAt由系统自动设置
             this.update(new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, id)
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .set(SysTenant::getIsDeleted, GlobalEnum.Deleted.DELETED.getCode())
-                    .set(SysTenant::getDeletedAt, LocalDateTime.now()));
+                    .set(SysTenant::getDeletedAt, LocalDateTime.now())
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             totalDeleted++;
 
             // 更新父租户的hasChildren标记
@@ -1134,12 +1249,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 计算新路径 = 父租户路径 + / + 子租户编码
             String newPath = parentTenant.getPath() + "/" + subTenant.getTenantCode();
 
-            // 更新子租户的父租户信息和路径
+            // 更新子租户的父租户信息和路径 审核字段updateBy和updateAt由系统自动设置
             this.update(new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, subTenant.getId())
                     .set(SysTenant::getParentId, String.valueOf(parentTenant.getId()))
                     .set(SysTenant::getParentName, parentTenant.getTenantName())
                     .set(SysTenant::getPath, newPath)
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             updatedCount++;
 
@@ -1153,6 +1269,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     this.update(new LambdaUpdateWrapper<SysTenant>()
                             .eq(SysTenant::getId, descendant.getId())
                             .set(SysTenant::getPath, newDescendantPath)
+                            .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                             .set(SysTenant::getUpdateAt, LocalDateTime.now()));
                 }
             }
@@ -1224,12 +1341,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 计算新路径 = 新父租户路径 + / + 子租户编码
             String newPath = newParent.getPath() + "/" + subTenant.getTenantCode();
 
-            // 更新当前子租户的父租户信息和路径
+            // 更新当前子租户的父租户信息和路径 审核字段updateBy和updateAt由系统自动设置
             this.update(new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, subTenant.getId())
                     .set(SysTenant::getParentId, String.valueOf(newParent.getId()))
                     .set(SysTenant::getParentName, newParent.getTenantName())
                     .set(SysTenant::getPath, newPath)
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             updatedCount++;
 
@@ -1243,6 +1361,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     this.update(new LambdaUpdateWrapper<SysTenant>()
                             .eq(SysTenant::getId, descendant.getId())
                             .set(SysTenant::getPath, newDescendantPath)
+                            .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                             .set(SysTenant::getUpdateAt, LocalDateTime.now()));
                 }
             }
