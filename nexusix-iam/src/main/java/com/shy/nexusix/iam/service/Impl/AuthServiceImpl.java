@@ -81,11 +81,15 @@ public class AuthServiceImpl implements IAuthService {
         // 用于去重 同一个权限ID只需记录一次编码
         Set<Long> seenPermIdSet = new HashSet<>();
 
-        // 记录每个权限ID在各层级是否存在禁用状态
+        // 权限ID是否存在[系统级]失效
         Map<Long, Boolean> hasSystemDisabledMap = new HashMap<>();
+        // 权限ID是否存在[租户级]失效
         Map<Long, Boolean> hasTenantDisabledMap = new HashMap<>();
+        // 权限ID是否存在[角色级]失效
         Map<Long, Boolean> hasRoleDisabledMap = new HashMap<>();
+        // 权限ID是否存在[用户级]失效
         Map<Long, Boolean> hasUserDisabledMap = new HashMap<>();
+        // 权限ID是否为有效状态
         Map<Long, Boolean> hasActiveMap = new HashMap<>();
 
         // 权限ID到权限编码的映射 方便后续按ID查找
@@ -98,55 +102,73 @@ public class AuthServiceImpl implements IAuthService {
 
         // 第一轮遍历 收集所有权限编码 记录各权限在不同层级的禁用状态 解析字段级权限
         for (UserPermJoinDTO row : permJoinList) {
+            // 获取当前权限行的权限ID
             Long permId = row.getPermId();
+            // 获取当前权限行的权限编码
             String permCode = row.getPermCode();
+            // 获取当前权限行的策略状态
             String status = row.getPolicyStatus();
 
             // 对同一权限ID进行去重 确保每个权限编码只在全量列表中出现一次
             if (permId != null && permCode != null && !seenPermIdSet.contains(permId)) {
+                // 将权限ID加入已处理集合
                 seenPermIdSet.add(permId);
+                // 权限ID与编码的映射
                 permIdToCodeMap.put(permId, permCode);
+                // 加入全量权限编码列表
                 allPermCodeList.add(permCode);
             }
 
-            // 根据策略状态标记该权限在各层级的禁用情况
+            // 根据策略状态 标记该权限在各层级的失效情况
             if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(status)) {
+                // 有效状态
                 hasActiveMap.put(permId, true);
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_SYSTEM_LEVEL.getCode().equals(status)) {
+                // 系统级禁用
                 hasSystemDisabledMap.put(permId, true);
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_TENANT_LEVEL.getCode().equals(status)) {
+                // 租户级禁用
                 hasTenantDisabledMap.put(permId, true);
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_ROLE_LEVEL.getCode().equals(status)) {
+                // 角色级禁用
                 hasRoleDisabledMap.put(permId, true);
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_USER_LEVEL.getCode().equals(status)) {
+                // 用户级禁用
                 hasUserDisabledMap.put(permId, true);
             }
 
-            // 获取字段级权限控制的元数据
+            // 允许操作的字段
             String fieldOperates = row.getFieldOperates();
+            // 访问类型
             String accessType = row.getAccessType();
+            // 表名
             String tableName = row.getTableName();
 
-            // 若字段操作、操作类型或表名为空，则跳过该行不处理字段权限
+            // 若字段操作 操作类型或表名为空 则跳过该行不处理字段权限
             if (fieldOperates == null || fieldOperates.isEmpty()
                     || accessType == null || tableName == null) {
                 continue;
             }
 
-            // 根据操作类型（查询/新增/更新）选择对应的字段权限Map
+            // 根据操作类型 选择对应的字段权限Map
             Map<String, UserContextDTO.EntityFieldPerm> targetMap;
             if (GlobalEnum.PermPolicyAccessType.QUERY.getCode().equals(accessType)) {
+                // 查询操作
                 targetMap = queryPermMap;
             } else if (GlobalEnum.PermPolicyAccessType.CREATE.getCode().equals(accessType)) {
+                // 新增操作
                 targetMap = createPermMap;
             } else if (GlobalEnum.PermPolicyAccessType.UPDATE.getCode().equals(accessType)) {
+                // 更新操作
                 targetMap = updatePermMap;
             } else {
+                // 未知操作类型 跳过
                 continue;
             }
 
             // 解析JSON数组格式的字段名称列表
             List<String> fields = JSON.parseArray(fieldOperates, String.class);
+            // 解析结果为空 跳过
             if (fields == null || fields.isEmpty()) {
                 continue;
             }
@@ -155,14 +177,16 @@ public class AuthServiceImpl implements IAuthService {
             UserContextDTO.EntityFieldPerm fieldPerm = targetMap.computeIfAbsent(tableName,
                     k -> new UserContextDTO.EntityFieldPerm());
 
-            // 若策略为激活状态，字段加入可见列表；否则加入不可见列表
+            // 根据策略状态 分配字段到可操作/不可操作列表
             if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(status)) {
+                // 有效字段加入可见列表
                 if (fieldPerm.getVisibleFields() == null) {
                     fieldPerm.setVisibleFields(new ArrayList<>(fields));
                 } else {
                     fieldPerm.getVisibleFields().addAll(fields);
                 }
             } else {
+                // 失效字段加入不可见列表
                 if (fieldPerm.getInvisibleFields() == null) {
                     fieldPerm.setInvisibleFields(new ArrayList<>(fields));
                 } else {
@@ -171,23 +195,30 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
 
-        // 第二轮遍历：对每个去重后的权限ID，汇总其禁用状态并分类到对应列表
+        // 第二轮遍历 对每个去重后的权限ID 汇总其禁用状态并分类到对应列表
         for (Long permId : seenPermIdSet) {
+            // 通过权限ID获取编码
             String permCode = permIdToCodeMap.get(permId);
 
-            // 获取该权限在各层级的禁用标记
+            // 获取当前权限ID 失效标记[系统级] 默认false
             boolean isSystemDisabled = hasSystemDisabledMap.getOrDefault(permId, false);
+            // 获取当前权限ID 失效标记[租户级] 默认false
             boolean isTenantDisabled = hasTenantDisabledMap.getOrDefault(permId, false);
+            // 获取当前权限ID 失效标记[角色级] 默认false
             boolean isRoleDisabled = hasRoleDisabledMap.getOrDefault(permId, false);
+            // 获取当前权限ID 失效标记[用户级] 默认false
             boolean isUserDisabled = hasUserDisabledMap.getOrDefault(permId, false);
 
-            // 按禁用层级分别归类
+            // 如果是系统级禁用 将权限编码加入系统级禁用列表
             if (isSystemDisabled) systemDisabledList.add(permCode);
+            // 如果是租户级禁用 将权限编码加入租户级禁用列表
             if (isTenantDisabled) tenantDisabledList.add(permCode);
+            // 如果是角色级禁用 将权限编码加入角色级禁用列表
             if (isRoleDisabled) roleDisabledList.add(permCode);
+            // 如果是用户级禁用 将权限编码加入用户级禁用列表
             if (isUserDisabled) userDisabledList.add(permCode);
 
-            // 任一层级禁用则该权限视为无效；只有全层级均为激活状态才视为有效
+            // 判断权限是否无效 任意一个层级禁用 即为无效权限
             if (isSystemDisabled || isTenantDisabled || isRoleDisabled || isUserDisabled) {
                 invalidPermCodeList.add(permCode);
             } else if (hasActiveMap.getOrDefault(permId, false)) {
@@ -197,38 +228,55 @@ public class AuthServiceImpl implements IAuthService {
 
         // TODO 查询角色信息
 
-        // 构建级联禁用信息：记录各层级分别禁用了哪些权限编码
+        // 实例化[级联禁用]信息对象 用于封装各层级失效的权限数据
         UserContextDTO.CascadeDisabled cascadeDisabled = new UserContextDTO.CascadeDisabled();
+        // 为级联禁用对象设置[系统级]失效权限列表
         cascadeDisabled.setSystemDisabled(systemDisabledList);
+        // 为级联禁用对象设置[租户级]失效权限列表
         cascadeDisabled.setTenantDisabled(tenantDisabledList);
+        // 为级联禁用对象设置[角色级]失效权限列表
         cascadeDisabled.setRoleDisabled(roleDisabledList);
+        // 为级联禁用对象设置[用户级]失效权限列表
         cascadeDisabled.setUserDisabled(userDisabledList);
 
-        // 构建字段权限信息：按查询/新增/更新三类操作分别存储字段可见性规则
+        // 实例化[字段权限]信息对象 用于封装查询/新增/更新的字段权限
         UserContextDTO.FieldPerm fieldPerm = new UserContextDTO.FieldPerm();
+        // 为字段权限对象设置[查询操作]的字段权限映射
         fieldPerm.setQuery(queryPermMap);
+        // 为字段权限对象设置[新增操作]的字段权限映射
         fieldPerm.setCreate(createPermMap);
+        // 为字段权限对象设置[更新操作]的字段权限映射
         fieldPerm.setUpdate(updatePermMap);
 
-        // 构建权限信息对象：聚齐全量、有效、无效权限编码及级联禁用、字段权限
+        // 实例化[权限信息]对象 用于封装用户所有权限相关数据
         UserContextDTO.PermInfo permInfo = new UserContextDTO.PermInfo();
+        // 设置全量权限编码列表[有效+无效]
         permInfo.setPerms(allPermCodeList);
+        // 设置有效权限编码列表
         permInfo.setValidPerms(validPermCodeList);
+        // 设置无效权限编码列表
         permInfo.setInvalidPerms(invalidPermCodeList);
+        // 设置级联禁用信息
         permInfo.setCascadeDisabled(cascadeDisabled);
+        // 设置字段权限信息
         permInfo.setFieldPerm(fieldPerm);
 
-        // 构建租户上下文信息
+        // 实例化[租户上下文信息]对象 用于封装用户所属租户数据
         UserContextDTO.TenantInfo tenantInfoCache = new UserContextDTO.TenantInfo();
+        // 设置租户名称
         tenantInfoCache.setTenantName(loginJoinInfo.getTenantName());
+        // 设置租户编码
         tenantInfoCache.setTenantCode(loginJoinInfo.getTenantCode());
 
-        // 组装完整的用户上下文对象，包含租户信息和权限信息
+
+        // 实例化[用户上下文信息]对象 整合所有用户登录后的核心信息
         UserContextDTO userContext = new UserContextDTO();
+        // 为用户上下文设置租户信息
         userContext.setTenantInfo(tenantInfoCache);
+        // 为用户上下文设置权限信息
         userContext.setPermInfo(permInfo);
 
-        // 将用户上下文存入Session，供后续请求使用
+        // 将用户上下文存入Session 供后续请求使用
         StpUtil.getSession().set("userContext", userContext);
         return ApiResponse.success();
 
