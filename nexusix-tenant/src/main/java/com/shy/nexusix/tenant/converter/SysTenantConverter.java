@@ -2,6 +2,8 @@ package com.shy.nexusix.tenant.converter;
 
 import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.tenant.entity.SysTenant;
+import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
+import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
 import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
@@ -166,6 +168,81 @@ public interface SysTenantConverter {
         GlobalEnum.Deleted deleted = GlobalEnum.Deleted.getByCode(code);
         return deleted != null ? deleted.getDesc() : null;
     }
+
+    /**
+     * 字符串转换为Long类型
+     * <p>用于RTO中String类型的编码字段转换为Entity中Long类型的ID字段</p>
+     *
+     * @param value 字符串值
+     * @return Long类型值，输入为空时返回null
+     */
+    @Named("stringToLong")
+    default Long stringToLong(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        return Long.parseLong(value.trim());
+    }
+
+    /**
+     * 租户新增RTO转换为实体对象
+     * <p>字段重命名映射，枚举类型转换为编码字符串</p>
+     *
+     * @param addRTO 租户新增请求对象
+     * @return 租户数据库实体
+     */
+    @Named("toEntityFromAdd")
+    @Mapping(source = "parentCode", target = "parentId")
+    @Mapping(source = "packageCode", target = "packageId", qualifiedByName = "stringToLong")
+    @Mapping(source = "createByCode", target = "createBy")
+    @Mapping(source = "createTime", target = "createAt")
+    @Mapping(source = "updateByCode", target = "updateBy")
+    @Mapping(source = "updateTime", target = "updateAt")
+    @Mapping(source = "status", target = "status", qualifiedByName = "statusToCode")
+    @Mapping(source = "isDeleted", target = "isDeleted", qualifiedByName = "isDeletedToCode")
+    @Mapping(source = "deleteTime", target = "deletedAt")
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "hasChildren", ignore = true)
+    SysTenant toEntityFromAdd(SysTenantAddRTO addRTO);
+
+    /**
+     * 租户更新RTO转换为实体对象
+     * <p>字段重命名映射，枚举类型转换为编码字符串</p>
+     *
+     * @param updateRTO 租户更新请求对象
+     * @return 租户数据库实体
+     */
+    @Named("toEntityFromUpdate")
+    @Mapping(source = "parentCode", target = "parentId")
+    @Mapping(source = "packageCode", target = "packageId", qualifiedByName = "stringToLong")
+    @Mapping(source = "createByCode", target = "createBy")
+    @Mapping(source = "createTime", target = "createAt")
+    @Mapping(source = "updateByCode", target = "updateBy")
+    @Mapping(source = "updateTime", target = "updateAt")
+    @Mapping(source = "status", target = "status", qualifiedByName = "statusToCode")
+    @Mapping(source = "isDeleted", target = "isDeleted", qualifiedByName = "isDeletedToCode")
+    @Mapping(source = "deleteTime", target = "deletedAt")
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "hasChildren", ignore = true)
+    SysTenant toEntityFromUpdate(SysTenantUpdateRTO updateRTO);
+
+    /**
+     * 租户新增RTO列表批量转换为实体列表
+     * <p>复用单对象转换规则，实现批量映射</p>
+     *
+     * @param addRTOList 租户新增请求对象集合
+     * @return 租户实体集合
+     */
+    @IterableMapping(qualifiedByName = "toEntityFromAdd")
+    List<SysTenant> addRTOListToEntityList(List<SysTenantAddRTO> addRTOList);
+
+    /**
+     * 租户更新RTO列表批量转换为实体列表
+     * <p>复用单对象转换规则，实现批量映射</p>
+     *
+     * @param updateRTOList 租户更新请求对象集合
+     * @return 租户实体集合
+     */
+    @IterableMapping(qualifiedByName = "toEntityFromUpdate")
+    List<SysTenant> updateRTOListToEntityList(List<SysTenantUpdateRTO> updateRTOList);
 
 
 }
