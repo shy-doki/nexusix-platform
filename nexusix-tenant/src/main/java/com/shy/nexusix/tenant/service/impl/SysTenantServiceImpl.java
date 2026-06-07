@@ -60,13 +60,16 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的查询操作字段权限
         UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于动态列选择
-        List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于动态列选择
+        List<String> visibleFields = tenantQueryPerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权查询租户信息");
+        }
 
         // 构建查询条件 仅选择用户有权限查看的列，并排除已删除的租户记录
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                // 遍历 SysTenant 实体的所有字段 排除不可操作字段
-                .select(SysTenant.class, entity -> !invisibleFields.contains(entity.getColumn()))
+                // 遍历 SysTenant 实体的所有字段 仅选择可操作字段
+                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         List<SysTenant> tenantList = this.list(wrapper);
         // 通过 MapStruct 转换器将实体列表转换为 VO 列表，同时完成状态码到描述的转换
@@ -92,12 +95,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的查询操作字段权限
         UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于动态列选择
-        List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于动态列选择
+        List<String> visibleFields = tenantQueryPerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权查询租户信息");
+        }
 
         // 构建分页查询条件 仅选择用户有权限查看的列，并排除已删除的租户记录
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> !invisibleFields.contains(entity.getColumn()))
+                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
         // 执行分页查询
@@ -129,12 +135,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的查询操作字段权限
         UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于动态列选择
-        List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于动态列选择
+        List<String> visibleFields = tenantQueryPerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权查询租户信息");
+        }
 
         // 查询所有未删除的租户 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> !invisibleFields.contains(entity.getColumn()))
+                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByAsc(SysTenant::getPath);
         List<SysTenant> allTenants = this.list(wrapper);
@@ -199,8 +208,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的查询操作字段权限
         UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于动态列选择
-        List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于动态列选择
+        List<String> visibleFields = tenantQueryPerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权查询租户信息");
+        }
 
         // 先查询根节点总数用于分页
         LambdaQueryWrapper<SysTenant> rootCountWrapper = new LambdaQueryWrapper<SysTenant>()
@@ -210,7 +222,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 分页查询根节点 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysTenant> rootWrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> !invisibleFields.contains(entity.getColumn()))
+                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .and(w -> w.isNull(SysTenant::getParentId).or().eq(SysTenant::getParentId, "0"))
                 .orderByAsc(SysTenant::getPath);
@@ -228,16 +240,17 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         List<SysTenant> allChildren = new ArrayList<>();
         if (!rootPaths.isEmpty()) {
             LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
-                    .select(SysTenant.class, entity -> !invisibleFields.contains(entity.getColumn()))
+                    .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .and(w -> {
                         // 利用path前缀匹配查询所有子节点 减少多次查询
+                        // 加"/"后缀避免匹配到根节点自身和路径前缀碰撞的无关节点
                         for (int i = 0; i < rootPaths.size(); i++) {
                             String pathPrefix = rootPaths.get(i);
                             if (i == 0) {
-                                w.likeRight(SysTenant::getPath, pathPrefix);
+                                w.likeRight(SysTenant::getPath, pathPrefix + "/");
                             } else {
-                                w.or().likeRight(SysTenant::getPath, pathPrefix);
+                                w.or().likeRight(SysTenant::getPath, pathPrefix + "/");
                             }
                         }
                     })
@@ -273,7 +286,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     SysTenantTreeVO parent = codeToTreeVOMap.get(parentTenantCode);
                     if (parent != null) {
                         parent.getChildTenant().add(treeVO);
+                    } else {
+                        // 父租户不在当前结果集中时作为根节点处理
+                        rootList.add(treeVO);
                     }
+                } else {
+                    // 父租户不存在时作为根节点处理
+                    rootList.add(treeVO);
                 }
             }
         }
@@ -309,12 +328,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的查询操作字段权限
         UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于动态列选择
-        List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于动态列选择
+        List<String> visibleFields = tenantQueryPerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权查询租户信息");
+        }
 
         // 查询指定租户
         LambdaQueryWrapper<SysTenant> targetWrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> !invisibleFields.contains(entity.getColumn()))
+                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
                 .eq(SysTenant::getId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysTenant targetTenant = this.getOne(targetWrapper);
@@ -324,7 +346,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 利用path前缀匹配查询所有子节点 一次查询获取整棵子树
         LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> !invisibleFields.contains(entity.getColumn()))
+                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .and(w -> w.eq(SysTenant::getId, id)
                         .or()
@@ -388,12 +410,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的查询操作字段权限
         UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于动态列选择
-        List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于动态列选择
+        List<String> visibleFields = tenantQueryPerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权查询租户信息");
+        }
 
         // 构建条件查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> !invisibleFields.contains(entity.getColumn()))
+                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
         // 租户编码精确匹配
@@ -485,12 +510,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的查询操作字段权限
         UserContextDTO.EntityFieldPerm tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于动态列选择
-        List<String> invisibleFields = tenantQueryPerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于动态列选择
+        List<String> visibleFields = tenantQueryPerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权查询租户信息");
+        }
 
         // 根据租户编码查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> !invisibleFields.contains(entity.getColumn()))
+                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
                 .eq(SysTenant::getTenantCode, tenantCode)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysTenant tenant = this.getOne(wrapper);
@@ -523,8 +551,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的新增操作字段权限
         UserContextDTO.EntityFieldPerm tenantCreatePerm = fieldPerm.getCreate().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于字段权限校验
-        List<String> invisibleFields = tenantCreatePerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于字段权限校验
+        List<String> visibleFields = tenantCreatePerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权新增租户");
+        }
 
         // 校验租户编码唯一性
         LambdaQueryWrapper<SysTenant> codeCheckWrapper = new LambdaQueryWrapper<SysTenant>()
@@ -598,18 +629,16 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能设置有权限的字段
-        if (invisibleFields != null) {
-            if (invisibleFields.contains("tenant_name")) entity.setTenantName(null);
-            if (invisibleFields.contains("tenant_type")) entity.setTenantType(null);
-            if (invisibleFields.contains("tenant_desc")) entity.setTenantDesc(null);
-            if (invisibleFields.contains("contact_name")) entity.setContactName(null);
-            if (invisibleFields.contains("contact_phone")) entity.setContactPhone(null);
-            if (invisibleFields.contains("status")) entity.setStatus(null);
-            if (invisibleFields.contains("expire_time")) entity.setExpireTime(null);
-            if (invisibleFields.contains("package_id")) entity.setPackageId(null);
-            if (invisibleFields.contains("package_name")) entity.setPackageName(null);
-            if (invisibleFields.contains("ext_attributes")) entity.setExtAttributes(null);
-        }
+        if (!visibleFields.contains("tenant_name")) entity.setTenantName(null);
+        if (!visibleFields.contains("tenant_type")) entity.setTenantType(null);
+        if (!visibleFields.contains("tenant_desc")) entity.setTenantDesc(null);
+        if (!visibleFields.contains("contact_name")) entity.setContactName(null);
+        if (!visibleFields.contains("contact_phone")) entity.setContactPhone(null);
+        if (!visibleFields.contains("status")) entity.setStatus(null);
+        if (!visibleFields.contains("expire_time")) entity.setExpireTime(null);
+        if (!visibleFields.contains("package_id")) entity.setPackageId(null);
+        if (!visibleFields.contains("package_name")) entity.setPackageName(null);
+        if (!visibleFields.contains("ext_attributes")) entity.setExtAttributes(null);
 
         // 保存租户信息
         this.save(entity);
@@ -644,8 +673,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的更新操作字段权限
         UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于字段权限校验
-        List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于字段权限校验
+        List<String> visibleFields = tenantUpdatePerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权修改租户");
+        }
 
         // 查询待更新的租户 确保租户存在且未删除
         SysTenant existingTenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
@@ -692,19 +724,17 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 根据字段权限清除不可操作的字段值 确保用户只能更新有权限的字段
         // 将不可见字段设为null MyBatis-Plus更新时将跳过null字段
-        if (invisibleFields != null) {
-            if (invisibleFields.contains("tenant_name")) entity.setTenantName(null);
-            if (invisibleFields.contains("tenant_type")) entity.setTenantType(null);
-            if (invisibleFields.contains("tenant_desc")) entity.setTenantDesc(null);
-            if (invisibleFields.contains("tenant_logo_url")) entity.setTenantLogoUrl(null);
-            if (invisibleFields.contains("contact_name")) entity.setContactName(null);
-            if (invisibleFields.contains("contact_phone")) entity.setContactPhone(null);
-            if (invisibleFields.contains("status")) entity.setStatus(null);
-            if (invisibleFields.contains("expire_time")) entity.setExpireTime(null);
-            if (invisibleFields.contains("package_id")) entity.setPackageId(null);
-            if (invisibleFields.contains("package_name")) entity.setPackageName(null);
-            if (invisibleFields.contains("ext_attributes")) entity.setExtAttributes(null);
-        }
+        if (!visibleFields.contains("tenant_name")) entity.setTenantName(null);
+        if (!visibleFields.contains("tenant_type")) entity.setTenantType(null);
+        if (!visibleFields.contains("tenant_desc")) entity.setTenantDesc(null);
+        if (!visibleFields.contains("tenant_logo_url")) entity.setTenantLogoUrl(null);
+        if (!visibleFields.contains("contact_name")) entity.setContactName(null);
+        if (!visibleFields.contains("contact_phone")) entity.setContactPhone(null);
+        if (!visibleFields.contains("status")) entity.setStatus(null);
+        if (!visibleFields.contains("expire_time")) entity.setExpireTime(null);
+        if (!visibleFields.contains("package_id")) entity.setPackageId(null);
+        if (!visibleFields.contains("package_name")) entity.setPackageName(null);
+        if (!visibleFields.contains("ext_attributes")) entity.setExtAttributes(null);
 
         // 租户编码和path不可修改 清除这些字段
         entity.setTenantCode(null);
@@ -738,8 +768,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改status字段
-        List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
-        if (invisibleFields != null && invisibleFields.contains("status")) {
+        List<String> visibleFields = tenantUpdatePerm.getVisibleFields();
+        if (visibleFields == null || !visibleFields.contains("status")) {
             throw new BusinessException("无权修改租户状态字段");
         }
 
@@ -819,8 +849,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改is_deleted字段
-        List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
-        if (invisibleFields != null && invisibleFields.contains("is_deleted")) {
+        List<String> visibleFields = tenantUpdatePerm.getVisibleFields();
+        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
             throw new BusinessException("无权删除租户");
         }
 
@@ -886,8 +916,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的新增操作字段权限
         UserContextDTO.EntityFieldPerm tenantCreatePerm = fieldPerm.getCreate().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于字段权限校验
-        List<String> invisibleFields = tenantCreatePerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于字段权限校验
+        List<String> visibleFields = tenantCreatePerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权新增租户");
+        }
 
         // 审核字段权限控制 通过Sa-Token判断当前用户是否为超级管理员
         boolean isSuperAdmin = StpUtil.hasRole(GlobalConstant.Role.SUPER_ADMIN_ROLE);
@@ -977,18 +1010,16 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (invisibleFields != null) {
-                if (invisibleFields.contains("tenant_name")) entity.setTenantName(null);
-                if (invisibleFields.contains("tenant_type")) entity.setTenantType(null);
-                if (invisibleFields.contains("tenant_desc")) entity.setTenantDesc(null);
-                if (invisibleFields.contains("contact_name")) entity.setContactName(null);
-                if (invisibleFields.contains("contact_phone")) entity.setContactPhone(null);
-                if (invisibleFields.contains("status")) entity.setStatus(null);
-                if (invisibleFields.contains("expire_time")) entity.setExpireTime(null);
-                if (invisibleFields.contains("package_id")) entity.setPackageId(null);
-                if (invisibleFields.contains("package_name")) entity.setPackageName(null);
-                if (invisibleFields.contains("ext_attributes")) entity.setExtAttributes(null);
-            }
+            if (!visibleFields.contains("tenant_name")) entity.setTenantName(null);
+            if (!visibleFields.contains("tenant_type")) entity.setTenantType(null);
+            if (!visibleFields.contains("tenant_desc")) entity.setTenantDesc(null);
+            if (!visibleFields.contains("contact_name")) entity.setContactName(null);
+            if (!visibleFields.contains("contact_phone")) entity.setContactPhone(null);
+            if (!visibleFields.contains("status")) entity.setStatus(null);
+            if (!visibleFields.contains("expire_time")) entity.setExpireTime(null);
+            if (!visibleFields.contains("package_id")) entity.setPackageId(null);
+            if (!visibleFields.contains("package_name")) entity.setPackageName(null);
+            if (!visibleFields.contains("ext_attributes")) entity.setExtAttributes(null);
         }
 
         // 批量保存所有租户
@@ -1017,8 +1048,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 获取用户对租户表的更新操作字段权限
         UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
-        // 提取用户不可操作的字段列表 用于字段权限校验
-        List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
+        // 提取用户可操作的字段列表 用于字段权限校验
+        List<String> visibleFields = tenantUpdatePerm.getVisibleFields();
+        if (visibleFields == null || visibleFields.isEmpty()) {
+            throw new BusinessException("无权修改租户");
+        }
 
         // 审核字段权限控制 通过Sa-Token判断当前用户是否为超级管理员
         boolean isSuperAdmin = StpUtil.hasRole(GlobalConstant.Role.SUPER_ADMIN_ROLE);
@@ -1066,19 +1100,17 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (invisibleFields != null) {
-                if (invisibleFields.contains("tenant_name")) entity.setTenantName(null);
-                if (invisibleFields.contains("tenant_type")) entity.setTenantType(null);
-                if (invisibleFields.contains("tenant_desc")) entity.setTenantDesc(null);
-                if (invisibleFields.contains("tenant_logo_url")) entity.setTenantLogoUrl(null);
-                if (invisibleFields.contains("contact_name")) entity.setContactName(null);
-                if (invisibleFields.contains("contact_phone")) entity.setContactPhone(null);
-                if (invisibleFields.contains("status")) entity.setStatus(null);
-                if (invisibleFields.contains("expire_time")) entity.setExpireTime(null);
-                if (invisibleFields.contains("package_id")) entity.setPackageId(null);
-                if (invisibleFields.contains("package_name")) entity.setPackageName(null);
-                if (invisibleFields.contains("ext_attributes")) entity.setExtAttributes(null);
-            }
+            if (!visibleFields.contains("tenant_name")) entity.setTenantName(null);
+            if (!visibleFields.contains("tenant_type")) entity.setTenantType(null);
+            if (!visibleFields.contains("tenant_desc")) entity.setTenantDesc(null);
+            if (!visibleFields.contains("tenant_logo_url")) entity.setTenantLogoUrl(null);
+            if (!visibleFields.contains("contact_name")) entity.setContactName(null);
+            if (!visibleFields.contains("contact_phone")) entity.setContactPhone(null);
+            if (!visibleFields.contains("status")) entity.setStatus(null);
+            if (!visibleFields.contains("expire_time")) entity.setExpireTime(null);
+            if (!visibleFields.contains("package_id")) entity.setPackageId(null);
+            if (!visibleFields.contains("package_name")) entity.setPackageName(null);
+            if (!visibleFields.contains("ext_attributes")) entity.setExtAttributes(null);
 
             // 租户编码和path不可修改
             entity.setTenantCode(null);
@@ -1113,8 +1145,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改status字段
-        List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
-        if (invisibleFields != null && invisibleFields.contains("status")) {
+        List<String> visibleFields = tenantUpdatePerm.getVisibleFields();
+        if (visibleFields == null || !visibleFields.contains("status")) {
             throw new BusinessException("无权修改租户状态字段");
         }
 
@@ -1198,8 +1230,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改is_deleted字段
-        List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
-        if (invisibleFields != null && invisibleFields.contains("is_deleted")) {
+        List<String> visibleFields = tenantUpdatePerm.getVisibleFields();
+        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
             throw new BusinessException("无权删除租户");
         }
 
@@ -1272,8 +1304,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改parentId和path字段
-        List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
-        if (invisibleFields != null && (invisibleFields.contains("parent_id") || invisibleFields.contains("path"))) {
+        List<String> visibleFields = tenantUpdatePerm.getVisibleFields();
+        if (visibleFields == null || !visibleFields.contains("parent_id") || !visibleFields.contains("path")) {
             throw new BusinessException("无权修改租户层级关系字段");
         }
 
@@ -1377,8 +1409,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO.EntityFieldPerm tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
         // 校验用户是否有权限修改parentId和path字段
-        List<String> invisibleFields = tenantUpdatePerm.getInvisibleFields();
-        if (invisibleFields != null && (invisibleFields.contains("parent_id") || invisibleFields.contains("path"))) {
+        List<String> visibleFields = tenantUpdatePerm.getVisibleFields();
+        if (visibleFields == null || !visibleFields.contains("parent_id") || !visibleFields.contains("path")) {
             throw new BusinessException("无权修改租户层级关系字段");
         }
 

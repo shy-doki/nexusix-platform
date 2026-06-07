@@ -1,6 +1,7 @@
 package com.shy.nexusix.core.context;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.alibaba.fastjson2.JSONObject;
 import com.shy.nexusix.common.constant.GlobalConstant;
 import com.shy.nexusix.core.entity.dto.UserContextDTO;
 
@@ -12,7 +13,64 @@ public class UserContext {
     }
 
     public static UserContextDTO getUserContext() {
-        return (UserContextDTO) StpUtil.getSession().get(GlobalConstant.Session.USER_CONTEXT);
+        Object obj = StpUtil.getSession().get(GlobalConstant.Session.USER_CONTEXT);
+        UserContextDTO dto;
+        if (obj instanceof UserContextDTO) {
+            dto = (UserContextDTO) obj;
+        } else if (obj instanceof JSONObject) {
+            dto = ((JSONObject) obj).toJavaObject(UserContextDTO.class);
+        } else {
+            dto = (UserContextDTO) obj;
+        }
+        ensureNonNull(dto);
+        return dto;
+    }
+
+    /**
+     * 确保 DTO 中所有 List 类型字段不为 null，防止反序列化时 null 值导致 NPE
+     */
+    private static void ensureNonNull(UserContextDTO dto) {
+        if (dto == null) {
+            return;
+        }
+        UserContextDTO.PermInfo permInfo = dto.getPermInfo();
+        if (permInfo == null) {
+            return;
+        }
+        permInfo.setPerms(nullToEmpty(permInfo.getPerms()));
+        permInfo.setValidPerms(nullToEmpty(permInfo.getValidPerms()));
+        permInfo.setInvalidPerms(nullToEmpty(permInfo.getInvalidPerms()));
+
+        UserContextDTO.CascadeDisabled cascadeDisabled = permInfo.getCascadeDisabled();
+        if (cascadeDisabled != null) {
+            cascadeDisabled.setSystemDisabled(nullToEmpty(cascadeDisabled.getSystemDisabled()));
+            cascadeDisabled.setTenantDisabled(nullToEmpty(cascadeDisabled.getTenantDisabled()));
+            cascadeDisabled.setRoleDisabled(nullToEmpty(cascadeDisabled.getRoleDisabled()));
+            cascadeDisabled.setUserDisabled(nullToEmpty(cascadeDisabled.getUserDisabled()));
+        }
+
+        UserContextDTO.FieldPerm fieldPerm = permInfo.getFieldPerm();
+        if (fieldPerm != null) {
+            ensureFieldPermMapNonNull(fieldPerm.getQuery());
+            ensureFieldPermMapNonNull(fieldPerm.getCreate());
+            ensureFieldPermMapNonNull(fieldPerm.getUpdate());
+        }
+    }
+
+    private static void ensureFieldPermMapNonNull(Map<String, UserContextDTO.EntityFieldPerm> map) {
+        if (map == null) {
+            return;
+        }
+        for (UserContextDTO.EntityFieldPerm perm : map.values()) {
+            if (perm != null) {
+                perm.setVisibleFields(nullToEmpty(perm.getVisibleFields()));
+                perm.setInvisibleFields(nullToEmpty(perm.getInvisibleFields()));
+            }
+        }
+    }
+
+    private static <T> List<T> nullToEmpty(List<T> list) {
+        return list != null ? list : Collections.emptyList();
     }
 
     public static Long getCurrentUserId() {

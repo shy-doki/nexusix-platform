@@ -2,6 +2,7 @@ package com.shy.nexusix.core.entity.dto;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -158,11 +159,11 @@ public class UserContextDTO {
         /**
          * 可见字段列表，策略状态为 ACTIVE 时配置，表示用户有权访问的字段名
          */
-        private List<String> visibleFields;
+        private List<String> visibleFields = new ArrayList<>();
         /**
          * 不可见字段列表，策略状态为非 ACTIVE（各级别禁用）时配置，表示用户无权访问的字段名
          */
-        private List<String> invisibleFields;
+        private List<String> invisibleFields = new ArrayList<>();
     }
 
 }

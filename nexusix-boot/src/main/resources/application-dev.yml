@@ -10,9 +10,9 @@ spring:
   # 数据源配置
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/NexusIX?useUnicode=true&characterEncoding=utf8&stringtype=unspecified
+    url: jdbc:postgresql://localhost:5432/NexusIX-Platform?useUnicode=true&characterEncoding=utf8&stringtype=unspecified
     username: postgres
-    password: zjw20030701
+    password: Zjw20030701
     # HikariCP 连接池配置
     hikari:
       # 最小空闲连接数
