@@ -474,6 +474,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public SysTenantDetailVO queryTenantDetail(String tenantCode) {
 
+        // 参数校验 租户编码不能为空
+        if (tenantCode == null || tenantCode.trim().isEmpty()) {
+            throw new BusinessException("租户编码不能为空");
+        }
+
         // 获取当前登录用户的上下文信息，包含权限配置
         UserContextDTO userContext = UserContext.getUserContext();
 
@@ -531,7 +536,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("租户编码已存在");
         }
 
-        // 查询父租户信息 用于计算path和校验父租户存在性
+        // 查询父租户信息 用于计算path和校验父租户存在性及状态
         SysTenant parentTenant = null;
         if (addParam.getParentCode() != null && !"0".equals(addParam.getParentCode())) {
             parentTenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
@@ -539,6 +544,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
             if (parentTenant == null) {
                 throw new BusinessException("父租户不存在");
+            }
+            // 校验父租户状态：停用或已过期的父租户下不允许新增子租户
+            if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(parentTenant.getStatus())) {
+                throw new BusinessException("父租户已停用，无法新增子租户");
+            }
+            if (GlobalEnum.TenantStatus.EXPIRED.getCode().equals(parentTenant.getStatus())) {
+                throw new BusinessException("父租户已过期，无法新增子租户");
             }
         }
 
@@ -746,6 +758,24 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("租户不存在");
         }
 
+        // 校验租户是否已处于目标状态
+        if (status.equals(tenant.getStatus())) {
+            throw new BusinessException("租户已处于该状态，无需重复操作");
+        }
+
+        // 启用租户时校验父租户状态 若父租户处于停用状态，则不允许启用子租户
+        if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(status)
+                && tenant.getParentId() != null
+                && !"0".equals(tenant.getParentId())) {
+            SysTenant parentTenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
+                    .eq(SysTenant::getId, tenant.getParentId())
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+            if (parentTenant != null
+                    && GlobalEnum.TenantStatus.DISABLED.getCode().equals(parentTenant.getStatus())) {
+                throw new BusinessException("父租户已停用，无法启用子租户");
+            }
+        }
+
         // 更新当前租户状态 审核字段updateBy和updateAt由系统自动设置
         this.update(new LambdaUpdateWrapper<SysTenant>()
                 .eq(SysTenant::getId, id)
@@ -867,6 +897,14 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 通过 MapStruct 转换器批量将RTO列表转换为实体列表
         List<SysTenant> entityList = sysTenantConverter.addRTOListToEntityList(addParamList);
 
+        // 批量内重复编码检查 同一批次中租户编码不得重复
+        Set<String> batchCodeSet = new HashSet<>();
+        for (SysTenant entity : entityList) {
+            if (!batchCodeSet.add(entity.getTenantCode())) {
+                throw new BusinessException("批量新增中存在重复的租户编码: " + entity.getTenantCode());
+            }
+        }
+
         // 遍历处理每个租户实体 校验编码唯一性、计算path、设置默认值、清除不可操作字段
         for (int i = 0; i < entityList.size(); i++) {
             SysTenant entity = entityList.get(i);
@@ -887,6 +925,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
                 if (parentTenant == null) {
                     throw new BusinessException("父租户不存在: " + entity.getParentId());
+                }
+                // 校验父租户状态 停用或已过期的父租户下不允许新增子租户
+                if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(parentTenant.getStatus())) {
+                    throw new BusinessException("父租户已停用，无法新增子租户: " + entity.getTenantCode());
+                }
+                if (GlobalEnum.TenantStatus.EXPIRED.getCode().equals(parentTenant.getStatus())) {
+                    throw new BusinessException("父租户已过期，无法新增子租户: " + entity.getTenantCode());
                 }
                 // 计算物化路径
                 if (entity.getPath() == null || entity.getPath().isEmpty()) {
@@ -1095,6 +1140,24 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 continue;
             }
 
+            // 校验租户是否已处于目标状态
+            if (status.equals(tenant.getStatus())) {
+                continue;
+            }
+
+            // 启用租户时校验父租户状态：若父租户处于停用状态，则不允许启用子租户
+            if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(status)
+                    && tenant.getParentId() != null
+                    && !"0".equals(tenant.getParentId())) {
+                SysTenant parentTenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
+                        .eq(SysTenant::getId, tenant.getParentId())
+                        .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+                if (parentTenant != null
+                        && GlobalEnum.TenantStatus.DISABLED.getCode().equals(parentTenant.getStatus())) {
+                    throw new BusinessException("父租户已停用，无法启用子租户: " + tenant.getTenantName());
+                }
+            }
+
             // 更新当前租户状态 审核字段updateBy和updateAt由系统自动设置
             this.update(new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, id)
@@ -1227,16 +1290,34 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("父租户不存在");
         }
 
+        // 校验父租户状态：停用或已过期的父租户下不允许分配子租户
+        if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(parentTenant.getStatus())) {
+            throw new BusinessException("父租户已停用，无法分配子租户");
+        }
+        if (GlobalEnum.TenantStatus.EXPIRED.getCode().equals(parentTenant.getStatus())) {
+            throw new BusinessException("父租户已过期，无法分配子租户");
+        }
+
         int updatedCount = 0;
 
         // 遍历子租户编码列表 更新每个子租户的父租户信息和路径
         for (String subTenantCode : assignParam.getSubCode()) {
+            // 自身分配检查 父租户不能分配给自己
+            if (parentTenant.getTenantCode().equals(subTenantCode)) {
+                throw new BusinessException("不能将租户分配给自己");
+            }
+
             // 查询子租户
             SysTenant subTenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getTenantCode, subTenantCode)
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
             if (subTenant == null) {
                 throw new BusinessException("子租户不存在: " + subTenantCode);
+            }
+
+            // 重复分配检查 检查子租户是否已分配在该父租户下
+            if (String.valueOf(parentTenant.getId()).equals(subTenant.getParentId())) {
+                throw new BusinessException("子租户已分配在该父租户下: " + subTenantCode);
             }
 
             // 保存旧路径前缀 用于批量更新子租户的path
@@ -1314,10 +1395,23 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("新父租户不存在");
         }
 
+        // 校验新父租户状态 停用或已过期的父租户下不允许分配子租户
+        if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(newParent.getStatus())) {
+            throw new BusinessException("新父租户已停用，无法分配子租户");
+        }
+        if (GlobalEnum.TenantStatus.EXPIRED.getCode().equals(newParent.getStatus())) {
+            throw new BusinessException("新父租户已过期，无法分配子租户");
+        }
+
         int updatedCount = 0;
 
         // 遍历子租户编码列表 执行层级调整
         for (String subTenantCode : assignParam.getSubCode()) {
+            // 自身分配检查：不能将租户移动到自身节点下
+            if (newParent.getTenantCode().equals(subTenantCode)) {
+                throw new BusinessException("不能将租户移动到自身节点下");
+            }
+
             // 查询待移动的子租户
             SysTenant subTenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getTenantCode, subTenantCode)
