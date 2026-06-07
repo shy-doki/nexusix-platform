@@ -354,10 +354,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 rootNode = treeVO;
             }
             String parentCode = treeVO.getParentCode();
-            if (parentCode == null || "0".equals(parentCode)) {
-                // 根节点不挂载到其他节点
-            } else {
-                // 通过parentCode(父租户ID)查找父租户的tenantCode 再通过tenantCode查找父TreeVO
+            // 仅当parentCode有效且不为"0"时，通过parentCode查找父TreeVO并挂载
+            if (parentCode != null && !"0".equals(parentCode)) {
                 String parentTenantCode = idToCodeMap.get(parentCode);
                 if (parentTenantCode != null) {
                     SysTenantTreeVO parent = codeToTreeVOMap.get(parentTenantCode);
