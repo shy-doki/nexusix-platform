@@ -906,10 +906,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 遍历处理每个租户实体 校验编码唯一性、计算path、设置默认值、清除不可操作字段
-        for (int i = 0; i < entityList.size(); i++) {
-            SysTenant entity = entityList.get(i);
-            SysTenantAddRTO addParam = addParamList.get(i);
-
+        for (SysTenant entity : entityList) {
             // 校验租户编码唯一性
             long codeCount = this.count(new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getTenantCode, entity.getTenantCode())
