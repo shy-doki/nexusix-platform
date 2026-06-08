@@ -11,11 +11,9 @@ import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
 import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
-import com.shy.nexusix.common.exception.BusinessException;
 import jakarta.validation.Valid;
 
-import java.lang.reflect.Field;
-import java.util.*;
+import java.util.List;
 
 /**
  * <p>
@@ -316,116 +314,5 @@ public interface ISysTenantService extends IService<SysTenant> {
      * @since 2026-05-04
      */
     Integer assignParentTenant(SysTenantAssignRTO assignParam);
-
-    // ==================== 字段权限过滤辅助方法 ====================
-
-    /**
-     * DB列名到VO字段名的映射关系
-     */
-    Map<String, List<String>> DB_COLUMN_TO_VO_FIELDS = Map.ofEntries(
-            Map.entry("tenant_code", List.of("tenantCode")),
-            Map.entry("tenant_name", List.of("tenantName")),
-            Map.entry("tenant_type", List.of("tenantType")),
-            Map.entry("parent_name", List.of("parentName")),
-            Map.entry("contact_name", List.of("contactName")),
-            Map.entry("contact_phone", List.of("contactPhone")),
-            Map.entry("status", List.of("status")),
-            Map.entry("expire_time", List.of("expireTime")),
-            Map.entry("has_children", List.of("hasChildren")),
-            Map.entry("package_name", List.of("packageName")),
-            Map.entry("create_by", List.of("createByName", "createByCode")),
-            Map.entry("create_at", List.of("createTime")),
-            Map.entry("update_by", List.of("updateByName", "updateByCode")),
-            Map.entry("update_at", List.of("updateTime")),
-            Map.entry("is_deleted", List.of("isDeleted")),
-            Map.entry("deleted_at", List.of("deleteTime")),
-            Map.entry("tenant_desc", List.of("tenantDesc")),
-            Map.entry("tenant_logo_url", List.of("tenantLogoUrl")),
-            Map.entry("path", List.of("path")),
-            Map.entry("ext_attributes", List.of("extAttributes")),
-            Map.entry("parent_id", List.of("parentCode"))
-    );
-
-    /**
-     * 树形查询业务必需的数据库字段
-     */
-    Set<String> TREE_MANDATORY_FIELDS = Set.of("id", "tenant_code", "parent_id", "path");
-
-    /**
-     * 构建查询字段集合：合并用户可见字段和业务必要字段
-     */
-    default Set<String> buildQueryFieldSet(List<String> visibleFields, Set<String> mandatoryFields) {
-        Set<String> queryFields = new HashSet<>(visibleFields);
-        if (mandatoryFields != null) {
-            queryFields.addAll(mandatoryFields);
-        }
-        return queryFields;
-    }
-
-    /**
-     * 根据用户可操作字段列表过滤VO对象
-     */
-    default void filterVoByVisibleFields(Object vo, List<String> visibleFields) {
-        if (vo == null || visibleFields == null) return;
-
-        Set<String> allowedVoFields = new HashSet<>();
-        for (String dbColumn : visibleFields) {
-            List<String> voFields = DB_COLUMN_TO_VO_FIELDS.get(dbColumn);
-            if (voFields != null) allowedVoFields.addAll(voFields);
-        }
-
-        try {
-            Class<?> clazz = vo.getClass();
-            while (clazz != null && clazz != Object.class) {
-                for (Field field : clazz.getDeclaredFields()) {
-                    String fieldName = field.getName();
-                    if ("childTenant".equals(fieldName) || "serialVersionUID".equals(fieldName)) continue;
-                    if (!allowedVoFields.contains(fieldName)) {
-                        field.setAccessible(true);
-                        if (!field.getType().isPrimitive()) field.set(vo, null);
-                    }
-                }
-                clazz = clazz.getSuperclass();
-            }
-        } catch (IllegalAccessException e) {
-            throw new BusinessException("字段权限过滤异常");
-        }
-    }
-
-    /**
-     * 递归过滤树形VO及其所有子节点
-     */
-    default void filterTreeVoByVisibleFields(SysTenantTreeVO treeVO, List<String> visibleFields) {
-        filterVoByVisibleFields(treeVO, visibleFields);
-        if (treeVO.getChildTenant() != null) {
-            for (SysTenantTreeVO child : treeVO.getChildTenant()) {
-                filterTreeVoByVisibleFields(child, visibleFields);
-            }
-        }
-    }
-
-    /**
-     * 批量过滤树形VO列表
-     */
-    default void filterTreeVoListByVisibleFields(List<SysTenantTreeVO> treeVOList, List<String> visibleFields) {
-        if (treeVOList == null) return;
-        for (SysTenantTreeVO treeVO : treeVOList) {
-            filterTreeVoByVisibleFields(treeVO, visibleFields);
-        }
-    }
-
-    /**
-     * 归一化物化路径前缀：移除末尾的"/"
-     * <p>数据库中path格式为 /1/2/3/（带前导和末尾斜杠），
-     * 后续使用 likeRight(path, prefix + "/") 查询子节点时，
-     * 如果path以"/"结尾则会产生双斜杠 /1/2/3// 导致LIKE匹配失败。
-     * 归一化后 prefix = /1/2/3，拼接后为 /1/2/3/ 可正确匹配子节点。</p>
-     */
-    default String normalizePathPrefix(String path) {
-        if (path != null && path.endsWith("/")) {
-            return path.substring(0, path.length() - 1);
-        }
-        return path;
-    }
 
 }
