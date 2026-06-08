@@ -241,11 +241,14 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         IPage<SysTenant> rootPage = this.page(new Page<>(page.getPageNum(), page.getPageSize()), rootWrapper);
 
         // 收集所有根节点的path前缀 用于一次性查询所有子节点
+        // 归一化path：移除末尾"/" 避免与后续拼接的"/"产生双斜杠导致LIKE匹配失败
         List<String> rootPaths = new ArrayList<>();
+        List<Long> rootIds = new ArrayList<>();
         for (SysTenant root : rootPage.getRecords()) {
             if (root.getPath() != null && !root.getPath().isEmpty()) {
-                rootPaths.add(root.getPath());
+                rootPaths.add(normalizePathPrefix(root.getPath()));
             }
+            rootIds.add(root.getId());
         }
 
         // 查询所有子节点 如果没有根节点则跳过
@@ -254,9 +257,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
                     .select(SysTenant.class, entity -> queryFields.contains(entity.getColumn()))
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                    .notIn(SysTenant::getId, rootIds)
                     .and(w -> {
                         // 利用path前缀匹配查询所有子节点 减少多次查询
-                        // 加"/"后缀避免匹配到根节点自身和路径前缀碰撞的无关节点
+                        // path已归一化（移除末尾"/"），拼接"/"后可正确匹配子节点路径
                         for (int i = 0; i < rootPaths.size(); i++) {
                             String pathPrefix = rootPaths.get(i);
                             if (i == 0) {
@@ -363,12 +367,14 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 利用path前缀匹配查询所有子节点 一次查询获取整棵子树
+        // 归一化path：移除末尾"/" 避免与后续拼接的"/"产生双斜杠导致LIKE匹配失败
+        String targetPathPrefix = normalizePathPrefix(targetTenant.getPath());
         LambdaQueryWrapper<SysTenant> childWrapper = new LambdaQueryWrapper<SysTenant>()
                 .select(SysTenant.class, entity -> queryFields.contains(entity.getColumn()))
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .and(w -> w.eq(SysTenant::getId, id)
                         .or()
-                        .likeRight(SysTenant::getPath, targetTenant.getPath() + "/"))
+                        .likeRight(SysTenant::getPath, targetPathPrefix + "/"))
                 .orderByAsc(SysTenant::getPath);
         List<SysTenant> subTreeTenants = this.list(childWrapper);
 
@@ -840,7 +846,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 如果是停用操作 利用path前缀匹配级联停用所有子租户
         if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(status) && tenant.getPath() != null) {
             LambdaUpdateWrapper<SysTenant> childUpdateWrapper = new LambdaUpdateWrapper<SysTenant>()
-                    .likeRight(SysTenant::getPath, tenant.getPath() + "/")
+                    .likeRight(SysTenant::getPath, normalizePathPrefix(tenant.getPath()) + "/")
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .ne(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
                     .set(SysTenant::getStatus, status)
@@ -888,7 +894,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 校验是否存在子租户 利用path前缀匹配查询
         if (tenant.getPath() != null) {
             long childCount = this.count(new LambdaQueryWrapper<SysTenant>()
-                    .likeRight(SysTenant::getPath, tenant.getPath() + "/")
+                    .likeRight(SysTenant::getPath, normalizePathPrefix(tenant.getPath()) + "/")
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
             if (childCount > 0) {
                 throw new BusinessException("该租户下存在子租户，无法删除");
@@ -1220,7 +1226,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 如果是停用操作 利用path前缀匹配级联停用所有子租户
             if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(status) && tenant.getPath() != null) {
                 this.update(new LambdaUpdateWrapper<SysTenant>()
-                        .likeRight(SysTenant::getPath, tenant.getPath() + "/")
+                        .likeRight(SysTenant::getPath, normalizePathPrefix(tenant.getPath()) + "/")
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                         .ne(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
                         .set(SysTenant::getStatus, status)
@@ -1273,7 +1279,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 校验是否存在子租户
             if (tenant.getPath() != null) {
                 long childCount = this.count(new LambdaQueryWrapper<SysTenant>()
-                        .likeRight(SysTenant::getPath, tenant.getPath() + "/")
+                        .likeRight(SysTenant::getPath, normalizePathPrefix(tenant.getPath()) + "/")
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
                 if (childCount > 0) {
                     throw new BusinessException("租户[" + tenant.getTenantName() + "]下存在子租户，无法删除");
@@ -1388,7 +1394,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 利用path前缀匹配更新所有子孙节点的路径 替换旧路径前缀为新路径前缀
             if (oldPathPrefix != null) {
                 List<SysTenant> descendants = this.list(new LambdaQueryWrapper<SysTenant>()
-                        .likeRight(SysTenant::getPath, oldPathPrefix + "/")
+                        .likeRight(SysTenant::getPath, normalizePathPrefix(oldPathPrefix) + "/")
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
                 for (SysTenant descendant : descendants) {
                     String newDescendantPath = newPath + descendant.getPath().substring(oldPathPrefix.length());
@@ -1493,7 +1499,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 利用path前缀匹配更新所有子孙节点的路径 替换旧路径前缀为新路径前缀
             if (oldPathPrefix != null) {
                 List<SysTenant> descendants = this.list(new LambdaQueryWrapper<SysTenant>()
-                        .likeRight(SysTenant::getPath, oldPathPrefix + "/")
+                        .likeRight(SysTenant::getPath, normalizePathPrefix(oldPathPrefix) + "/")
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
                 for (SysTenant descendant : descendants) {
                     String newDescendantPath = newPath + descendant.getPath().substring(oldPathPrefix.length());
@@ -1526,6 +1532,23 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
         return updatedCount;
 
+    }
+
+    /**
+     * 归一化物化路径前缀：移除末尾的"/"
+     * <p>数据库中path格式为 /1/2/3/（带前导和末尾斜杠），
+     * 后续使用 likeRight(path, prefix + "/") 查询子节点时，
+     * 如果path以"/"结尾则会产生双斜杠 /1/2/3// 导致LIKE匹配失败。
+     * 归一化后 prefix = /1/2/3，拼接后为 /1/2/3/ 可正确匹配子节点。</p>
+     *
+     * @param path 原始物化路径
+     * @return 移除末尾"/"后的路径
+     */
+    private String normalizePathPrefix(String path) {
+        if (path != null && path.endsWith("/")) {
+            return path.substring(0, path.length() - 1);
+        }
+        return path;
     }
 
     /**
