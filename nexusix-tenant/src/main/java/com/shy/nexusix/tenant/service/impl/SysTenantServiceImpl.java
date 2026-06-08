@@ -141,6 +141,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("无权查询租户信息");
         }
 
+        // 加入固定查询字段 业务涉及
+        visibleFields.addAll(Arrays.asList("id", "tenant_code", "parent_id", "parent_code"));
+
         // 查询所有未删除的租户 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
                 .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
