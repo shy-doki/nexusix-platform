@@ -1,5 +1,9 @@
 package com.shy.nexusix.common.constant;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * <p>
  * 全局常量定义 (默认分页大小、状态码常量)
@@ -174,7 +178,7 @@ public class GlobalConstant {
          *   <li>path - path前缀匹配查询子节点，排序</li>
          * </ul>
          */
-        public static final java.util.Set<String> TREE_MANDATORY_FIELDS = java.util.Set.of(
+        public static final Set<String> TREE_MANDATORY_FIELDS = Set.of(
                 "id", "tenant_code", "parent_id", "path"
         );
 
@@ -183,28 +187,28 @@ public class GlobalConstant {
          * <p>用于在返回前端时根据用户可见字段过滤VO数据</p>
          * <p>一个DB列可能映射到多个VO字段（如create_by同时映射createByName和createByCode）</p>
          */
-        public static final java.util.Map<String, java.util.List<String>> DB_COLUMN_TO_VO_FIELDS = java.util.Map.ofEntries(
-                java.util.Map.entry("tenant_code", java.util.List.of("tenantCode")),
-                java.util.Map.entry("tenant_name", java.util.List.of("tenantName")),
-                java.util.Map.entry("tenant_type", java.util.List.of("tenantType")),
-                java.util.Map.entry("parent_name", java.util.List.of("parentName")),
-                java.util.Map.entry("contact_name", java.util.List.of("contactName")),
-                java.util.Map.entry("contact_phone", java.util.List.of("contactPhone")),
-                java.util.Map.entry("status", java.util.List.of("status")),
-                java.util.Map.entry("expire_time", java.util.List.of("expireTime")),
-                java.util.Map.entry("has_children", java.util.List.of("hasChildren")),
-                java.util.Map.entry("package_name", java.util.List.of("packageName")),
-                java.util.Map.entry("create_by", java.util.List.of("createByName", "createByCode")),
-                java.util.Map.entry("create_at", java.util.List.of("createTime")),
-                java.util.Map.entry("update_by", java.util.List.of("updateByName", "updateByCode")),
-                java.util.Map.entry("update_at", java.util.List.of("updateTime")),
-                java.util.Map.entry("is_deleted", java.util.List.of("isDeleted")),
-                java.util.Map.entry("deleted_at", java.util.List.of("deleteTime")),
-                java.util.Map.entry("tenant_desc", java.util.List.of("tenantDesc")),
-                java.util.Map.entry("tenant_logo_url", java.util.List.of("tenantLogoUrl")),
-                java.util.Map.entry("path", java.util.List.of("path")),
-                java.util.Map.entry("ext_attributes", java.util.List.of("extAttributes")),
-                java.util.Map.entry("parent_id", java.util.List.of("parentCode"))
+        public static final Map<String, List<String>> DB_COLUMN_TO_VO_FIELDS = Map.ofEntries(
+                Map.entry("tenant_code", List.of("tenantCode")),
+                Map.entry("tenant_name", List.of("tenantName")),
+                Map.entry("tenant_type", List.of("tenantType")),
+                Map.entry("parent_name", List.of("parentName")),
+                Map.entry("contact_name", List.of("contactName")),
+                Map.entry("contact_phone", List.of("contactPhone")),
+                Map.entry("status", List.of("status")),
+                Map.entry("expire_time", List.of("expireTime")),
+                Map.entry("has_children", List.of("hasChildren")),
+                Map.entry("package_name", List.of("packageName")),
+                Map.entry("create_by", List.of("createByName", "createByCode")),
+                Map.entry("create_at", List.of("createTime")),
+                Map.entry("update_by", List.of("updateByName", "updateByCode")),
+                Map.entry("update_at", List.of("updateTime")),
+                Map.entry("is_deleted", List.of("isDeleted")),
+                Map.entry("deleted_at", List.of("deleteTime")),
+                Map.entry("tenant_desc", List.of("tenantDesc")),
+                Map.entry("tenant_logo_url", List.of("tenantLogoUrl")),
+                Map.entry("path", List.of("path")),
+                Map.entry("ext_attributes", List.of("extAttributes")),
+                Map.entry("parent_id", List.of("parentCode"))
         );
 
     }
