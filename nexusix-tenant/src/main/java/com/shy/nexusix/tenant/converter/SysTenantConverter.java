@@ -13,6 +13,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -262,19 +264,22 @@ public interface SysTenantConverter {
         // 构建允许的VO字段名集合
         Set<String> allowedVoFields = buildAllowedVoFields(visibleFields);
 
-        // 使用直接setter过滤SysTenantCommonVO中的字段
-        filterCommonVoFields(treeVO, allowedVoFields);
+        // 使用BFS队列遍历树形结构，替代递归避免深层树栈溢出
+        Deque<SysTenantTreeVO> queue = new ArrayDeque<>();
+        queue.add(treeVO);
 
-        // 过滤SysTenantTreeVO自身字段
-        if (!allowedVoFields.contains("parentCode")) {
-            treeVO.setParentCode(null);
-        }
-        // childTenant是结构性字段，不属于数据字段，不参与过滤
-
-        // 递归过滤子节点
-        if (treeVO.getChildTenant() != null) {
-            for (SysTenantTreeVO child : treeVO.getChildTenant()) {
-                filterTreeVoByVisibleFields(child, visibleFields);
+        while (!queue.isEmpty()) {
+            SysTenantTreeVO node = queue.poll();
+            // 使用直接setter过滤SysTenantCommonVO中的字段
+            filterCommonVoFields(node, allowedVoFields);
+            // 过滤SysTenantTreeVO自身字段
+            if (!allowedVoFields.contains("parentCode")) {
+                node.setParentCode(null);
+            }
+            // childTenant是结构性字段，不属于数据字段，不参与过滤
+            // 将子节点加入队列继续处理
+            if (node.getChildTenant() != null) {
+                queue.addAll(node.getChildTenant());
             }
         }
     }
