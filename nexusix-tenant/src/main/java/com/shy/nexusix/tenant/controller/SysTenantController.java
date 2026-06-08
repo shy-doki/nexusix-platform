@@ -143,7 +143,7 @@ public class SysTenantController {
      */
     @GetMapping("/tree/{id}")
     @Operation(summary = "查询指定租户树形结构", description = "返回所有租户的层级树形结构")
-    public ApiResponse queryTenantTree(@NotBlank(message = "Id不能为空") @RequestParam String id) {
+    public ApiResponse queryTenantTree(@NotBlank(message = "Id不能为空") @PathVariable String id) {
         SysTenantTreeVO tenantTree = iSysTenantService.queryTenantTree(id);
         return ApiResponse.success(tenantTree);
     }
