@@ -28,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -144,7 +143,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 构建查询字段集合 合并用户可见字段和树形查询业务必要字段
         // 创建新集合 不修改原始visibleFields，避免污染Session缓存中的权限数据 该集合是为了确保业务执行正确性
-        Set<String> queryFields = buildQueryFieldSet(visibleFields, TREE_MANDATORY_FIELDS);
+        Set<String> queryFields = new HashSet<>(visibleFields);
+        queryFields.addAll(GlobalConstant.FieldPerm.TREE_MANDATORY_FIELDS);
 
         // 查询所有未删除的租户 选择用户有权限查看的列 + 业务必要字段
         LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
@@ -192,7 +192,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 根据用户可操作字段过滤返回数据，仅返回有权限的字段
-        filterTreeVoListByVisibleFields(rootList, visibleFields);
+        sysTenantConverter.filterTreeVoListByVisibleFields(rootList, visibleFields);
         return rootList;
 
     }
@@ -224,7 +224,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 构建查询字段集合：合并用户可见字段和树形查询业务必要字段
         // 创建新集合，不修改原始visibleFields，避免污染Session缓存中的权限数据
-        Set<String> queryFields = buildQueryFieldSet(visibleFields, TREE_MANDATORY_FIELDS);
+        Set<String> queryFields = new HashSet<>(visibleFields);
+        queryFields.addAll(GlobalConstant.FieldPerm.TREE_MANDATORY_FIELDS);
 
         // 先查询根节点总数用于分页
         LambdaQueryWrapper<SysTenant> rootCountWrapper = new LambdaQueryWrapper<SysTenant>()
@@ -316,7 +317,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 构建分页返回结果
         IPage<SysTenantTreeVO> voPage = new Page<>(rootPage.getCurrent(), rootPage.getSize(), rootTotal);
         // 根据用户可操作字段过滤返回数据，仅返回有权限的字段
-        filterTreeVoListByVisibleFields(rootList, visibleFields);
+        sysTenantConverter.filterTreeVoListByVisibleFields(rootList, visibleFields);
         voPage.setRecords(rootList);
         return voPage;
 
@@ -354,7 +355,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 构建查询字段集合：合并用户可见字段和树形查询业务必要字段
         // 创建新集合，不修改原始visibleFields，避免污染Session缓存中的权限数据
-        Set<String> queryFields = buildQueryFieldSet(visibleFields, TREE_MANDATORY_FIELDS);
+        Set<String> queryFields = new HashSet<>(visibleFields);
+        queryFields.addAll(GlobalConstant.FieldPerm.TREE_MANDATORY_FIELDS);
 
         // 查询指定租户
         LambdaQueryWrapper<SysTenant> targetWrapper = new LambdaQueryWrapper<SysTenant>()
@@ -414,7 +416,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 根据用户可操作字段过滤返回数据，仅返回有权限的字段
         if (rootNode != null) {
-            filterTreeVoByVisibleFields(rootNode, visibleFields);
+            sysTenantConverter.filterTreeVoByVisibleFields(rootNode, visibleFields);
         }
         return rootNode;
 
@@ -1549,150 +1551,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             return path.substring(0, path.length() - 1);
         }
         return path;
-    }
-
-    /**
-     * DB列名到VO字段名的映射关系
-     * <p>用于在返回前端时根据用户可见字段过滤VO数据</p>
-     * <p>一个DB列可能映射到多个VO字段（如create_by同时映射createByName和createByCode）</p>
-     */
-    private static final Map<String, List<String>> DB_COLUMN_TO_VO_FIELDS;
-
-    static {
-        Map<String, List<String>> map = new HashMap<>();
-        map.put("tenant_code", List.of("tenantCode"));
-        map.put("tenant_name", List.of("tenantName"));
-        map.put("tenant_type", List.of("tenantType"));
-        map.put("parent_name", List.of("parentName"));
-        map.put("contact_name", List.of("contactName"));
-        map.put("contact_phone", List.of("contactPhone"));
-        map.put("status", List.of("status"));
-        map.put("expire_time", List.of("expireTime"));
-        map.put("has_children", List.of("hasChildren"));
-        map.put("package_name", List.of("packageName"));
-        map.put("create_by", List.of("createByName", "createByCode"));
-        map.put("create_at", List.of("createTime"));
-        map.put("update_by", List.of("updateByName", "updateByCode"));
-        map.put("update_at", List.of("updateTime"));
-        map.put("is_deleted", List.of("isDeleted"));
-        map.put("deleted_at", List.of("deleteTime"));
-        map.put("tenant_desc", List.of("tenantDesc"));
-        map.put("tenant_logo_url", List.of("tenantLogoUrl"));
-        map.put("path", List.of("path"));
-        map.put("ext_attributes", List.of("extAttributes"));
-        map.put("parent_id", List.of("parentCode"));
-        DB_COLUMN_TO_VO_FIELDS = Collections.unmodifiableMap(map);
-    }
-
-    /**
-     * 树形查询业务必需的数据库字段
-     * <p>这些字段在构建树形结构时必须从数据库查询，不受用户字段权限限制：</p>
-     * <ul>
-     *   <li>id - 构建idToCodeMap，将parentId转为tenantCode</li>
-     *   <li>tenant_code - 构建idToCodeMap和codeToTreeVOMap，O(1)查找节点</li>
-     *   <li>parent_id - 判断根节点，查找父租户关联</li>
-     *   <li>path - path前缀匹配查询子节点，排序</li>
-     * </ul>
-     */
-    private static final Set<String> TREE_MANDATORY_FIELDS = Set.of(
-            "id", "tenant_code", "parent_id", "path"
-    );
-
-    /**
-     * 构建查询字段集合：合并用户可见字段和业务必要字段
-     * <p>创建新的Set集合，不修改原始visibleFields列表，避免污染Session缓存中的权限数据</p>
-     *
-     * @param visibleFields   用户可操作字段列表（来自权限上下文）
-     * @param mandatoryFields 业务必要字段集合（不受权限限制）
-     * @return 合并后的查询字段集合
-     */
-    private Set<String> buildQueryFieldSet(List<String> visibleFields, Set<String> mandatoryFields) {
-        Set<String> queryFields = new HashSet<>(visibleFields);
-        if (mandatoryFields != null) {
-            queryFields.addAll(mandatoryFields);
-        }
-        return queryFields;
-    }
-
-    /**
-     * 根据用户可操作字段列表过滤VO对象
-     * <p>将不在visibleFields对应的VO字段设为null，确保前端仅接收有权限的数据</p>
-     * <p>跳过结构性字段（childTenant、serialVersionUID），这些字段不属于数据字段</p>
-     *
-     * @param vo            视图对象
-     * @param visibleFields 用户可操作字段列表
-     */
-    private void filterVoByVisibleFields(Object vo, List<String> visibleFields) {
-        if (vo == null || visibleFields == null) return;
-
-        // 构建允许的VO字段名集合
-        Set<String> allowedVoFields = new HashSet<>();
-        for (String dbColumn : visibleFields) {
-            List<String> voFields = DB_COLUMN_TO_VO_FIELDS.get(dbColumn);
-            if (voFields != null) {
-                allowedVoFields.addAll(voFields);
-            }
-        }
-
-        // 使用反射将非允许字段设为null
-        try {
-            for (Field field : getAllFields(vo.getClass())) {
-                String fieldName = field.getName();
-                // 跳过结构性字段和序列化ID
-                if ("childTenant".equals(fieldName) || "serialVersionUID".equals(fieldName)) continue;
-                if (!allowedVoFields.contains(fieldName)) {
-                    field.setAccessible(true);
-                    if (!field.getType().isPrimitive()) {
-                        field.set(vo, null);
-                    }
-                }
-            }
-        } catch (IllegalAccessException e) {
-            throw new BusinessException("字段权限过滤异常");
-        }
-    }
-
-    /**
-     * 递归过滤树形VO及其所有子节点
-     *
-     * @param treeVO        树形视图对象
-     * @param visibleFields 用户可操作字段列表
-     */
-    private void filterTreeVoByVisibleFields(SysTenantTreeVO treeVO, List<String> visibleFields) {
-        filterVoByVisibleFields(treeVO, visibleFields);
-        if (treeVO.getChildTenant() != null) {
-            for (SysTenantTreeVO child : treeVO.getChildTenant()) {
-                filterTreeVoByVisibleFields(child, visibleFields);
-            }
-        }
-    }
-
-    /**
-     * 批量过滤树形VO列表
-     *
-     * @param treeVOList    树形视图对象列表
-     * @param visibleFields 用户可操作字段列表
-     */
-    private void filterTreeVoListByVisibleFields(List<SysTenantTreeVO> treeVOList, List<String> visibleFields) {
-        if (treeVOList == null) return;
-        for (SysTenantTreeVO treeVO : treeVOList) {
-            filterTreeVoByVisibleFields(treeVO, visibleFields);
-        }
-    }
-
-    /**
-     * 递归获取类及其父类的所有声明字段
-     *
-     * @param clazz 类对象
-     * @return 所有声明字段列表（包含父类字段）
-     */
-    private List<Field> getAllFields(Class<?> clazz) {
-        List<Field> fields = new ArrayList<>();
-        while (clazz != null && clazz != Object.class) {
-            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
-            clazz = clazz.getSuperclass();
-        }
-        return fields;
     }
 
 }

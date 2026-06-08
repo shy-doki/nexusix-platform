@@ -155,4 +155,57 @@ public class GlobalConstant {
         public static final String SUPER_ADMIN_ROLE = "SUPER_ADMIN";
 
     }
+
+    /**
+     *  字段权限常量
+     */
+    public static final class FieldPerm {
+
+        private FieldPerm() {
+        }
+
+        /**
+         * 树形查询业务必需的数据库字段
+         * <p>这些字段在构建树形结构时必须从数据库查询，不受用户字段权限限制：</p>
+         * <ul>
+         *   <li>id - 构建idToCodeMap，将parentId转为tenantCode</li>
+         *   <li>tenant_code - 构建idToCodeMap和codeToTreeVOMap，O(1)查找节点</li>
+         *   <li>parent_id - 判断根节点，查找父租户关联</li>
+         *   <li>path - path前缀匹配查询子节点，排序</li>
+         * </ul>
+         */
+        public static final java.util.Set<String> TREE_MANDATORY_FIELDS = java.util.Set.of(
+                "id", "tenant_code", "parent_id", "path"
+        );
+
+        /**
+         * DB列名到VO字段名的映射关系
+         * <p>用于在返回前端时根据用户可见字段过滤VO数据</p>
+         * <p>一个DB列可能映射到多个VO字段（如create_by同时映射createByName和createByCode）</p>
+         */
+        public static final java.util.Map<String, java.util.List<String>> DB_COLUMN_TO_VO_FIELDS = java.util.Map.ofEntries(
+                java.util.Map.entry("tenant_code", java.util.List.of("tenantCode")),
+                java.util.Map.entry("tenant_name", java.util.List.of("tenantName")),
+                java.util.Map.entry("tenant_type", java.util.List.of("tenantType")),
+                java.util.Map.entry("parent_name", java.util.List.of("parentName")),
+                java.util.Map.entry("contact_name", java.util.List.of("contactName")),
+                java.util.Map.entry("contact_phone", java.util.List.of("contactPhone")),
+                java.util.Map.entry("status", java.util.List.of("status")),
+                java.util.Map.entry("expire_time", java.util.List.of("expireTime")),
+                java.util.Map.entry("has_children", java.util.List.of("hasChildren")),
+                java.util.Map.entry("package_name", java.util.List.of("packageName")),
+                java.util.Map.entry("create_by", java.util.List.of("createByName", "createByCode")),
+                java.util.Map.entry("create_at", java.util.List.of("createTime")),
+                java.util.Map.entry("update_by", java.util.List.of("updateByName", "updateByCode")),
+                java.util.Map.entry("update_at", java.util.List.of("updateTime")),
+                java.util.Map.entry("is_deleted", java.util.List.of("isDeleted")),
+                java.util.Map.entry("deleted_at", java.util.List.of("deleteTime")),
+                java.util.Map.entry("tenant_desc", java.util.List.of("tenantDesc")),
+                java.util.Map.entry("tenant_logo_url", java.util.List.of("tenantLogoUrl")),
+                java.util.Map.entry("path", java.util.List.of("path")),
+                java.util.Map.entry("ext_attributes", java.util.List.of("extAttributes")),
+                java.util.Map.entry("parent_id", java.util.List.of("parentCode"))
+        );
+
+    }
 }
