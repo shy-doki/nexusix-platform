@@ -7,8 +7,8 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | NexusIX-Platform 多租户 SaaS 平台底座 |
-| 文档版本 | V1.0 |
-| 编写日期 | 2026-05-23 |
+| 文档版本 | V2.0 |
+| 编写日期 | 2026-06-09 |
 | 文档状态 | 初稿 |
 | 技术栈 | Spring Boot 3.3.4 + MyBatis-Plus 3.5.12 + PostgreSQL 17 + Sa-Token 1.42.0 + Redis 7 |
 
@@ -192,16 +192,16 @@ nexusix-platform (pom)
 | 项目 | 说明 |
 |------|------|
 | 包路径 | `com.shy.nexusix.tenant` |
-| 负责数据表 | `sys_tenant`、`sys_tenant_subscription` |
-| 核心功能 | 租户 CRUD、租户树形结构管理（parent_id/path）、租户状态管理、套餐订阅管理（订阅类型/自动续费/来源类型）、租户扩展属性（JSONB `ext_attributes`）、MapStruct Converter |
+| 负责数据表 | `sys_tenant`、`sys_tenant_subscription`、`sys_tenant_security`、`sys_tenant_config`、`sys_industry_template`、`sys_form_template` |
+| 核心功能 | 租户 CRUD、租户树形结构管理（parent_id/path，路径格式为ID路径如 `/1/2/3/`）、租户状态管理、套餐订阅管理（订阅类型/自动续费/来源类型）、租户安全策略配置（密码策略/登录锁定策略）、租户配置管理、行业模板管理、表单模板管理、租户扩展属性（JSONB `ext_attributes`）、MapStruct Converter |
 
 #### nexusix-billing — 计费订阅
 
 | 项目 | 说明 |
 |------|------|
 | 包路径 | `com.shy.nexusix.billing` |
-| 负责数据表 | `prod_package`、`prod_package_quota`（规划中） |
-| 核心功能 | 套餐定义、配额管理、账单生成、用量统计 |
+| 负责数据表 | `prod_package`、`prod_package_quota`、`sys_tenant_quota_adjustment`、`sys_resource_usage`、`bill_order`、`bill_invoice` |
+| 核心功能 | 套餐产品定义与上下架管理、配额模板管理、租户配额调整与用量统计、订单管理（创建/支付/取消）、发票管理（开具/作废/邮寄）、账单生成 |
 
 #### nexusix-iam — 身份与权限
 
@@ -209,31 +209,31 @@ nexusix-platform (pom)
 |------|------|
 | 包路径 | `com.shy.nexusix.iam` |
 | 负责数据表 | `sys_user`、`sys_user_tenant_rel`、`sys_perm`、`sys_perm_policy`、`sys_user_perm_rel`、`sys_user_token` |
-| 核心功能 | 用户注册/登录认证、用户-租户关联管理、权限/资源树管理、权限策略控制（字段级 `field_operates`/`field_un_operates` JSONB）、用户权限关联、Token 记录管理 |
+| 核心功能 | 用户注册/登录认证、用户-租户关联管理、权限/资源树管理、权限策略控制（字段级 `field_operates` JSONB 数组）、用户权限关联、Token 记录管理 |
 
 #### nexusix-org — 组织架构
 
 | 项目 | 说明 |
 |------|------|
 | 包路径 | `com.shy.nexusix.org` |
-| 负责数据表 | `sys_dept`、`sys_post`、`sys_role`、`sys_role_policy`、`sys_user_role_rel`、`sys_role_dept_rel`、`sys_user_group`、`sys_user_group_rel`（规划中） |
-| 核心功能 | 部门树管理、岗位管理、角色管理、角色策略控制、用户-角色关联、用户组管理、数据范围控制 |
+| 负责数据表 | `sys_dept`、`sys_post`、`sys_role`、`sys_role_policy`、`sys_user_role_rel`、`sys_role_dept_rel`、`sys_user_group`、`sys_user_group_rel` |
+| 核心功能 | 部门树管理（parent_id/path，ID路径格式如 `/1/2/3/`）、岗位管理（岗位CRUD/岗位与部门关联）、角色管理、角色策略控制、用户-角色关联、用户组管理（用户组CRUD/成员管理）、角色-部门数据权限关联、数据范围控制 |
 
 #### nexusix-dynamic — 动态表单
 
 | 项目 | 说明 |
 |------|------|
 | 包路径 | `com.shy.nexusix.dynamic` |
-| 负责数据表 | 动态表单相关表（规划中） |
-| 核心功能 | 自定义表单设计、字段配置、表单数据存储与查询 |
+| 负责数据表 | `sys_form_config`、`sys_datasource_config`、`sys_print_template` |
+| 核心功能 | 表单配置管理（自定义表单设计/字段配置/版本管理/JSONB form_schema）、数据源配置管理（业务表/API接口/字典/SQL查询多类型数据源）、打印模板管理（模板设计/模板内容/模板配置）、表单数据存储与查询 |
 
 #### nexusix-system — 系统管理
 
 | 项目 | 说明 |
 |------|------|
 | 包路径 | `com.shy.nexusix.system` |
-| 负责数据表 | `sys_dict`、`sys_dict_item`、`sys_config`、`sys_menu`、`sys_file`（规划中） |
-| 核心功能 | 字典管理、系统配置、菜单管理、文件上传/存储（本地/OSS/MinIO） |
+| 负责数据表 | `sys_menu`、`sys_dict`、`sys_dict_item`、`sys_file`、`sys_notice`、`sys_notice_user_rel` |
+| 核心功能 | 菜单管理（菜单树/权限标识/路由配置）、字典管理（字典类型/字典数据）、文件上传/存储（本地/OSS/MinIO）、系统公告管理（公告发布/已读未读状态追踪） |
 
 #### nexusix-notify — 消息通知
 
@@ -248,8 +248,8 @@ nexusix-platform (pom)
 | 项目 | 说明 |
 |------|------|
 | 包路径 | `com.shy.nexusix.audit` |
-| 负责数据表 | `sys_login_log`、`sys_oper_log`（规划中） |
-| 核心功能 | 登录日志记录、操作日志记录（`@OperationLog` 注解驱动）、数据变更审计 |
+| 负责数据表 | `sys_oper_log`、`sys_login_log`、`sys_data_audit_log` |
+| 核心功能 | 操作日志记录（`@OperationLog` 注解驱动，记录操作人/操作类型/请求参数/响应结果/耗时）、登录日志记录（登录IP/设备信息/登录时间/登录结果）、数据变更审计（对比更新前后数据差异，记录字段级变更） |
 
 #### nexusix-boot — 启动模块
 
@@ -364,13 +364,28 @@ graph TB
 | `TenantContext` | 基于 SaSession 的租户上下文，提供 `getCurrentTenantId()`/`getCurrentTenantName()` |
 | 忽略表配置 | 系统级公共表不追加租户条件，通过 `ignoreTable()` 方法配置 |
 
-#### 忽略租户过滤的表
+#### 忽略租户过滤的表（17 张）
 
 ```
-sys_tenant, sys_user, sys_perm, sys_perm_policy, sys_user_perm_rel,
-sys_user_tenant_rel, sys_role, sys_role_policy, sys_user_role_rel,
-sys_login_log, sys_oper_log, prod_package, prod_package_quota,
+sys_tenant, sys_tenant_subscription, sys_tenant_security, sys_tenant_config,
+sys_industry_template, sys_form_template,
+sys_user, sys_perm, sys_perm_policy, sys_user_perm_rel,
+sys_user_tenant_rel, sys_user_token,
+sys_role, sys_role_policy, sys_user_role_rel,
+sys_login_log, sys_oper_log,
+prod_package, prod_package_quota,
 sys_dict_item, sys_menu, sys_user_group_rel
+```
+
+#### 租户隔离过滤的表（24 张）
+
+```
+sys_dept, sys_post, sys_user_group, sys_role_dept_rel,
+sys_tenant_quota_adjustment, sys_resource_usage, bill_order, bill_invoice,
+sys_form_config, sys_datasource_config, sys_print_template,
+sys_dict, sys_file, sys_notice, sys_notice_user_rel,
+sys_message_template, sys_inbox_message, sys_message_schedule,
+sys_data_audit_log
 ```
 
 #### 数据流
@@ -388,8 +403,8 @@ sys_dict_item, sys_menu, sys_user_group_rel
 graph TD
     L1[第1层：身份认证<br/>Sa-Token JWT 验证 Token 合法性] --> L2[第2层：租户关联<br/>从 SaSession 获取 tenantId<br/>校验用户-租户绑定关系]
     L2 --> L3[第3层：租户状态<br/>校验租户是否启用<br/>是否过期]
-    L3 --> L4[第4层：权限策略<br/>RBAC 角色权限 + ABAC 策略叠加<br/>拒绝优先原则]
-    L4 --> L5[第5层：字段控制<br/>sys_perm_policy.field_operates<br/>sys_perm_policy.field_un_operates<br/>access_type: QUERY/CREATE/UPDATE]
+    L3 --> L4[第4层：权限策略<br/>RBAC 角色权限 + ABAC 策略叠加<br/>策略状态五值枚举<br/>拒绝优先原则]
+    L4 --> L5[第5层：字段控制<br/>sys_perm_policy.field_operates<br/>access_type: QUERY/CREATE/UPDATE]
 ```
 
 | 层级 | 校验内容 | 实现方式 |
@@ -397,7 +412,7 @@ graph TD
 | 第1层 | 身份认证 | Sa-Token JWT Simple 模式，Token 签名验证 + 过期检查 |
 | 第2层 | 租户关联 | `sys_user_tenant_rel` 表校验用户与租户的绑定关系 |
 | 第3层 | 租户状态 | `sys_tenant.status` + `sys_tenant.expire_time` 校验 |
-| 第4层 | 权限策略 | 角色权限基底 + 策略叠加，拒绝优先 |
+| 第4层 | 权限策略 | 角色权限基底 + 策略叠加，拒绝优先；策略状态五值枚举（ACTIVE / DISABLED_SYSTEM_LEVEL / DISABLED_TENANT_LEVEL / DISABLED_ROLE_LEVEL / DISABLED_USER_LEVEL） |
 | 第5层 | 字段控制 | `ColumnPerm` 实体控制 query/create/update 三维度可见字段 |
 
 ### 6.3 RBAC + ABAC 混合权限模型
@@ -416,6 +431,7 @@ ABAC 叠加：策略（sys_perm_policy / sys_role_policy）→ 属性条件 → 
 | 角色权限基底 | 用户通过角色继承基础权限集合 |
 | 策略叠加 | 在角色权限基础上，通过 `sys_perm_policy` 和 `sys_role_policy` 叠加额外权限或限制 |
 | 拒绝优先 | 当权限同时出现在允许和拒绝列表时，拒绝生效 |
+| 策略状态五值 | 策略状态枚举：`ACTIVE`（生效）、`DISABLED_SYSTEM_LEVEL`（系统级禁用）、`DISABLED_TENANT_LEVEL`（租户级禁用）、`DISABLED_ROLE_LEVEL`（角色级禁用）、`DISABLED_USER_LEVEL`（用户级禁用），禁用层级越高优先级越高 |
 | 继承控制 | 租户级策略可覆盖系统级策略，用户级策略可覆盖租户级策略 |
 
 #### 权限层级（UserContext 四级分离）
@@ -442,7 +458,7 @@ ABAC 叠加：策略（sys_perm_policy / sys_role_policy）→ 属性条件 → 
 | 类型 | 枚举值 | 说明 |
 |------|--------|------|
 | 全部数据 | `ALL` | 无数据范围限制 |
-| 本部门及以下 | `DEPT_AND_CHILD` | 基于 `dept_id` 和部门树 `path` 过滤 |
+| 本部门及以下 | `DEPT_AND_CHILD` | 基于 `dept_id` 和部门树 `path`（ID路径格式如 `/1/2/3/`）过滤 |
 | 本部门 | `DEPT_ONLY` | 仅 `dept_id` 匹配 |
 | 仅本人 | `SELF_ONLY` | 仅 `user_id` 匹配 |
 | 自定义 | `CUSTOM` | 自定义 SQL 片段 |
@@ -469,8 +485,7 @@ ABAC 叠加：策略（sys_perm_policy / sys_role_policy）→ 属性条件 → 
 |------|------|------|
 | `table_name` | `VARCHAR(64)` | 目标数据表名 |
 | `access_type` | `VARCHAR(20)` | 操作类型：`QUERY`/`CREATE`/`UPDATE` |
-| `field_operates` | `JSONB` | 允许操作的字段集合，如 `{"fields": ["id", "tenant_name", "status"]}` |
-| `field_un_operates` | `JSONB` | 禁止操作的字段集合，如 `{"fields": ["password", "expire_time"]}` |
+| `field_operates` | `JSONB` | 允许操作的字段集合，数组格式，如 `["id", "user_name", "status"]` |
 
 #### ColumnPerm 实体
 
@@ -489,7 +504,7 @@ public class ColumnPerm {
 请求 → UserContext 获取 ColumnPerm
      → 根据 access_type 匹配操作类型
      → 根据 table_name 匹配目标表
-     → field_operates 白名单 ∪ field_un_operates 黑名单
+     → field_operates 白名单过滤
      → 拦截/过滤请求字段 或 遮蔽响应字段
 ```
 
@@ -579,7 +594,92 @@ nexusix:lock:{businessKey}         # 分布式锁
 
 ## 8 数据库设计原则
 
-### 8.1 主键策略
+### 8.1 数据表总览
+
+系统共包含 **41** 张数据表，按模块分组如下：
+
+#### nexusix-tenant — 租户管理（6 张）
+
+| 表名 | 说明 |
+|------|------|
+| `sys_tenant` | 租户主表 |
+| `sys_tenant_subscription` | 租户订阅表 |
+| `sys_tenant_security` | 租户安全策略配置表 |
+| `sys_tenant_config` | 租户配置表 |
+| `sys_industry_template` | 行业模板表 |
+| `sys_form_template` | 表单模板表 |
+
+#### nexusix-billing — 计费订阅（6 张）
+
+| 表名 | 说明 |
+|------|------|
+| `prod_package` | 产品套餐定义表 |
+| `prod_package_quota` | 套餐配额模板表 |
+| `sys_tenant_quota_adjustment` | 租户配额调整表 |
+| `sys_resource_usage` | 资源使用量表 |
+| `bill_order` | 订单表 |
+| `bill_invoice` | 发票表 |
+
+#### nexusix-iam — 身份与权限（6 张）
+
+| 表名 | 说明 |
+|------|------|
+| `sys_user` | 用户基础表 |
+| `sys_user_tenant_rel` | 用户-租户关联表 |
+| `sys_perm` | 权限/资源表 |
+| `sys_perm_policy` | 权限策略表 |
+| `sys_user_perm_rel` | 用户权限关联表 |
+| `sys_user_token` | 用户 Token 记录表 |
+
+#### nexusix-org — 组织架构（8 张）
+
+| 表名 | 说明 |
+|------|------|
+| `sys_dept` | 部门表 |
+| `sys_post` | 岗位表 |
+| `sys_role` | 角色表 |
+| `sys_role_policy` | 角色策略表 |
+| `sys_user_role_rel` | 用户-角色关联表 |
+| `sys_role_dept_rel` | 角色-部门数据权限关联表 |
+| `sys_user_group` | 用户组表 |
+| `sys_user_group_rel` | 用户组成员关联表 |
+
+#### nexusix-dynamic — 动态表单（3 张）
+
+| 表名 | 说明 |
+|------|------|
+| `sys_form_config` | 动态表单配置表 |
+| `sys_datasource_config` | 数据源配置表 |
+| `sys_print_template` | 打印模板配置表 |
+
+#### nexusix-system — 系统管理（6 张）
+
+| 表名 | 说明 |
+|------|------|
+| `sys_menu` | 菜单表 |
+| `sys_dict` | 字典类型表 |
+| `sys_dict_item` | 字典数据表 |
+| `sys_file` | 文件表 |
+| `sys_notice` | 系统公告表 |
+| `sys_notice_user_rel` | 用户公告阅读状态表 |
+
+#### nexusix-notify — 消息通知（3 张）
+
+| 表名 | 说明 |
+|------|------|
+| `sys_message_template` | 消息模板表 |
+| `sys_inbox_message` | 站内信表 |
+| `sys_message_schedule` | 定时消息表 |
+
+#### nexusix-audit — 审计日志（3 张）
+
+| 表名 | 说明 |
+|------|------|
+| `sys_oper_log` | 操作日志表 |
+| `sys_login_log` | 登录日志表 |
+| `sys_data_audit_log` | 数据变更审计日志表 |
+
+### 8.2 主键策略
 
 - 采用**雪花算法**生成分布式唯一 ID（`id-type: ASSIGN_ID`）
 - 主键类型为 `BIGINT`，避免 UUID 字符串索引性能问题
@@ -600,8 +700,7 @@ nexusix:lock:{businessKey}         # 分布式锁
 | 表 | 字段 | 用途 |
 |----|------|------|
 | `sys_tenant` | `ext_attributes` | 租户扩展属性（联系方式、行业信息等） |
-| `sys_perm_policy` | `field_operates` | 允许操作的字段集合 |
-| `sys_perm_policy` | `field_un_operates` | 禁止操作的字段集合 |
+| `sys_perm_policy` | `field_operates` | 允许操作的字段集合（数组格式） |
 
 - JSONB 查询配合 GIN 索引加速：`CREATE INDEX idx_xxx_gin ON table_name USING gin (jsonb_column)`
 
@@ -612,10 +711,10 @@ nexusix:lock:{businessKey}         # 分布式锁
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `id` | `BIGINT` | 雪花算法主键 |
-| `create_by` / `create_by_id` | `BIGINT` | 创建人ID |
-| `create_at` / `create_time` | `TIMESTAMP` | 创建时间 |
-| `update_by` / `update_by_id` | `BIGINT` | 更新人ID |
-| `update_at` / `update_time` | `TIMESTAMP` | 更新时间 |
+| `create_by` | `BIGINT` | 创建人ID |
+| `create_at` | `TIMESTAMP` | 创建时间 |
+| `update_by` | `BIGINT` | 更新人ID |
+| `update_at` | `TIMESTAMP` | 更新时间 |
 | `is_deleted` | `VARCHAR(20)` | 删除标记 |
 | `deleted_at` | `TIMESTAMP` | 删除时间 |
 
@@ -630,13 +729,40 @@ nexusix:lock:{businessKey}         # 分布式锁
 | BCrypt | 默认密码加密 | Spring Security 兼容，自带盐值，计算成本可调 |
 | Argon2 | 高安全场景 | 2015 年密码哈希竞赛冠军，抗 GPU/ASIC 破解 |
 
-### 9.2 数据隔离
+### 9.2 租户安全策略（sys_tenant_security）
+
+通过 `sys_tenant_security` 表为每个租户配置独立的安全策略，支持密码策略和登录锁定策略的租户级差异化管控。
+
+#### 密码策略配置
+
+| 配置项 | 字段 | 默认值 | 说明 |
+|--------|------|--------|------|
+| 密码最小长度 | `pwd_min_length` | 6 | 密码最小字符数 |
+| 密码复杂度 | `pwd_complexity` | `NONE` | 枚举值：`NONE`（无限制）、`LETTER_NUMBER`（字母+数字）、`LETTER_NUMBER_SPECIAL`（字母+数字+特殊字符） |
+| 密码过期天数 | `pwd_expire_days` | 0 | 密码过期天数，0 表示永不过期 |
+
+#### 登录锁定策略
+
+| 配置项 | 字段 | 默认值 | 说明 |
+|--------|------|--------|------|
+| 登录失败锁定次数 | `login_fail_limit` | 5 | 连续登录失败达到该次数后锁定账户 |
+| 锁定时长 | `lock_duration` | 30 | 账户锁定时长（分钟），锁定期间禁止登录 |
+
+#### 策略优先级
+
+```
+系统默认值（代码硬编码） ← 租户安全策略（sys_tenant_security）覆盖
+```
+
+租户创建时自动初始化安全策略记录，租户管理员可按需调整。
+
+### 9.3 数据隔离
 
 | 隔离维度 | 实现方式 |
 |----------|----------|
 | 租户数据隔离 | `TenantLineInnerInterceptor` 行级隔离，SQL 自动追加 `tenant_id` 条件 |
 | 数据范围隔离 | `@DataScope` 注解 + `DataScopeAspect` 切面，按部门/个人过滤 |
-| 字段级隔离 | `sys_perm_policy` JSONB 字段控制，`ColumnPerm` 实体三维度过滤 |
+| 字段级隔离 | `sys_perm_policy` JSONB 字段控制（`field_operates` 数组格式），`ColumnPerm` 实体三维度过滤 |
 
 ### 9.3 Token 管理
 
@@ -650,7 +776,7 @@ nexusix:lock:{businessKey}         # 分布式锁
 | JWT 模式 | Simple | Token 为 JWT 格式，会话数据存 Redis |
 | JWT 密钥 | 环境变量 `JWT_SECRET_KEY` | 禁止硬编码 |
 
-### 9.4 审计日志
+### 9.5 审计日志
 
 - **登录日志**：记录登录 IP、设备信息、登录时间
 - **操作日志**：`@OperationLog` 注解驱动，记录操作人、操作类型、请求参数、响应结果、耗时

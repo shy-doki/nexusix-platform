@@ -7,7 +7,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | NexusIX-Platform 多租户 SaaS 平台底座 |
-| 文档版本 | v1.0.0 |
+| 文档版本 | v2.0.0 |
 | 创建日期 | 2026-05-23 |
 | 作者 | shy |
 | 技术栈 | Spring Boot 3 / Sa-Token JWT / MyBatis-Plus / Redis / PostgreSQL |
@@ -132,8 +132,12 @@ Content-Type: application/json
 | 1000-1999 | 租户 | 租户相关业务错误 |
 | 2000-2999 | 用户 | 用户相关业务错误 |
 | 3000-3999 | 权限 | 权限/角色相关业务错误 |
-| 4000-4999 | 组织架构 | 组织架构相关业务错误（预留） |
-| 5000-5999 | 计费 | 计费相关业务错误（预留） |
+| 4000-4999 | 组织架构 | 组织架构相关业务错误 |
+| 5000-5999 | 计费 | 计费相关业务错误 |
+| 6000-6999 | 系统管理 | 系统管理相关业务错误 |
+| 7000-7999 | 消息通知 | 消息通知相关业务错误 |
+| 8000-8999 | 审计 | 审计相关业务错误 |
+| 9000-9999 | 动态配置 | 动态配置相关业务错误 |
 | 10001-10099 | Sa-Token | 认证框架相关错误 |
 
 ### 3.2 租户相关错误码（1000-1999）
@@ -166,13 +170,74 @@ Content-Type: application/json
 
 ### 3.5 组织架构相关错误码（4000-4999）
 
-预留，待后续模块实现时定义。
+| 错误码 | 常量名 | 说明 | 触发场景 |
+|--------|--------|------|----------|
+| 4001 | DEPT_NOT_FOUND | 部门不存在 | 指定的部门ID不存在 |
+| 4002 | DEPT_CODE_EXISTS | 部门编码已存在 | 创建部门时编码重复 |
+| 4003 | DEPT_HAS_CHILDREN | 部门存在子部门 | 删除含有子部门的部门 |
+| 4004 | POST_NOT_FOUND | 岗位不存在 | 指定的岗位ID不存在 |
+| 4005 | POST_CODE_EXISTS | 岗位编码已存在 | 创建岗位时编码重复 |
+| 4006 | USER_GROUP_NOT_FOUND | 用户组不存在 | 指定的用户组ID不存在 |
+| 4007 | USER_GROUP_MEMBER_EXISTS | 用户组成员已存在 | 添加已存在的成员 |
 
 ### 3.6 计费相关错误码（5000-5999）
 
-预留，待后续模块实现时定义。
+| 错误码 | 常量名 | 说明 | 触发场景 |
+|--------|--------|------|----------|
+| 5001 | PACKAGE_NOT_FOUND | 套餐不存在 | 指定的套餐ID不存在 |
+| 5002 | PACKAGE_CODE_EXISTS | 套餐编码已存在 | 创建套餐时编码重复 |
+| 5003 | SUBSCRIPTION_NOT_FOUND | 订阅不存在 | 指定的订阅ID不存在 |
+| 5004 | SUBSCRIPTION_EXPIRED | 订阅已过期 | 操作已过期的订阅 |
+| 5005 | SUBSCRIPTION_ALREADY_CANCELLED | 订阅已取消 | 重复取消订阅 |
+| 5006 | ORDER_NOT_FOUND | 订单不存在 | 指定的订单ID不存在 |
+| 5007 | INVOICE_NOT_FOUND | 发票不存在 | 指定的发票ID不存在 |
+| 5008 | INVOICE_ALREADY_APPLIED | 发票已申请 | 重复申请发票 |
 
-### 3.7 Sa-Token 相关错误码（10001-10099）
+### 3.7 系统管理相关错误码（6000-6999）
+
+| 错误码 | 常量名 | 说明 | 触发场景 |
+|--------|--------|------|----------|
+| 6001 | MENU_NOT_FOUND | 菜单不存在 | 指定的菜单ID不存在 |
+| 6002 | MENU_CODE_EXISTS | 菜单编码已存在 | 创建菜单时编码重复 |
+| 6003 | MENU_HAS_CHILDREN | 菜单存在子菜单 | 删除含有子菜单的菜单 |
+| 6004 | DICT_NOT_FOUND | 字典不存在 | 指定的字典ID不存在 |
+| 6005 | DICT_TYPE_EXISTS | 字典类型已存在 | 创建字典时类型重复 |
+| 6006 | DICT_ITEM_NOT_FOUND | 字典数据不存在 | 指定的字典数据不存在 |
+| 6007 | FILE_NOT_FOUND | 文件不存在 | 指定的文件ID不存在 |
+| 6008 | FILE_UPLOAD_FAILED | 文件上传失败 | 文件上传过程中异常 |
+| 6009 | NOTICE_NOT_FOUND | 公告不存在 | 指定的公告ID不存在 |
+
+### 3.8 消息通知相关错误码（7000-7999）
+
+| 错误码 | 常量名 | 说明 | 触发场景 |
+|--------|--------|------|----------|
+| 7001 | NOTIFY_NOT_FOUND | 站内信不存在 | 指定的站内信ID不存在 |
+| 7002 | TEMPLATE_NOT_FOUND | 消息模板不存在 | 指定的模板ID不存在 |
+| 7003 | TEMPLATE_CODE_EXISTS | 模板编码已存在 | 创建模板时编码重复 |
+| 7004 | SCHEDULE_NOT_FOUND | 定时消息不存在 | 指定的定时消息ID不存在 |
+| 7005 | SCHEDULE_ALREADY_SENT | 定时消息已发送 | 修改已发送的定时消息 |
+
+### 3.9 审计相关错误码（8000-8999）
+
+| 错误码 | 常量名 | 说明 | 触发场景 |
+|--------|--------|------|----------|
+| 8001 | OPER_LOG_NOT_FOUND | 操作日志不存在 | 指定的操作日志ID不存在 |
+| 8002 | LOGIN_LOG_NOT_FOUND | 登录日志不存在 | 指定的登录日志ID不存在 |
+| 8003 | DATA_AUDIT_LOG_NOT_FOUND | 数据审计日志不存在 | 指定的数据审计日志ID不存在 |
+
+### 3.10 动态配置相关错误码（9000-9999）
+
+| 错误码 | 常量名 | 说明 | 触发场景 |
+|--------|--------|------|----------|
+| 9001 | FORM_CONFIG_NOT_FOUND | 表单配置不存在 | 指定的表单配置ID不存在 |
+| 9002 | FORM_CONFIG_CODE_EXISTS | 表单配置编码已存在 | 创建表单配置时编码重复 |
+| 9003 | DATASOURCE_CONFIG_NOT_FOUND | 数据源配置不存在 | 指定的数据源配置ID不存在 |
+| 9004 | DATASOURCE_CONFIG_CODE_EXISTS | 数据源配置编码已存在 | 创建数据源配置时编码重复 |
+| 9005 | DATASOURCE_CONNECTION_FAILED | 数据源连接失败 | 数据源连接测试不通过 |
+| 9006 | PRINT_TEMPLATE_NOT_FOUND | 打印模板不存在 | 指定的打印模板ID不存在 |
+| 9007 | PRINT_TEMPLATE_CODE_EXISTS | 打印模板编码已存在 | 创建打印模板时编码重复 |
+
+### 3.11 Sa-Token 相关错误码（10001-10099）
 
 | 错误码 | 常量名 | 说明 | 触发场景 |
 |--------|--------|------|----------|
@@ -854,7 +919,88 @@ Content-Type: application/json
 
 ---
 
-#### 4.4.2 PUT /roles/{id} - 更新角色
+#### 4.4.2 GET /roles/page - 分页查询角色
+
+**描述：** 分页查询角色列表，支持条件筛选。
+
+**权限要求：** `@RequirePermission("role:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| roleName | String | 否 | - | 角色名称（模糊查询） | 管理员 |
+| roleCode | String | 否 | - | 角色编码 | TENANT_ADMIN |
+| status | String | 否 | - | 角色状态 | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "roleName": "租户管理员",
+        "roleCode": "TENANT_ADMIN",
+        "roleDesc": "租户级别管理员",
+        "dataScope": "TENANT",
+        "status": "ENABLED",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 10,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.4.3 GET /roles/{id} - 获取角色详情
+
+**描述：** 根据ID查询角色详细信息。
+
+**权限要求：** `@RequirePermission("role:view")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 角色ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1,
+    "roleName": "租户管理员",
+    "roleCode": "TENANT_ADMIN",
+    "roleDesc": "租户级别管理员",
+    "dataScope": "TENANT",
+    "status": "ENABLED",
+    "createAt": "2026-05-19 10:00:00",
+    "updateAt": "2026-05-19 15:00:00"
+  }
+}
+```
+
+**可能错误码：** 3002、3001
+
+---
+
+#### 4.4.4 PUT /roles/{id} - 更新角色
 
 **描述：** 更新指定角色信息。
 
@@ -889,7 +1035,7 @@ Content-Type: application/json
 
 ---
 
-#### 4.4.3 DELETE /roles/{id} - 删除角色
+#### 4.4.5 DELETE /roles/{id} - 删除角色
 
 **描述：** 逻辑删除指定角色。
 
@@ -915,19 +1061,49 @@ Content-Type: application/json
 
 ---
 
-#### 4.4.4 GET /roles - 查询角色列表
+#### 4.4.6 POST /roles/{id}/policies - 为角色分配策略
 
-**描述：** 查询当前租户下的角色列表。
+**描述：** 为指定角色分配权限策略，支持批量分配。
 
-**权限要求：** `@RequirePermission("role:list")`
+**权限要求：** `@RequirePermission("role:assign-policy")`
 
-**请求参数（Query）：**
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 角色ID |
+
+**请求参数：**
 
 | 字段 | 类型 | 必填 | 说明 | 示例 |
 |------|------|------|------|------|
-| roleName | String | 否 | 角色名称（模糊查询） | 管理员 |
-| roleCode | String | 否 | 角色编码 | TENANT_ADMIN |
-| status | String | 否 | 角色状态 | ENABLED |
+| policyIds | Array\<Long\> | 是 | 策略ID列表 | [1, 2, 3] |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 3002、3001
+
+---
+
+#### 4.4.7 GET /roles/{id}/policies - 查询角色策略列表
+
+**描述：** 查询指定角色已分配的权限策略列表。
+
+**权限要求：** `@RequirePermission("role:view")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 角色ID |
 
 **响应格式：**
 
@@ -938,21 +1114,21 @@ Content-Type: application/json
   "data": [
     {
       "id": 1,
-      "roleName": "租户管理员",
-      "roleCode": "TENANT_ADMIN",
-      "roleDesc": "租户级别管理员",
-      "dataScope": "TENANT",
-      "status": "ENABLED"
+      "policyCode": "POLICY_001",
+      "policyName": "用户数据读写权限",
+      "tableName": "sys_user",
+      "accessType": "READ_WRITE",
+      "status": "ACTIVE"
     }
   ]
 }
 ```
 
-**可能错误码：** 3001
+**可能错误码：** 3002、3001
 
 ---
 
-#### 4.4.5 POST /users/{id}/roles - 分配用户角色
+#### 4.4.8 POST /users/{id}/roles - 分配用户角色
 
 **描述：** 为指定用户分配角色，支持批量分配。
 
@@ -1150,8 +1326,8 @@ Content-Type: application/json
 | tableName | String | 是 | 控制的数据表名 | sys_user |
 | tableDesc | String | 否 | 数据表描述 | 系统用户表 |
 | accessType | String | 是 | 访问类型（READ_ONLY/READ_WRITE） | READ_WRITE |
-| fieldOperates | String | 否 | 允许操作的字段，JSON格式 | ["id","name","email"] |
-| status | String | 否 | 策略状态，默认ACTIVE | ACTIVE |
+| fieldOperates | Array\<String\> | 否 | 允许操作的字段列表 | ["id", "user_name"] |
+| status | String | 否 | 策略状态，默认ACTIVE（ACTIVE/DISABLED_SYSTEM_LEVEL/DISABLED_TENANT_LEVEL/DISABLED_ROLE_LEVEL/DISABLED_USER_LEVEL） | ACTIVE |
 
 **响应格式：**
 
@@ -1189,8 +1365,8 @@ Content-Type: application/json
 |------|------|------|------|------|
 | policyName | String | 否 | 策略名称 | 用户数据读写权限 |
 | accessType | String | 否 | 访问类型 | READ_WRITE |
-| fieldOperates | String | 否 | 允许操作的字段 | ["id","name","email"] |
-| status | String | 否 | 策略状态 | ACTIVE |
+| fieldOperates | Array\<String\> | 否 | 允许操作的字段列表 | ["id", "user_name"] |
+| status | String | 否 | 策略状态（ACTIVE/DISABLED_SYSTEM_LEVEL/DISABLED_TENANT_LEVEL/DISABLED_ROLE_LEVEL/DISABLED_USER_LEVEL） | ACTIVE |
 
 **响应格式：**
 
@@ -1248,7 +1424,7 @@ Content-Type: application/json
 | policyName | String | 否 | - | 策略名称（模糊查询） | 读写 |
 | targetType | String | 否 | - | 授权目标类型 | USER |
 | tableName | String | 否 | - | 数据表名 | sys_user |
-| status | String | 否 | - | 策略状态 | ACTIVE |
+| status | String | 否 | - | 策略状态（ACTIVE/DISABLED_SYSTEM_LEVEL/DISABLED_TENANT_LEVEL/DISABLED_ROLE_LEVEL/DISABLED_USER_LEVEL） | ACTIVE |
 
 **响应格式：**
 
@@ -1265,6 +1441,7 @@ Content-Type: application/json
         "targetType": "USER",
         "tableName": "sys_user",
         "accessType": "READ_WRITE",
+        "fieldOperates": ["id", "user_name"],
         "status": "ACTIVE",
         "createAt": "2026-05-19 10:00:00"
       }
@@ -1340,6 +1517,2268 @@ Content-Type: application/json
 ```
 
 **可能错误码：** 10005、3001
+
+---
+
+### 4.8 组织架构模块 `/api/v1/org`
+
+#### 4.8.1 POST /org/depts - 创建部门
+
+**描述：** 创建新部门，支持指定父部门实现层级关系。
+
+**权限要求：** `@RequirePermission("dept:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| deptName | String | 是 | 部门名称 | 技术部 |
+| deptCode | String | 是 | 部门编码 | DEPT_001 |
+| parentId | Long | 否 | 父部门ID，0为顶级 | 0 |
+| leader | String | 否 | 负责人 | 张三 |
+| phone | String | 否 | 联系电话 | 13800138000 |
+| email | String | 否 | 邮箱 | dept@example.com |
+| sort | Integer | 否 | 排序号 | 1 |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "deptName": "技术部",
+    "deptCode": "DEPT_001"
+  }
+}
+```
+
+**可能错误码：** 4002、4001、3001
+
+---
+
+#### 4.8.2 GET /org/depts/tree - 查询部门树
+
+**描述：** 查询部门树形结构。
+
+**权限要求：** `@RequirePermission("dept:list")`
+
+**请求参数：** 无
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": [
+    {
+      "id": 1,
+      "deptName": "总公司",
+      "deptCode": "DEPT_ROOT",
+      "leader": "李总",
+      "sort": 1,
+      "status": "ENABLED",
+      "children": [
+        {
+          "id": 2,
+          "deptName": "技术部",
+          "deptCode": "DEPT_001",
+          "leader": "张三",
+          "sort": 1,
+          "status": "ENABLED",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.8.3 GET /org/depts/{id} - 获取部门详情
+
+**描述：** 根据ID查询部门详细信息。
+
+**权限要求：** `@RequirePermission("dept:view")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 部门ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 2,
+    "deptName": "技术部",
+    "deptCode": "DEPT_001",
+    "parentId": 1,
+    "parentName": "总公司",
+    "leader": "张三",
+    "phone": "13800138000",
+    "email": "dept@example.com",
+    "sort": 1,
+    "status": "ENABLED",
+    "createAt": "2026-05-19 10:00:00",
+    "updateAt": "2026-05-19 15:00:00"
+  }
+}
+```
+
+**可能错误码：** 4001、3001
+
+---
+
+#### 4.8.4 PUT /org/depts/{id} - 更新部门
+
+**描述：** 更新指定部门信息。
+
+**权限要求：** `@RequirePermission("dept:update")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 部门ID |
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| deptName | String | 否 | 部门名称 | 技术部 |
+| leader | String | 否 | 负责人 | 张三 |
+| phone | String | 否 | 联系电话 | 13800138000 |
+| email | String | 否 | 邮箱 | dept@example.com |
+| sort | Integer | 否 | 排序号 | 1 |
+| status | String | 否 | 状态 | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 4001、3001
+
+---
+
+#### 4.8.5 DELETE /org/depts/{id} - 删除部门
+
+**描述：** 逻辑删除指定部门。
+
+**权限要求：** `@RequirePermission("dept:delete")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 部门ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 4001、4003、3001
+
+---
+
+#### 4.8.6 POST /org/posts - 创建岗位
+
+**描述：** 创建新岗位。
+
+**权限要求：** `@RequirePermission("post:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| postName | String | 是 | 岗位名称 | 高级工程师 |
+| postCode | String | 是 | 岗位编码 | POST_SE |
+| sort | Integer | 否 | 排序号 | 1 |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+| remark | String | 否 | 备注 | 技术岗位 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "postName": "高级工程师",
+    "postCode": "POST_SE"
+  }
+}
+```
+
+**可能错误码：** 4005、3001
+
+---
+
+#### 4.8.7 GET /org/posts/page - 分页查询岗位
+
+**描述：** 分页查询岗位列表，支持条件筛选。
+
+**权限要求：** `@RequirePermission("post:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| postName | String | 否 | - | 岗位名称（模糊查询） | 工程师 |
+| postCode | String | 否 | - | 岗位编码 | POST_SE |
+| status | String | 否 | - | 状态 | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "postName": "高级工程师",
+        "postCode": "POST_SE",
+        "sort": 1,
+        "status": "ENABLED",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 5,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.8.8 PUT /org/posts/{id} - 更新岗位
+
+**描述：** 更新指定岗位信息。
+
+**权限要求：** `@RequirePermission("post:update")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 岗位ID |
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| postName | String | 否 | 岗位名称 | 高级工程师 |
+| sort | Integer | 否 | 排序号 | 1 |
+| status | String | 否 | 状态 | ENABLED |
+| remark | String | 否 | 备注 | 技术岗位 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 4004、3001
+
+---
+
+#### 4.8.9 DELETE /org/posts/{id} - 删除岗位
+
+**描述：** 逻辑删除指定岗位。
+
+**权限要求：** `@RequirePermission("post:delete")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 岗位ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 4004、3001
+
+---
+
+#### 4.8.10 POST /org/user-groups - 创建用户组
+
+**描述：** 创建新用户组。
+
+**权限要求：** `@RequirePermission("user-group:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| groupName | String | 是 | 用户组名称 | 技术组 |
+| groupCode | String | 是 | 用户组编码 | GROUP_TECH |
+| groupDesc | String | 否 | 用户组描述 | 技术部门用户组 |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "groupName": "技术组",
+    "groupCode": "GROUP_TECH"
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.8.11 GET /org/user-groups/page - 分页查询用户组
+
+**描述：** 分页查询用户组列表，支持条件筛选。
+
+**权限要求：** `@RequirePermission("user-group:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| groupName | String | 否 | - | 用户组名称（模糊查询） | 技术 |
+| groupCode | String | 否 | - | 用户组编码 | GROUP_TECH |
+| status | String | 否 | - | 状态 | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "groupName": "技术组",
+        "groupCode": "GROUP_TECH",
+        "groupDesc": "技术部门用户组",
+        "memberCount": 15,
+        "status": "ENABLED",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 3,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.8.12 PUT /org/user-groups/{id} - 更新用户组
+
+**描述：** 更新指定用户组信息。
+
+**权限要求：** `@RequirePermission("user-group:update")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 用户组ID |
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| groupName | String | 否 | 用户组名称 | 技术组 |
+| groupDesc | String | 否 | 用户组描述 | 技术部门用户组 |
+| status | String | 否 | 状态 | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 4006、3001
+
+---
+
+#### 4.8.13 DELETE /org/user-groups/{id} - 删除用户组
+
+**描述：** 逻辑删除指定用户组。
+
+**权限要求：** `@RequirePermission("user-group:delete")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 用户组ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 4006、3001
+
+---
+
+#### 4.8.14 POST /org/user-groups/{id}/members - 添加用户组成员
+
+**描述：** 向指定用户组添加成员，支持批量添加。
+
+**权限要求：** `@RequirePermission("user-group:manage")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 用户组ID |
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| userIds | Array\<Long\> | 是 | 用户ID列表 | [1, 2, 3] |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 4006、4007、3001
+
+---
+
+#### 4.8.15 DELETE /org/user-groups/{id}/members/{userId} - 移除用户组成员
+
+**描述：** 从指定用户组移除成员。
+
+**权限要求：** `@RequirePermission("user-group:manage")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 用户组ID |
+| userId | Long | 是 | 用户ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 4006、3001
+
+---
+
+### 4.9 计费模块 `/api/v1/billing`
+
+#### 4.9.1 GET /billing/packages/page - 分页查询套餐
+
+**描述：** 分页查询计费套餐列表，支持条件筛选。
+
+**权限要求：** `@RequirePermission("package:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| packageName | String | 否 | - | 套餐名称（模糊查询） | 基础版 |
+| packageCode | String | 否 | - | 套餐编码 | PKG_BASIC |
+| status | String | 否 | - | 状态 | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "packageName": "基础版",
+        "packageCode": "PKG_BASIC",
+        "price": 99.00,
+        "duration": 30,
+        "durationUnit": "DAY",
+        "status": "ENABLED",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 5,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.9.2 GET /billing/packages/{id} - 获取套餐详情
+
+**描述：** 根据ID查询套餐详细信息。
+
+**权限要求：** `@RequirePermission("package:view")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 套餐ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1,
+    "packageName": "基础版",
+    "packageCode": "PKG_BASIC",
+    "price": 99.00,
+    "duration": 30,
+    "durationUnit": "DAY",
+    "packageDesc": "适合小型团队的基础套餐",
+    "features": ["10用户", "5GB存储", "基础功能"],
+    "status": "ENABLED",
+    "createAt": "2026-05-19 10:00:00",
+    "updateAt": "2026-05-19 15:00:00"
+  }
+}
+```
+
+**可能错误码：** 5001、3001
+
+---
+
+#### 4.9.3 POST /billing/packages - 创建套餐
+
+**描述：** 创建新的计费套餐。
+
+**权限要求：** `@RequirePermission("package:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| packageName | String | 是 | 套餐名称 | 基础版 |
+| packageCode | String | 是 | 套餐编码 | PKG_BASIC |
+| price | BigDecimal | 是 | 价格 | 99.00 |
+| duration | Integer | 是 | 时长 | 30 |
+| durationUnit | String | 是 | 时长单位（DAY/MONTH/YEAR） | DAY |
+| packageDesc | String | 否 | 套餐描述 | 适合小型团队 |
+| features | Array\<String\> | 否 | 功能列表 | ["10用户", "5GB存储"] |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "packageName": "基础版",
+    "packageCode": "PKG_BASIC"
+  }
+}
+```
+
+**可能错误码：** 5002、3001
+
+---
+
+#### 4.9.4 PUT /billing/packages/{id} - 更新套餐
+
+**描述：** 更新指定套餐信息。
+
+**权限要求：** `@RequirePermission("package:update")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 套餐ID |
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| packageName | String | 否 | 套餐名称 | 基础版 |
+| price | BigDecimal | 否 | 价格 | 99.00 |
+| duration | Integer | 否 | 时长 | 30 |
+| durationUnit | String | 否 | 时长单位 | DAY |
+| packageDesc | String | 否 | 套餐描述 | 适合小型团队 |
+| features | Array\<String\> | 否 | 功能列表 | ["10用户", "5GB存储"] |
+| status | String | 否 | 状态 | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 5001、3001
+
+---
+
+#### 4.9.5 POST /billing/subscriptions - 创建订阅
+
+**描述：** 为租户创建套餐订阅。
+
+**权限要求：** `@RequirePermission("subscription:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| tenantId | Long | 是 | 租户ID | 1 |
+| packageId | Long | 是 | 套餐ID | 1 |
+| startTime | LocalDateTime | 否 | 订阅开始时间 | 2026-06-01 00:00:00 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "tenantId": 1,
+    "packageId": 1,
+    "status": "ACTIVE",
+    "startTime": "2026-06-01 00:00:00",
+    "expireTime": "2026-07-01 00:00:00"
+  }
+}
+```
+
+**可能错误码：** 5001、1003、3001
+
+---
+
+#### 4.9.6 GET /billing/subscriptions/page - 分页查询订阅
+
+**描述：** 分页查询订阅列表，支持条件筛选。
+
+**权限要求：** `@RequirePermission("subscription:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| tenantId | Long | 否 | - | 租户ID | 1 |
+| packageId | Long | 否 | - | 套餐ID | 1 |
+| status | String | 否 | - | 订阅状态 | ACTIVE |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "tenantId": 1,
+        "tenantName": "某某科技有限公司",
+        "packageId": 1,
+        "packageName": "基础版",
+        "status": "ACTIVE",
+        "startTime": "2026-06-01 00:00:00",
+        "expireTime": "2026-07-01 00:00:00",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 10,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.9.7 PUT /billing/subscriptions/{id}/cancel - 取消订阅
+
+**描述：** 取消指定订阅。
+
+**权限要求：** `@RequirePermission("subscription:cancel")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 订阅ID |
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| reason | String | 否 | 取消原因 | 不再需要 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 5003、5005、3001
+
+---
+
+#### 4.9.8 POST /billing/orders - 创建订单
+
+**描述：** 创建计费订单。
+
+**权限要求：** `@RequirePermission("order:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| tenantId | Long | 是 | 租户ID | 1 |
+| packageId | Long | 是 | 套餐ID | 1 |
+| subscriptionId | Long | 否 | 关联订阅ID | 1 |
+| orderType | String | 是 | 订单类型（NEW/RENEW/UPGRADE） | NEW |
+| remark | String | 否 | 备注 | 首次购买 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "orderNo": "ORD20260601000001",
+    "amount": 99.00,
+    "status": "PENDING"
+  }
+}
+```
+
+**可能错误码：** 5001、1003、3001
+
+---
+
+#### 4.9.9 GET /billing/orders/page - 分页查询订单
+
+**描述：** 分页查询订单列表，支持条件筛选。
+
+**权限要求：** `@RequirePermission("order:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| orderNo | String | 否 | - | 订单编号 | ORD20260601000001 |
+| tenantId | Long | 否 | - | 租户ID | 1 |
+| status | String | 否 | - | 订单状态 | PAID |
+| orderType | String | 否 | - | 订单类型 | NEW |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "orderNo": "ORD20260601000001",
+        "tenantId": 1,
+        "tenantName": "某某科技有限公司",
+        "packageId": 1,
+        "packageName": "基础版",
+        "amount": 99.00,
+        "orderType": "NEW",
+        "status": "PAID",
+        "createAt": "2026-06-01 10:00:00"
+      }
+    ],
+    "total": 20,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 2
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.9.10 GET /billing/orders/{id} - 获取订单详情
+
+**描述：** 根据ID查询订单详细信息。
+
+**权限要求：** `@RequirePermission("order:view")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 订单ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1,
+    "orderNo": "ORD20260601000001",
+    "tenantId": 1,
+    "tenantName": "某某科技有限公司",
+    "packageId": 1,
+    "packageName": "基础版",
+    "subscriptionId": 1,
+    "amount": 99.00,
+    "orderType": "NEW",
+    "status": "PAID",
+    "remark": "首次购买",
+    "payTime": "2026-06-01 10:05:00",
+    "createAt": "2026-06-01 10:00:00",
+    "updateAt": "2026-06-01 10:05:00"
+  }
+}
+```
+
+**可能错误码：** 5006、3001
+
+---
+
+#### 4.9.11 POST /billing/invoices - 申请发票
+
+**描述：** 申请开具发票。
+
+**权限要求：** `@RequirePermission("invoice:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| orderId | Long | 是 | 关联订单ID | 1 |
+| invoiceType | String | 是 | 发票类型（ELECTRONIC/PAPER） | ELECTRONIC |
+| title | String | 是 | 发票抬头 | 某某科技有限公司 |
+| taxNo | String | 否 | 税号 | 91110000XXXXXXXXXX |
+| email | String | 否 | 接收邮箱 | finance@example.com |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "invoiceNo": "INV20260601000001",
+    "status": "PENDING"
+  }
+}
+```
+
+**可能错误码：** 5006、5008、3001
+
+---
+
+#### 4.9.12 GET /billing/invoices/page - 分页查询发票
+
+**描述：** 分页查询发票列表，支持条件筛选。
+
+**权限要求：** `@RequirePermission("invoice:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| invoiceNo | String | 否 | - | 发票编号 | INV20260601000001 |
+| orderId | Long | 否 | - | 关联订单ID | 1 |
+| status | String | 否 | - | 发票状态 | ISSUED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "invoiceNo": "INV20260601000001",
+        "orderId": 1,
+        "invoiceType": "ELECTRONIC",
+        "title": "某某科技有限公司",
+        "amount": 99.00,
+        "status": "ISSUED",
+        "createAt": "2026-06-01 10:10:00"
+      }
+    ],
+    "total": 8,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+### 4.10 系统管理模块 `/api/v1/system`
+
+#### 4.10.1 GET /system/menus/tree - 查询菜单树
+
+**描述：** 查询系统菜单的树形结构。
+
+**权限要求：** `@RequirePermission("menu:list")`
+
+**请求参数：** 无
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": [
+    {
+      "id": 1,
+      "menuName": "系统管理",
+      "menuCode": "SYSTEM",
+      "path": "/system",
+      "icon": "setting",
+      "menuType": "DIRECTORY",
+      "sort": 1,
+      "visible": true,
+      "children": [
+        {
+          "id": 2,
+          "menuName": "用户管理",
+          "menuCode": "SYS_USER",
+          "path": "/system/user",
+          "icon": "user",
+          "menuType": "MENU",
+          "sort": 1,
+          "visible": true,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.10.2 POST /system/menus - 创建菜单
+
+**描述：** 创建新的系统菜单。
+
+**权限要求：** `@RequirePermission("menu:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| menuName | String | 是 | 菜单名称 | 用户管理 |
+| menuCode | String | 是 | 菜单编码 | SYS_USER |
+| parentId | Long | 否 | 父菜单ID，0为顶级 | 0 |
+| path | String | 否 | 路由路径 | /system/user |
+| icon | String | 否 | 图标 | user |
+| menuType | String | 是 | 菜单类型（DIRECTORY/MENU/BUTTON） | MENU |
+| sort | Integer | 否 | 排序号 | 1 |
+| visible | Boolean | 否 | 是否可见，默认true | true |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "menuName": "用户管理",
+    "menuCode": "SYS_USER"
+  }
+}
+```
+
+**可能错误码：** 6002、3001
+
+---
+
+#### 4.10.3 PUT /system/menus/{id} - 更新菜单
+
+**描述：** 更新指定菜单信息。
+
+**权限要求：** `@RequirePermission("menu:update")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 菜单ID |
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| menuName | String | 否 | 菜单名称 | 用户管理 |
+| path | String | 否 | 路由路径 | /system/user |
+| icon | String | 否 | 图标 | user |
+| sort | Integer | 否 | 排序号 | 1 |
+| visible | Boolean | 否 | 是否可见 | true |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 6001、3001
+
+---
+
+#### 4.10.4 DELETE /system/menus/{id} - 删除菜单
+
+**描述：** 逻辑删除指定菜单。
+
+**权限要求：** `@RequirePermission("menu:delete")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 菜单ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 6001、6003、3001
+
+---
+
+#### 4.10.5 GET /system/dicts/page - 分页查询字典
+
+**描述：** 分页查询字典类型列表。
+
+**权限要求：** `@RequirePermission("dict:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| dictName | String | 否 | - | 字典名称（模糊查询） | 用户状态 |
+| dictType | String | 否 | - | 字典类型 | sys_user_status |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "dictName": "用户状态",
+        "dictType": "sys_user_status",
+        "status": "ENABLED",
+        "remark": "用户状态列表",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 15,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 2
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.10.6 POST /system/dicts - 创建字典
+
+**描述：** 创建新的字典类型。
+
+**权限要求：** `@RequirePermission("dict:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| dictName | String | 是 | 字典名称 | 用户状态 |
+| dictType | String | 是 | 字典类型 | sys_user_status |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+| remark | String | 否 | 备注 | 用户状态列表 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "dictName": "用户状态",
+    "dictType": "sys_user_status"
+  }
+}
+```
+
+**可能错误码：** 6005、3001
+
+---
+
+#### 4.10.7 GET /system/dicts/{dictType}/items - 查询字典数据
+
+**描述：** 根据字典类型查询字典数据列表。
+
+**权限要求：** 需登录
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| dictType | String | 是 | 字典类型 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": [
+    {
+      "id": 1,
+      "dictType": "sys_user_status",
+      "itemLabel": "启用",
+      "itemValue": "ENABLED",
+      "sort": 1,
+      "status": "ENABLED"
+    },
+    {
+      "id": 2,
+      "dictType": "sys_user_status",
+      "itemLabel": "禁用",
+      "itemValue": "DISABLED",
+      "sort": 2,
+      "status": "ENABLED"
+    }
+  ]
+}
+```
+
+**可能错误码：** 6004、10005
+
+---
+
+#### 4.10.8 POST /system/dicts/{dictId}/items - 新增字典数据
+
+**描述：** 向指定字典新增数据项。
+
+**权限要求：** `@RequirePermission("dict:create")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| dictId | Long | 是 | 字典ID |
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| itemLabel | String | 是 | 数据标签 | 启用 |
+| itemValue | String | 是 | 数据值 | ENABLED |
+| sort | Integer | 否 | 排序号 | 1 |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+| remark | String | 否 | 备注 | 正常状态 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "itemLabel": "启用",
+    "itemValue": "ENABLED"
+  }
+}
+```
+
+**可能错误码：** 6004、3001
+
+---
+
+#### 4.10.9 POST /system/files/upload - 文件上传
+
+**描述：** 上传文件到系统。
+
+**权限要求：** 需登录
+
+**请求参数（multipart/form-data）：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| file | MultipartFile | 是 | 上传文件 | - |
+| bizType | String | 否 | 业务类型 | avatar |
+| bizId | String | 否 | 业务ID | 1 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "fileName": "avatar.png",
+    "filePath": "/upload/2026/06/09/avatar.png",
+    "fileSize": 102400,
+    "fileType": "image/png",
+    "url": "/api/v1/system/files/1987654321098765432"
+  }
+}
+```
+
+**可能错误码：** 6008、10005
+
+---
+
+#### 4.10.10 GET /system/files/{id} - 获取文件信息
+
+**描述：** 根据ID查询文件信息。
+
+**权限要求：** 需登录
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 文件ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "fileName": "avatar.png",
+    "filePath": "/upload/2026/06/09/avatar.png",
+    "fileSize": 102400,
+    "fileType": "image/png",
+    "bizType": "avatar",
+    "bizId": "1",
+    "createAt": "2026-06-09 10:00:00"
+  }
+}
+```
+
+**可能错误码：** 6007、10005
+
+---
+
+#### 4.10.11 GET /system/notices/page - 分页查询公告
+
+**描述：** 分页查询系统公告列表。
+
+**权限要求：** `@RequirePermission("notice:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| noticeTitle | String | 否 | - | 公告标题（模糊查询） | 升级通知 |
+| noticeType | String | 否 | - | 公告类型 | NOTICE |
+| status | String | 否 | - | 状态 | PUBLISHED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "noticeTitle": "系统升级通知",
+        "noticeType": "NOTICE",
+        "status": "PUBLISHED",
+        "publisher": "管理员",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 5,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.10.12 POST /system/notices - 发布公告
+
+**描述：** 发布系统公告。
+
+**权限要求：** `@RequirePermission("notice:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| noticeTitle | String | 是 | 公告标题 | 系统升级通知 |
+| noticeType | String | 是 | 公告类型（NOTICE/ANNOUNCEMENT/UPDATE） | NOTICE |
+| noticeContent | String | 是 | 公告内容 | 系统将于...升级 |
+| status | String | 否 | 状态，默认DRAFT | PUBLISHED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "noticeTitle": "系统升级通知",
+    "status": "PUBLISHED"
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.10.13 PUT /system/notices/{id} - 更新公告
+
+**描述：** 更新指定公告信息。
+
+**权限要求：** `@RequirePermission("notice:update")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 公告ID |
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| noticeTitle | String | 否 | 公告标题 | 系统升级通知 |
+| noticeType | String | 否 | 公告类型 | NOTICE |
+| noticeContent | String | 否 | 公告内容 | 系统将于...升级 |
+| status | String | 否 | 状态 | PUBLISHED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 6009、3001
+
+---
+
+### 4.11 消息通知模块 `/api/v1/notify`
+
+#### 4.11.1 GET /notify/inbox/page - 查询站内信列表
+
+**描述：** 分页查询当前用户的站内信列表。
+
+**权限要求：** 需登录
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| readStatus | String | 否 | - | 已读状态（READ/UNREAD） | UNREAD |
+| msgType | String | 否 | - | 消息类型 | SYSTEM |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "title": "系统升级通知",
+        "content": "系统将于今晚进行升级...",
+        "msgType": "SYSTEM",
+        "readStatus": "UNREAD",
+        "sender": "系统管理员",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 20,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 2
+  }
+}
+```
+
+**可能错误码：** 10005
+
+---
+
+#### 4.11.2 GET /notify/inbox/{id} - 查看站内信详情
+
+**描述：** 查看指定站内信详情，自动标记为已读。
+
+**权限要求：** 需登录
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 站内信ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1,
+    "title": "系统升级通知",
+    "content": "系统将于今晚22:00-次日06:00进行升级维护，届时系统将无法访问，请提前做好准备。",
+    "msgType": "SYSTEM",
+    "readStatus": "READ",
+    "sender": "系统管理员",
+    "readAt": "2026-05-19 14:30:00",
+    "createAt": "2026-05-19 10:00:00"
+  }
+}
+```
+
+**可能错误码：** 7001、10005
+
+---
+
+#### 4.11.3 PUT /notify/inbox/{id}/read - 标记已读
+
+**描述：** 标记指定站内信为已读。
+
+**权限要求：** 需登录
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 站内信ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 7001、10005
+
+---
+
+#### 4.11.4 PUT /notify/inbox/read-all - 全部标记已读
+
+**描述：** 将当前用户所有未读站内信标记为已读。
+
+**权限要求：** 需登录
+
+**请求参数：** 无
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": null
+}
+```
+
+**可能错误码：** 10005
+
+---
+
+#### 4.11.5 GET /notify/inbox/unread-count - 获取未读数量
+
+**描述：** 获取当前用户未读站内信数量。
+
+**权限要求：** 需登录
+
+**请求参数：** 无
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "unreadCount": 5
+  }
+}
+```
+
+**可能错误码：** 10005
+
+---
+
+#### 4.11.6 GET /notify/templates/page - 分页查询消息模板
+
+**描述：** 分页查询消息模板列表。
+
+**权限要求：** `@RequirePermission("notify-template:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| templateName | String | 否 | - | 模板名称（模糊查询） | 升级通知 |
+| templateCode | String | 否 | - | 模板编码 | TPL_UPGRADE |
+| channel | String | 否 | - | 通知渠道（INBOX/EMAIL/SMS） | INBOX |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "templateName": "系统升级通知",
+        "templateCode": "TPL_UPGRADE",
+        "channel": "INBOX",
+        "status": "ENABLED",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 8,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.11.7 POST /notify/templates - 创建消息模板
+
+**描述：** 创建新的消息模板。
+
+**权限要求：** `@RequirePermission("notify-template:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| templateName | String | 是 | 模板名称 | 系统升级通知 |
+| templateCode | String | 是 | 模板编码 | TPL_UPGRADE |
+| channel | String | 是 | 通知渠道（INBOX/EMAIL/SMS） | INBOX |
+| titleTemplate | String | 是 | 标题模板 | 系统升级通知-${date} |
+| contentTemplate | String | 是 | 内容模板 | 系统将于${time}进行升级... |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "templateName": "系统升级通知",
+    "templateCode": "TPL_UPGRADE"
+  }
+}
+```
+
+**可能错误码：** 7003、3001
+
+---
+
+#### 4.11.8 GET /notify/schedules/page - 分页查询定时消息
+
+**描述：** 分页查询定时消息列表。
+
+**权限要求：** `@RequirePermission("notify-schedule:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| status | String | 否 | - | 发送状态（PENDING/SENT/FAILED） | PENDING |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "title": "系统升级通知",
+        "channel": "INBOX",
+        "scheduledAt": "2026-06-01 09:00:00",
+        "status": "PENDING",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 3,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.11.9 POST /notify/schedules - 创建定时消息
+
+**描述：** 创建定时发送的消息。
+
+**权限要求：** `@RequirePermission("notify-schedule:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| templateId | Long | 否 | 关联模板ID | 1 |
+| channel | String | 是 | 通知渠道（INBOX/EMAIL/SMS） | INBOX |
+| title | String | 是 | 消息标题 | 系统升级通知 |
+| content | String | 是 | 消息内容 | 系统将于...升级 |
+| targetUsers | Array\<Long\> | 否 | 目标用户ID列表 | [1, 2, 3] |
+| targetRoles | Array\<Long\> | 否 | 目标角色ID列表 | [1] |
+| scheduledAt | LocalDateTime | 是 | 定时发送时间 | 2026-06-01 09:00:00 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "title": "系统升级通知",
+    "scheduledAt": "2026-06-01 09:00:00",
+    "status": "PENDING"
+  }
+}
+```
+
+**可能错误码：** 7002、3001
+
+---
+
+### 4.12 审计模块 `/api/v1/audit`
+
+#### 4.12.1 GET /audit/oper-logs/page - 分页查询操作日志
+
+**描述：** 分页查询操作日志列表。
+
+**权限要求：** `@RequirePermission("oper-log:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| operModule | String | 否 | - | 操作模块 | 用户管理 |
+| operType | String | 否 | - | 操作类型（CREATE/UPDATE/DELETE/QUERY） | CREATE |
+| operUser | String | 否 | - | 操作人（模糊查询） | admin |
+| startTime | String | 否 | - | 开始时间 | 2026-05-01 00:00:00 |
+| endTime | String | 否 | - | 结束时间 | 2026-05-31 23:59:59 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "operModule": "用户管理",
+        "operType": "CREATE",
+        "operDesc": "创建用户zhangsan",
+        "operUser": "admin",
+        "operIp": "192.168.1.1",
+        "operUrl": "/api/v1/users",
+        "requestMethod": "POST",
+        "requestParams": "{}",
+        "responseResult": "{}",
+        "status": "SUCCESS",
+        "costTime": 120,
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 100,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 10
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.12.2 GET /audit/login-logs/page - 分页查询登录日志
+
+**描述：** 分页查询登录日志列表。
+
+**权限要求：** `@RequirePermission("login-log:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| username | String | 否 | - | 用户名（模糊查询） | admin |
+| loginStatus | String | 否 | - | 登录状态（SUCCESS/FAIL） | SUCCESS |
+| loginIp | String | 否 | - | 登录IP | 192.168.1.1 |
+| startTime | String | 否 | - | 开始时间 | 2026-05-01 00:00:00 |
+| endTime | String | 否 | - | 结束时间 | 2026-05-31 23:59:59 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "username": "admin",
+        "loginIp": "192.168.1.1",
+        "loginLocation": "北京市",
+        "browser": "Chrome",
+        "os": "Windows",
+        "loginStatus": "SUCCESS",
+        "loginMsg": "登录成功",
+        "loginAt": "2026-05-19 09:00:00"
+      }
+    ],
+    "total": 200,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 20
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.12.3 GET /audit/data-audit-logs/page - 分页查询数据审计日志
+
+**描述：** 分页查询数据审计日志列表，记录数据变更详情。
+
+**权限要求：** `@RequirePermission("data-audit-log:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| tableName | String | 否 | - | 数据表名 | sys_user |
+| operType | String | 否 | - | 操作类型（INSERT/UPDATE/DELETE） | UPDATE |
+| operUser | String | 否 | - | 操作人（模糊查询） | admin |
+| startTime | String | 否 | - | 开始时间 | 2026-05-01 00:00:00 |
+| endTime | String | 否 | - | 结束时间 | 2026-05-31 23:59:59 |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "tableName": "sys_user",
+        "recordId": "1987654321098765432",
+        "operType": "UPDATE",
+        "operUser": "admin",
+        "oldValue": "{\"nickName\": \"张三\"}",
+        "newValue": "{\"nickName\": \"张三丰\"}",
+        "changedFields": ["nickName"],
+        "operIp": "192.168.1.1",
+        "createAt": "2026-05-19 15:00:00"
+      }
+    ],
+    "total": 50,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 5
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+### 4.13 动态配置模块 `/api/v1/dynamic`
+
+#### 4.13.1 GET /dynamic/form-configs/page - 分页查询表单配置
+
+**描述：** 分页查询动态表单配置列表。
+
+**权限要求：** `@RequirePermission("form-config:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| formName | String | 否 | - | 表单名称（模糊查询） | 用户信息 |
+| formCode | String | 否 | - | 表单编码 | FORM_USER |
+| status | String | 否 | - | 状态 | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "formName": "用户信息表单",
+        "formCode": "FORM_USER",
+        "formDesc": "用户基本信息采集表单",
+        "fieldCount": 8,
+        "status": "ENABLED",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 12,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 2
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.13.2 POST /dynamic/form-configs - 创建表单配置
+
+**描述：** 创建新的动态表单配置。
+
+**权限要求：** `@RequirePermission("form-config:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| formName | String | 是 | 表单名称 | 用户信息表单 |
+| formCode | String | 是 | 表单编码 | FORM_USER |
+| formDesc | String | 否 | 表单描述 | 用户基本信息采集表单 |
+| fields | Array\<Object\> | 是 | 表单字段配置 | [{"fieldKey":"userName","fieldLabel":"用户名","fieldType":"INPUT","required":true}] |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "formName": "用户信息表单",
+    "formCode": "FORM_USER"
+  }
+}
+```
+
+**可能错误码：** 9002、3001
+
+---
+
+#### 4.13.3 GET /dynamic/form-configs/{id} - 获取表单配置详情
+
+**描述：** 根据ID查询表单配置详细信息，包含字段定义。
+
+**权限要求：** `@RequirePermission("form-config:view")`
+
+**路径参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | Long | 是 | 表单配置ID |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1,
+    "formName": "用户信息表单",
+    "formCode": "FORM_USER",
+    "formDesc": "用户基本信息采集表单",
+    "fields": [
+      {
+        "fieldKey": "userName",
+        "fieldLabel": "用户名",
+        "fieldType": "INPUT",
+        "required": true,
+        "placeholder": "请输入用户名",
+        "defaultValue": "",
+        "sort": 1
+      }
+    ],
+    "status": "ENABLED",
+    "createAt": "2026-05-19 10:00:00",
+    "updateAt": "2026-05-19 15:00:00"
+  }
+}
+```
+
+**可能错误码：** 9001、3001
+
+---
+
+#### 4.13.4 GET /dynamic/datasource-configs/page - 分页查询数据源配置
+
+**描述：** 分页查询数据源配置列表。
+
+**权限要求：** `@RequirePermission("datasource-config:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| dsName | String | 否 | - | 数据源名称（模糊查询） | 主数据源 |
+| dsCode | String | 否 | - | 数据源编码 | DS_MAIN |
+| dsType | String | 否 | - | 数据源类型（MYSQL/POSTGRESQL/ORACLE） | POSTGRESQL |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "dsName": "主数据源",
+        "dsCode": "DS_MAIN",
+        "dsType": "POSTGRESQL",
+        "host": "192.168.1.100",
+        "port": 5432,
+        "database": "nexusix",
+        "status": "ENABLED",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 3,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.13.5 POST /dynamic/datasource-configs - 创建数据源配置
+
+**描述：** 创建新的数据源配置。
+
+**权限要求：** `@RequirePermission("datasource-config:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| dsName | String | 是 | 数据源名称 | 主数据源 |
+| dsCode | String | 是 | 数据源编码 | DS_MAIN |
+| dsType | String | 是 | 数据源类型（MYSQL/POSTGRESQL/ORACLE） | POSTGRESQL |
+| host | String | 是 | 主机地址 | 192.168.1.100 |
+| port | Integer | 是 | 端口号 | 5432 |
+| database | String | 是 | 数据库名 | nexusix |
+| username | String | 是 | 用户名 | dbuser |
+| password | String | 是 | 密码 | dbpass123 |
+| remark | String | 否 | 备注 | 主库数据源 |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "dsName": "主数据源",
+    "dsCode": "DS_MAIN"
+  }
+}
+```
+
+**可能错误码：** 9004、3001
+
+---
+
+#### 4.13.6 GET /dynamic/print-templates/page - 分页查询打印模板
+
+**描述：** 分页查询打印模板列表。
+
+**权限要求：** `@RequirePermission("print-template:list")`
+
+**请求参数（Query）：**
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 | 示例 |
+|------|------|------|--------|------|------|
+| pageNum | Integer | 否 | 1 | 当前页码 | 1 |
+| pageSize | Integer | 否 | 10 | 每页数量（1-100） | 10 |
+| templateName | String | 否 | - | 模板名称（模糊查询） | 发票模板 |
+| templateCode | String | 否 | - | 模板编码 | TPL_INVOICE |
+| status | String | 否 | - | 状态 | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "templateName": "发票打印模板",
+        "templateCode": "TPL_INVOICE",
+        "templateDesc": "增值税发票打印模板",
+        "paperSize": "A4",
+        "status": "ENABLED",
+        "createAt": "2026-05-19 10:00:00"
+      }
+    ],
+    "total": 5,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+**可能错误码：** 3001
+
+---
+
+#### 4.13.7 POST /dynamic/print-templates - 创建打印模板
+
+**描述：** 创建新的打印模板。
+
+**权限要求：** `@RequirePermission("print-template:create")`
+
+**请求参数：**
+
+| 字段 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| templateName | String | 是 | 模板名称 | 发票打印模板 |
+| templateCode | String | 是 | 模板编码 | TPL_INVOICE |
+| templateDesc | String | 否 | 模板描述 | 增值发票打印模板 |
+| templateContent | String | 是 | 模板内容（HTML/模板语法） | \<html\>...\</html\> |
+| paperSize | String | 否 | 纸张大小，默认A4 | A4 |
+| orientation | String | 否 | 打印方向（PORTRAIT/LANDSCAPE），默认PORTRAIT | PORTRAIT |
+| status | String | 否 | 状态，默认ENABLED | ENABLED |
+
+**响应格式：**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "id": 1987654321098765432,
+    "templateName": "发票打印模板",
+    "templateCode": "TPL_INVOICE"
+  }
+}
+```
+
+**可能错误码：** 9007、3001
 
 ---
 
@@ -1488,7 +3927,7 @@ registry.addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
 
 **字段权限控制：**
 
-权限策略通过 `field_operates`（JSON格式）定义允许操作的字段，通过 `field_un_operates` 定义禁止操作的字段。系统在构建用户权限上下文时，会合并所有层级的策略，生成最终的：
+权限策略通过 `field_operates`（数组格式，如 `["id", "user_name"]`）定义允许操作的字段。系统在构建用户权限上下文时，会合并所有层级的策略，生成最终的：
 
 - `query`：查询操作可见/不可见字段映射
 - `create`：创建操作可见/不可见字段映射

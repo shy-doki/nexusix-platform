@@ -4,8 +4,8 @@
 
 | 项目 | 内容 |
 |------|------|
-| 版本号 | v1.0.0 |
-| 日期 | 2026-05-23 |
+| 版本号 | v2.0.0 |
+| 日期 | 2026-06-09 |
 | 作者 | shy |
 | 项目 | NexusIX-Platform — 多租户 SaaS 平台底座 |
 
@@ -13,6 +13,7 @@
 
 | 版本 | 日期 | 作者 | 变更说明 |
 |------|------|------|----------|
+| v2.0.0 | 2026-06-09 | shy | 统一字段命名规范、补充策略状态五值枚举、补充JSONB/租户隔离/冗余字段/路径字段规范 |
 | v1.0.0 | 2026-05-23 | shy | 初始版本 |
 
 ---
@@ -63,7 +64,33 @@ private String extAttributes;
 
 如需在业务层操作 JSONB 内容，在 Service 中使用 Fastjson2 / Jackson 解析为具体对象。
 
-### 2.4 代码格式
+### 2.4 Entity 字段类型规范
+
+| 字段类别 | Java 类型 | 数据库类型 | 说明 |
+|----------|-----------|------------|------|
+| 状态字段 | 枚举类型 + `@EnumValue` | VARCHAR(20) | 使用 `@EnumValue` 注解标记存入数据库的值 |
+| JSONB 字段 | `String` + `JsonTypeHandler` | JSONB | 参见 2.3 节 |
+| 布尔字段 | `Boolean` | BOOLEAN | 禁止使用 SMALLINT 模拟布尔 |
+| 时间字段 | `LocalDateTime` | TIMESTAMP(6) | 禁止使用 `java.util.Date` |
+
+**状态字段示例：**
+
+```java
+public enum StatusEnum {
+    ENABLED("ENABLED"),
+    DISABLED("DISABLED");
+
+    @EnumValue
+    private final String value;
+}
+```
+
+```java
+@TableField("status")
+private StatusEnum status;
+```
+
+### 2.5 代码格式
 
 | 规则 | 说明 |
 |------|------|
@@ -81,7 +108,7 @@ public void example() {
 }
 ```
 
-### 2.5 Import 顺序
+### 2.6 Import 顺序
 
 按以下分组排列，各组之间空一行，组内按字母序排列：
 
@@ -92,7 +119,7 @@ public void example() {
 
 IDE 配置推荐：IntelliJ IDEA → Settings → Editor → Code Style → Java → Imports，按上述顺序配置。
 
-### 2.6 空行规范
+### 2.7 空行规范
 
 | 场景 | 空行数 |
 |------|--------|
@@ -172,6 +199,170 @@ Controller 层方法可使用 `query` 前缀表示查询操作（如 `queryTenan
 | 外键 | `{ref}_id` | `parent_id`, `package_id` |
 | 普通索引 | `idx_{table}_{columns}` | `idx_sys_tenant_status` |
 | 唯一索引 | `uk_{table}_{columns}` | `uk_sys_tenant_tenant_code` |
+
+#### 3.5.1 字段命名规范
+
+**时间字段：**
+
+| 字段 | 命名 | 类型 | 说明 |
+|------|------|------|------|
+| 创建时间 | `create_at` | TIMESTAMP(6) | 禁止使用 `create_time` |
+| 更新时间 | `update_at` | TIMESTAMP(6) | 禁止使用 `update_time` |
+| 删除时间 | `deleted_at` | TIMESTAMP(6) | 禁止使用 `delete_at` 或 `delete_time` |
+
+**逻辑删除字段：**
+
+| 字段 | 命名 | 类型 | 枚举值 | 说明 |
+|------|------|------|--------|------|
+| 逻辑删除 | `is_deleted` | VARCHAR(20) | `NOT_DELETED` / `DELETED` | 禁止使用 SMALLINT 0/1 |
+
+**状态字段：**
+
+- 统一使用 `VARCHAR(20)` 字符串枚举，**禁止使用 SMALLINT 数字编码**
+- 字段命名使用 `status`、`state` 等语义化名称
+
+**策略状态枚举（五值）：**
+
+| 枚举值 | 含义 |
+|--------|------|
+| `ACTIVE` | 启用 |
+| `DISABLED_SYSTEM_LEVEL` | 系统级禁用 |
+| `DISABLED_TENANT_LEVEL` | 租户级禁用 |
+| `DISABLED_ROLE_LEVEL` | 角色级禁用 |
+| `DISABLED_USER_LEVEL` | 用户级禁用 |
+
+#### 3.5.2 冗余字段规范
+
+关联表中允许冗余主表的名称字段，以减少关联查询，提升查询性能。
+
+**冗余字段命名：**
+
+| 冗余字段 | 来源 | 说明 |
+|----------|------|------|
+| `tenant_code` | `sys_tenant.tenant_code` | 租户编码 |
+| `tenant_name` | `sys_tenant.tenant_name` | 租户名称 |
+| `parent_code` | 主表自身 `code` 字段 | 上级编码 |
+| `parent_name` | 主表自身 `name` 字段 | 上级名称 |
+
+**冗余字段更新策略：**
+
+- 当主表名称变更时，关联表的冗余名称字段**必须同步更新**
+- 同步更新逻辑放在主表更新 Service 方法中，使用批量更新确保一致性
+- 禁止在冗余字段上建立唯一约束（冗余字段仅用于展示，不用于关联）
+
+```java
+// 示例：租户名称变更时同步更新关联表
+@Transactional(rollbackFor = Exception.class)
+public void updateTenantName(Long tenantId, String newName) {
+    // 1. 更新主表
+    sysTenantMapper.updateById(tenant);
+    // 2. 同步更新关联表冗余字段
+    sysUserMapper.updateTenantNameByTenantId(tenantId, newName);
+    sysRoleMapper.updateTenantNameByTenantId(tenantId, newName);
+}
+```
+
+#### 3.5.3 租户隔离规范
+
+**自动隔离机制：**
+
+- 含 `tenant_id` 的表必须通过 MyBatis-Plus `TenantLineInnerInterceptor` 自动隔离
+- 所有包含 `tenant_id` 字段的表，其 SQL 自动追加 `WHERE tenant_id = ?` 条件
+- 禁止在业务代码中手动拼接租户隔离条件
+
+**忽略表清单（不含 `tenant_id`，不参与自动隔离）：**
+
+| 表名 | 说明 |
+|------|------|
+| `sys_user` | 系统用户表（用户可属于多个租户） |
+| `sys_perm` | 系统权限表（权限为全局资源） |
+| `sys_menu` | 系统菜单表（菜单为全局资源） |
+| `sys_dict` | 系统字典表（字典为全局资源） |
+
+> 忽略表清单需在 `TenantLineInnerInterceptor` 配置中通过 `ignoreTable()` 方法注册。
+
+**`tenant_id` 字段规范：**
+
+| 属性 | 规范 |
+|------|------|
+| 命名 | `tenant_id` |
+| 类型 | `BIGINT NOT NULL` |
+| 索引 | 必须建立普通索引 `idx_{table}_tenant_id` |
+
+**冗余字段 `tenant_code`、`tenant_name` 规范：**
+
+| 属性 | `tenant_code` | `tenant_name` |
+|------|---------------|---------------|
+| 类型 | VARCHAR(64) | VARCHAR(128) |
+| 可空 | NOT NULL | NOT NULL |
+| 用途 | 租户编码冗余，用于展示和日志追踪 | 租户名称冗余，用于展示 |
+| 更新策略 | 不可变，创建后不更新 | 随主表同步更新 |
+
+#### 3.5.4 JSONB 字段使用规范
+
+**字段格式约定：**
+
+| 字段 | 格式 | 示例 | 说明 |
+|------|------|------|------|
+| `field_operates` | 数组格式 | `["id", "user_name"]` | 禁止使用对象格式 |
+| `ext_attributes` | 对象格式 | `{"key": "value"}` | 扩展属性键值对 |
+
+**默认值规范：**
+
+| JSONB 类型 | 默认值 | SQL 示例 |
+|------------|--------|----------|
+| 对象 | `'{}'::jsonb` | `DEFAULT '{}'::jsonb` |
+| 数组 | `'[]'::jsonb` | `DEFAULT '[]'::jsonb` |
+
+**核心约束：**
+
+- **禁止 JSONB 字段为 NULL**，必须设置默认值
+- 查询 JSONB 字段内容时使用 PostgreSQL 的 JSONB 操作符和函数
+- JSONB 字段中的 key 使用 snake_case 命名
+
+#### 3.5.5 路径字段规范
+
+- `path` 字段使用斜杠分隔 ID 格式：`/1/2/3/`
+- 起始和结束均使用斜杠 `/`
+- 根节点 path 为 `/1/`（1 为根节点 ID）
+
+**示例：**
+
+```
+/1/                          — 一级节点
+/1/2/                        — 二级节点（父节点 ID 为 1）
+/1/2/3/                      — 三级节点（父节点 ID 为 2）
+```
+
+**查询用法：**
+
+```sql
+-- 查询某节点及其所有子节点
+SELECT * FROM sys_tenant WHERE path LIKE '/1/2/%';
+
+-- 查询某节点的所有祖先节点
+SELECT * FROM sys_tenant WHERE '/1/2/3/' LIKE path || '%';
+```
+
+#### 3.5.6 枚举值命名规范
+
+- 所有枚举值统一使用**大写蛇形命名（UPPER_SNAKE_CASE）**
+- 枚举值应具有自描述性，禁止使用数字编码
+
+**状态枚举值示例：**
+
+| 枚举类 | 枚举值 | 含义 |
+|--------|--------|------|
+| `StatusEnum` | `ENABLED` / `DISABLED` | 启用 / 禁用 |
+| `DeletedEnum` | `NOT_DELETED` / `DELETED` | 未删除 / 已删除 |
+| `PolicyStatusEnum` | `ACTIVE` / `DISABLED_SYSTEM_LEVEL` / `DISABLED_TENANT_LEVEL` / `DISABLED_ROLE_LEVEL` / `DISABLED_USER_LEVEL` | 策略状态五值 |
+
+**类型枚举值示例：**
+
+| 枚举类 | 枚举值 | 含义 |
+|--------|--------|------|
+| `PermTypeEnum` | `MENU` / `BUTTON` / `API` | 菜单 / 按钮 / 接口 |
+| `SubscriptionActionEnum` | `NEW` / `RENEWAL` / `UPGRADE` / `DOWNGRADE` | 新购 / 续费 / 升级 / 降级 |
 
 ### 3.6 API 命名
 

@@ -1,547 +1,1322 @@
-/*
- Navicat Premium Data Transfer
+-- =============================================================================
+-- 【重要说明】本文件为初始设计参考版本，仅作历史对照用途。
+-- 最终数据库设计以 public.sql 为准，两者存在以下关键差异：
+-- 1. 字段命名：本文件使用 create_time/update_time，最终版使用 create_at/update_at
+-- 2. 枚举风格：本文件使用 SMALLINT 数字枚举(1/0)，最终版使用 VARCHAR(20) 字符串枚举
+-- 3. 逻辑删除：本文件使用 SMALLINT(0/1)，最终版使用 VARCHAR(20)(NOT_DELETED/DELETED)
+-- 4. 策略状态：本文件无四级禁用状态，最终版使用五值枚举(ACTIVE/DISABLED_*_LEVEL)
+-- 5. 缺失字段：本文件缺少 deleted_at、冗余名称字段等，最终版已补充
+-- 6. 表名差异：本文件使用 sys_permission/sys_permission_policy，最终版使用 sys_perm/sys_perm_policy
+-- 7. 路径字段：本文件使用 ancestors，最终版使用 path
+-- 请勿直接使用本文件创建数据库表结构！
+-- =============================================================================
 
- Source Server         : Postgresql17.5
- Source Server Type    : PostgreSQL
- Source Server Version : 170005 (170005)
- Source Host           : localhost:5432
- Source Catalog        : NexusIX
- Source Schema         : public
+-- =============================================================================
+-- 1. 核心租户域 (Tenant Core)
+-- =============================================================================
 
- Target Server Type    : PostgreSQL
- Target Server Version : 170005 (170005)
- File Encoding         : 65001
+-- 租户信息表
+CREATE TABLE sys_tenant (
+                            id                  BIGINT          NOT NULL,
+                            tenant_name         VARCHAR(100)    NOT NULL,
+                            tenant_code         VARCHAR(50)     NOT NULL,
+                            parent_id           BIGINT          DEFAULT 0,
+                            ancestors           VARCHAR(500)    DEFAULT '',
+                            contact_name        VARCHAR(50)     DEFAULT '',
+                            contact_phone       VARCHAR(20)     DEFAULT '',
+                            status              SMALLINT        DEFAULT 1,
+                            expire_time         TIMESTAMP       DEFAULT NULL,
+                            package_id          BIGINT          DEFAULT 0,
+                            ext_attributes      JSONB           DEFAULT '{}'::jsonb,
+                            create_by           BIGINT          DEFAULT 0,
+                            update_by           BIGINT          DEFAULT 0,
+                            create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                            update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                            is_deleted          SMALLINT        DEFAULT 0,
+                            PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_tenant IS '租户信息表 - 存储租户基础信息，支持无限层级';
+COMMENT ON COLUMN sys_tenant.id IS '主键 ID (雪花算法)';
+COMMENT ON COLUMN sys_tenant.tenant_name IS '租户名称';
+COMMENT ON COLUMN sys_tenant.tenant_code IS '租户唯一编码';
+COMMENT ON COLUMN sys_tenant.parent_id IS '父租户 ID (0 为根租户)';
+COMMENT ON COLUMN sys_tenant.ancestors IS '祖级列表 (物化路径，如 0,100,200)';
+COMMENT ON COLUMN sys_tenant.contact_name IS '联系人姓名';
+COMMENT ON COLUMN sys_tenant.contact_phone IS '联系人电话';
+COMMENT ON COLUMN sys_tenant.status IS '状态 (1-正常 0-冻结)';
+COMMENT ON COLUMN sys_tenant.expire_time IS '服务过期时间';
+COMMENT ON COLUMN sys_tenant.package_id IS '当前主套餐 ID';
+COMMENT ON COLUMN sys_tenant.ext_attributes IS '扩展属性 (JSONB，存储行业特定配置)';
+COMMENT ON COLUMN sys_tenant.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_tenant.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_tenant.create_time IS '创建时间';
+COMMENT ON COLUMN sys_tenant.update_time IS '更新时间';
+COMMENT ON COLUMN sys_tenant.is_deleted IS '逻辑删除 (0-正常 1-删除)';
 
- Date: 06/06/2026 14:49:17
-*/
+-- 租户套餐订阅表
+CREATE TABLE sys_tenant_subscription (
+                                         id                  BIGINT          NOT NULL,
+                                         tenant_id           BIGINT          NOT NULL,
+                                         package_id          BIGINT          NOT NULL,
+                                         subscription_type   SMALLINT        DEFAULT 1,
+                                         start_time          TIMESTAMP       NOT NULL,
+                                         end_time            TIMESTAMP       NOT NULL,
+                                         status              SMALLINT        DEFAULT 1,
+                                         is_auto_renew       BOOLEAN         DEFAULT FALSE,
+                                         source_type         SMALLINT        DEFAULT 1,
+                                         parent_grant_id     BIGINT          DEFAULT 0,
+                                         create_by           BIGINT          DEFAULT 0,
+                                         update_by           BIGINT          DEFAULT 0,
+                                         create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                         update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                         is_deleted          SMALLINT        DEFAULT 0,
+                                         PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_tenant_subscription IS '租户套餐订阅表 - 记录租户购买的套餐及订阅状态';
+COMMENT ON COLUMN sys_tenant_subscription.id IS '主键 ID';
+COMMENT ON COLUMN sys_tenant_subscription.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_tenant_subscription.package_id IS '套餐产品 ID';
+COMMENT ON COLUMN sys_tenant_subscription.subscription_type IS '订阅类型 (1-自购 2-父租户分配)';
+COMMENT ON COLUMN sys_tenant_subscription.start_time IS '订阅开始时间';
+COMMENT ON COLUMN sys_tenant_subscription.end_time IS '订阅结束时间';
+COMMENT ON COLUMN sys_tenant_subscription.status IS '状态 (1-生效 0-过期)';
+COMMENT ON COLUMN sys_tenant_subscription.is_auto_renew IS '是否自动续费';
+COMMENT ON COLUMN sys_tenant_subscription.source_type IS '来源类型';
+COMMENT ON COLUMN sys_tenant_subscription.parent_grant_id IS '父租户分配记录 ID';
+COMMENT ON COLUMN sys_tenant_subscription.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_tenant_subscription.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_tenant_subscription.create_time IS '创建时间';
+COMMENT ON COLUMN sys_tenant_subscription.update_time IS '更新时间';
+COMMENT ON COLUMN sys_tenant_subscription.is_deleted IS '逻辑删除';
 
+-- =============================================================================
+-- 2. 计费与配额域 (Billing & Quota)
+-- =============================================================================
 
--- ----------------------------
--- Table structure for sys_perm
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_perm";
-CREATE TABLE "public"."sys_perm" (
-                                     "id" int8 NOT NULL,
-                                     "perm_name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "perm_desc" varchar(200) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "perm_code" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "perm_key" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "perm_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "parent_id" int8 NOT NULL,
-                                     "parent_name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "path" varchar(200) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "status" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "create_by" int8 NOT NULL,
-                                     "create_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                     "update_by" int8 NOT NULL,
-                                     "update_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                     "is_deleted" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "deleted_at" timestamp(6)
-)
-;
-COMMENT ON COLUMN "public"."sys_perm"."id" IS '主键ID';
-COMMENT ON COLUMN "public"."sys_perm"."perm_name" IS '权限名称';
-COMMENT ON COLUMN "public"."sys_perm"."perm_desc" IS '权限描述';
-COMMENT ON COLUMN "public"."sys_perm"."perm_code" IS '权限编码';
-COMMENT ON COLUMN "public"."sys_perm"."perm_key" IS '权限标识';
-COMMENT ON COLUMN "public"."sys_perm"."perm_type" IS '权限类型';
-COMMENT ON COLUMN "public"."sys_perm"."parent_id" IS '父权限ID';
-COMMENT ON COLUMN "public"."sys_perm"."parent_name" IS '父权限名称';
-COMMENT ON COLUMN "public"."sys_perm"."path" IS '权限路径';
-COMMENT ON COLUMN "public"."sys_perm"."status" IS '权限状态';
-COMMENT ON COLUMN "public"."sys_perm"."create_by" IS '创建人ID';
-COMMENT ON COLUMN "public"."sys_perm"."create_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_perm"."update_by" IS '更新人ID';
-COMMENT ON COLUMN "public"."sys_perm"."update_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_perm"."is_deleted" IS '删除状态';
-COMMENT ON COLUMN "public"."sys_perm"."deleted_at" IS '删除时间';
-COMMENT ON TABLE "public"."sys_perm" IS '系统权限资源表';
+-- 产品套餐定义表
+CREATE TABLE prod_package (
+                              id                  BIGINT          NOT NULL,
+                              package_name        VARCHAR(100)    NOT NULL,
+                              package_code        VARCHAR(50)     NOT NULL,
+                              description         VARCHAR(500)    DEFAULT '',
+                              price               DECIMAL(10,2)   DEFAULT 0.00,
+                              cycle_type          SMALLINT        DEFAULT 1,
+                              cycle_value         INT             DEFAULT 1,
+                              status              SMALLINT        DEFAULT 1,
+                              sort_order          INT             DEFAULT 0,
+                              ext_config          JSONB           DEFAULT '{}'::jsonb,
+                              create_by           BIGINT          DEFAULT 0,
+                              update_by           BIGINT          DEFAULT 0,
+                              create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                              update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                              is_deleted          SMALLINT        DEFAULT 0,
+                              PRIMARY KEY (id)
+);
+COMMENT ON TABLE prod_package IS '产品套餐定义表 - 定义可售卖的套餐模板';
+COMMENT ON COLUMN prod_package.id IS '主键 ID';
+COMMENT ON COLUMN prod_package.package_name IS '套餐名称';
+COMMENT ON COLUMN prod_package.package_code IS '套餐编码';
+COMMENT ON COLUMN prod_package.description IS '套餐描述';
+COMMENT ON COLUMN prod_package.price IS '价格';
+COMMENT ON COLUMN prod_package.cycle_type IS '周期类型 (1-天 2-月 3-年)';
+COMMENT ON COLUMN prod_package.cycle_value IS '周期数值';
+COMMENT ON COLUMN prod_package.status IS '状态 (1-上架 0-下架)';
+COMMENT ON COLUMN prod_package.sort_order IS '排序';
+COMMENT ON COLUMN prod_package.ext_config IS '扩展配置 (JSONB，存储套餐功能开关)';
+COMMENT ON COLUMN prod_package.create_by IS '创建人 ID';
+COMMENT ON COLUMN prod_package.update_by IS '更新人 ID';
+COMMENT ON COLUMN prod_package.create_time IS '创建时间';
+COMMENT ON COLUMN prod_package.update_time IS '更新时间';
+COMMENT ON COLUMN prod_package.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Records of sys_perm
--- ----------------------------
-INSERT INTO "public"."sys_perm" VALUES (1, '系统管理', '系统管理根菜单', 'SYS_MGMT', 'system', 'MENU', 0, '-', '/1/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (2, '用户管理', '用户管理菜单', 'USER_MGMT', 'system:user', 'MENU', 1, '系统管理', '/1/2/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (3, '用户列表', '用户列表页面', 'USER_LIST', 'system:user:list', 'MENU', 2, '用户管理', '/1/2/3/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (4, '新增用户', '新增用户按钮', 'USER_ADD', 'system:user:add', 'BUTTON', 3, '用户列表', '/1/2/3/4/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (5, '编辑用户', '编辑用户按钮', 'USER_EDIT', 'system:user:edit', 'BUTTON', 3, '用户列表', '/1/2/3/5/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (6, '删除用户', '删除用户按钮', 'USER_DEL', 'system:user:del', 'BUTTON', 3, '用户列表', '/1/2/3/6/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (7, '导出用户', '导出用户按钮', 'USER_EXPORT', 'system:user:export', 'BUTTON', 3, '用户列表', '/1/2/3/7/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (8, '用户接口', '用户相关API', 'USER_API', 'system:user:api', 'API', 2, '用户管理', '/1/2/8/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (9, '角色管理', '角色管理菜单', 'ROLE_MGMT', 'system:role', 'MENU', 1, '系统管理', '/1/9/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (10, '角色列表', '角色列表页面', 'ROLE_LIST', 'system:role:list', 'MENU', 9, '角色管理', '/1/9/10/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (11, '新增角色', '新增角色按钮', 'ROLE_ADD', 'system:role:add', 'BUTTON', 10, '角色列表', '/1/9/10/11/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (12, '分配角色', '分配角色按钮', 'ROLE_ASSIGN', 'system:role:assign', 'BUTTON', 10, '角色列表', '/1/9/10/12/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (13, '角色接口', '角色相关API', 'ROLE_API', 'system:role:api', 'API', 9, '角色管理', '/1/9/13/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (14, '租户管理', '租户管理菜单', 'TENANT_MGMT', 'system:tenant', 'MENU', 1, '系统管理', '/1/14/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (15, '租户列表', '租户列表页面', 'TENANT_LIST', 'system:tenant:list', 'MENU', 14, '租户管理', '/1/14/15/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (16, '新增租户', '新增租户按钮', 'TENANT_ADD', 'system:tenant:add', 'BUTTON', 15, '租户列表', '/1/14/15/16/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (17, '编辑租户', '编辑租户按钮', 'TENANT_EDIT', 'system:tenant:edit', 'BUTTON', 15, '租户列表', '/1/14/15/17/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (18, '权限管理', '权限管理菜单', 'PERM_MGMT', 'system:perm', 'MENU', 1, '系统管理', '/1/18/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (19, '权限列表', '权限列表页面', 'PERM_LIST', 'system:perm:list', 'MENU', 18, '权限管理', '/1/18/19/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (20, '新增权限', '新增权限按钮', 'PERM_ADD', 'system:perm:add', 'BUTTON', 19, '权限列表', '/1/18/19/20/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (21, '业务模块', '业务模块根菜单', 'BIZ_MGMT', 'biz', 'MENU', 0, '-', '/21/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (22, '订单管理', '订单管理菜单', 'ORDER_MGMT', 'biz:order', 'MENU', 21, '业务模块', '/21/22/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (23, '订单列表', '订单列表页面', 'ORDER_LIST', 'biz:order:list', 'MENU', 22, '订单管理', '/21/22/23/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (24, '创建订单', '创建订单按钮', 'ORDER_CREATE', 'biz:order:create', 'BUTTON', 23, '订单列表', '/21/22/23/24/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (25, '取消订单', '取消订单按钮', 'ORDER_CANCEL', 'biz:order:cancel', 'BUTTON', 23, '订单列表', '/21/22/23/25/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (26, '导出订单', '导出订单按钮', 'ORDER_EXPORT', 'biz:order:export', 'BUTTON', 23, '订单列表', '/21/22/23/26/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (27, '订单接口', '订单相关API', 'ORDER_API', 'biz:order:api', 'API', 22, '订单管理', '/21/22/27/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (28, '商品管理', '商品管理菜单', 'PRODUCT_MGMT', 'biz:product', 'MENU', 21, '业务模块', '/21/28/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (29, '商品列表', '商品列表页面', 'PRODUCT_LIST', 'biz:product:list', 'MENU', 28, '商品管理', '/21/28/29/', 'ENABLED', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm" VALUES (30, '禁用权限', '已禁用权限演示', 'PERM_DISABLED', 'system:perm:disabled', 'BUTTON', 3, '用户列表', '/1/2/3/30/', 'DISABLED', 1, '2025-01-01 00:00:00', 1, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
+-- 套餐配额模板表
+CREATE TABLE prod_package_quota (
+                                    id                  BIGINT          NOT NULL,
+                                    package_id          BIGINT          NOT NULL,
+                                    resource_code       VARCHAR(50)     NOT NULL,
+                                    resource_name       VARCHAR(100)    NOT NULL,
+                                    quota_value         BIGINT          NOT NULL,
+                                    unit                VARCHAR(20)     DEFAULT '',
+                                    is_allow_overage    BOOLEAN         DEFAULT FALSE,
+                                    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                    is_deleted          SMALLINT        DEFAULT 0,
+                                    PRIMARY KEY (id)
+);
+COMMENT ON TABLE prod_package_quota IS '套餐配额模板表 - 定义套餐包含的资源配额';
+COMMENT ON COLUMN prod_package_quota.id IS '主键 ID';
+COMMENT ON COLUMN prod_package_quota.package_id IS '关联套餐 ID';
+COMMENT ON COLUMN prod_package_quota.resource_code IS '资源类型代码 (如 TOKENS, STORAGE)';
+COMMENT ON COLUMN prod_package_quota.resource_name IS '资源名称';
+COMMENT ON COLUMN prod_package_quota.quota_value IS '配额数值';
+COMMENT ON COLUMN prod_package_quota.unit IS '单位';
+COMMENT ON COLUMN prod_package_quota.is_allow_overage IS '是否允许超额使用';
+COMMENT ON COLUMN prod_package_quota.create_time IS '创建时间';
+COMMENT ON COLUMN prod_package_quota.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Table structure for sys_perm_policy
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_perm_policy";
-CREATE TABLE "public"."sys_perm_policy" (
-                                            "id" int8 NOT NULL,
-                                            "policy_code" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                            "policy_name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                            "target_id" int8 NOT NULL,
-                                            "target_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                            "perm_id" int8 NOT NULL,
-                                            "tenant_id" int8 NOT NULL,
-                                            "table_name" varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-                                            "table_desc" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                            "access_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                            "field_operates" jsonb DEFAULT '[]'::jsonb,
-                                            "status" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                            "create_by" int8 NOT NULL,
-                                            "create_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                            "update_by" int8 NOT NULL,
-                                            "update_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                            "is_deleted" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                            "deleted_at" timestamp(6)
-)
-;
-COMMENT ON COLUMN "public"."sys_perm_policy"."id" IS '主键ID';
-COMMENT ON COLUMN "public"."sys_perm_policy"."policy_code" IS '策略编码';
-COMMENT ON COLUMN "public"."sys_perm_policy"."policy_name" IS '策略名称';
-COMMENT ON COLUMN "public"."sys_perm_policy"."target_id" IS '授权目标ID';
-COMMENT ON COLUMN "public"."sys_perm_policy"."target_type" IS '授权目标类型';
-COMMENT ON COLUMN "public"."sys_perm_policy"."perm_id" IS '关联权限ID';
-COMMENT ON COLUMN "public"."sys_perm_policy"."tenant_id" IS '租户ID';
-COMMENT ON COLUMN "public"."sys_perm_policy"."table_name" IS '控制的数据表名';
-COMMENT ON COLUMN "public"."sys_perm_policy"."table_desc" IS '数据表描述';
-COMMENT ON COLUMN "public"."sys_perm_policy"."access_type" IS '访问类型';
-COMMENT ON COLUMN "public"."sys_perm_policy"."field_operates" IS '允许操作的字段，JSON格式';
-COMMENT ON COLUMN "public"."sys_perm_policy"."status" IS '策略状态';
-COMMENT ON COLUMN "public"."sys_perm_policy"."create_by" IS '创建人ID';
-COMMENT ON COLUMN "public"."sys_perm_policy"."create_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_perm_policy"."update_by" IS '更新人ID';
-COMMENT ON COLUMN "public"."sys_perm_policy"."update_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_perm_policy"."is_deleted" IS '删除状态';
-COMMENT ON COLUMN "public"."sys_perm_policy"."deleted_at" IS '删除时间';
-COMMENT ON TABLE "public"."sys_perm_policy" IS '权限策略表';
+-- 租户配额调整表
+CREATE TABLE sys_tenant_quota_adjustment (
+                                             id                  BIGINT          NOT NULL,
+                                             tenant_id           BIGINT          NOT NULL,
+                                             resource_code       VARCHAR(50)     NOT NULL,
+                                             adjust_value        BIGINT          NOT NULL,
+                                             adjust_type         SMALLINT        DEFAULT 1,
+                                             reason              VARCHAR(500)    DEFAULT '',
+                                             effective_time      TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                             expire_time         TIMESTAMP       DEFAULT NULL,
+                                             operator_id         BIGINT          DEFAULT 0,
+                                             create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                             is_deleted          SMALLINT        DEFAULT 0,
+                                             PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_tenant_quota_adjustment IS '租户配额调整表 - 记录套餐外的配额增减 (加油包/补偿)';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.id IS '主键 ID';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.resource_code IS '资源类型代码';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.adjust_value IS '调整数值 (正增负减)';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.adjust_type IS '调整类型 (1-购买加油包 2-补偿 3-惩罚)';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.reason IS '调整原因';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.effective_time IS '生效时间';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.expire_time IS '过期时间 (NULL 为永久)';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.operator_id IS '操作人 ID';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.create_time IS '创建时间';
+COMMENT ON COLUMN sys_tenant_quota_adjustment.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Records of sys_perm_policy
--- ----------------------------
-INSERT INTO "public"."sys_perm_policy" VALUES (1, 'POL-SYS-QUERY-USER', '查询用户-系统级', 0, 'TENANT', 3, 1, 'sys_user', '用户表', 'QUERY', '["id", "user_name", "nick_name"]', 'ACTIVE', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (2, 'POL-SYS-ADD-USER-DIS', '新增用户-系统级禁用', 0, 'TENANT', 4, 1, 'sys_user', '用户表', 'CREATE', '["password", "phone"]', 'DISABLED_SYSTEM_LEVEL', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (3, 'POL-TENANT-ADD-USER', '新增用户-集团A租户级', 2, 'TENANT', 4, 2, 'sys_user', '用户表', 'CREATE', '["user_name", "nick_name", "email"]', 'ACTIVE', 2, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (4, 'POL-TENANT-DEL-USER-DIS', '删除用户-集团A租户级禁用', 2, 'TENANT', 6, 2, 'sys_user', '用户表', 'UPDATE', '[]', 'DISABLED_TENANT_LEVEL', 2, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (5, 'POL-ROLE-ASSIGN-DIS', '分配角色-角色级禁用', 4, 'ROLE', 12, 2, 'sys_user_role_rel', '用户角色关联表', 'UPDATE', '[]', 'DISABLED_ROLE_LEVEL', 2, '2025-01-15 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (6, 'POL-USER-QUERY-ROLE-DIS', '查询角色-用户级禁用', 5, 'USER', 10, 2, 'sys_role', '角色表', 'QUERY', '[]', 'DISABLED_USER_LEVEL', 2, '2025-03-01 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (7, 'POL-SYS-QUERY-TENANT', '查询租户-系统级', 0, 'TENANT', 15, 1, 'sys_tenant', '租户表', 'QUERY', '["tenant_name", "status"]', 'ACTIVE', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (8, 'POL-TENANT-ADD-TENANT', '新增租户-集团A租户级', 2, 'TENANT', 16, 2, 'sys_tenant', '租户表', 'CREATE', '["tenant_code", "tenant_name"]', 'ACTIVE', 2, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (9, 'POL-TENANT-UPDATE-USER', '修改用户-集团A租户级', 2, 'TENANT', 5, 2, 'sys_user', '用户表', 'UPDATE', '["nick_name", "email", "phone"]', 'ACTIVE', 2, '2025-01-15 00:00:00', 2, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (10, 'POL-BRANCH-QUERY-USER', '查询用户-华东分公司', 3, 'TENANT', 3, 3, 'sys_user', '用户表', 'QUERY', '["id", "user_name"]', 'ACTIVE', 3, '2025-02-01 00:00:00', 3, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (11, 'POL-DEPT-QUERY-USER', '查询用户-技术部', 4, 'TENANT', 3, 4, 'sys_user', '用户表', 'QUERY', '["id", "user_name"]', 'ACTIVE', 4, '2025-02-15 00:00:00', 4, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (12, 'POL-SYS-QUERY-ROLE', '查询角色-系统级', 0, 'TENANT', 10, 1, 'sys_role', '角色表', 'QUERY', '["id", "role_name", "role_code"]', 'ACTIVE', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (13, 'POL-SYS-QUERY-PERM', '查询权限-系统级', 0, 'TENANT', 19, 1, 'sys_perm', '权限表', 'QUERY', '["id", "perm_name", "perm_code"]', 'ACTIVE', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (14, 'POL-TENANT-EDIT-USER-DIS', '编辑用户-集团A租户级禁用', 2, 'TENANT', 5, 2, 'sys_user', '用户表', 'UPDATE', '[]', 'DISABLED_TENANT_LEVEL', 2, '2025-02-01 00:00:00', 2, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (15, 'POL-USER-EXPORT-DIS', '导出用户-用户级禁用', 9, 'USER', 7, 2, 'sys_user', '用户表', 'QUERY', '[]', 'DISABLED_USER_LEVEL', 2, '2025-03-01 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (16, 'POL-TENANT-QUERY-ORDER', '查询订单-集团A租户级', 2, 'TENANT', 23, 2, 'biz_order', '订单表', 'QUERY', '["id", "order_no", "status"]', 'ACTIVE', 2, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (17, 'POL-TENANT-CREATE-ORDER', '创建订单-集团A租户级', 2, 'TENANT', 24, 2, 'biz_order', '订单表', 'CREATE', '["order_no", "product_id", "quantity"]', 'DISABLED_USER_LEVEL', 2, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (18, 'POL-TENANT-CANCEL-ORDER-DIS', '取消订单-集团A租户级禁用', 2, 'TENANT', 25, 2, 'biz_order', '订单表', 'UPDATE', '[]', 'DISABLED_TENANT_LEVEL', 2, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (19, 'POL-SYS-EXPORT-ORDER', '导出订单-系统级', 0, 'TENANT', 26, 1, 'biz_order', '订单表', 'QUERY', '["id", "order_no", "amount"]', 'ACTIVE', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (20, 'POL-USER-CREATE-ORDER-DIS', '创建订单-用户级禁用', 14, 'USER', 24, 2, 'biz_order', '订单表', 'CREATE', '[]', 'DISABLED_USER_LEVEL', 2, '2025-03-01 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (21, 'POL-BRANCH-QUERY-ORDER', '查询订单-华南分公司', 7, 'TENANT', 23, 7, 'biz_order', '订单表', 'QUERY', '["id", "order_no"]', 'ACTIVE', 7, '2025-02-01 00:00:00', 7, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (22, 'POL-DEPT-QUERY-ORDER', '查询订单-财务部', 8, 'TENANT', 23, 8, 'biz_order', '订单表', 'QUERY', '["id", "order_no", "amount"]', 'ACTIVE', 8, '2025-02-15 00:00:00', 8, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (23, 'POL-ROLE-ADD-ROLE-DIS', '新增角色-角色级禁用', 4, 'ROLE', 11, 2, 'sys_role', '角色表', 'CREATE', '[]', 'DISABLED_ROLE_LEVEL', 2, '2025-03-01 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (24, 'POL-SYS-ADD-PERM-DIS', '新增权限-系统级禁用', 0, 'TENANT', 20, 1, 'sys_perm', '权限表', 'CREATE', '[]', 'DISABLED_SYSTEM_LEVEL', 1, '2025-06-01 00:00:00', 1, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_perm_policy" VALUES (25, 'POL-DELETED', '已删除策略', 2, 'TENANT', 6, 2, 'sys_user', '用户表', 'UPDATE', '[]', 'ACTIVE', 2, '2025-01-15 00:00:00', 2, '2025-04-01 00:00:00', 'DELETED', '2025-04-01 00:00:00');
+-- 资源使用计量表
+CREATE TABLE sys_resource_usage (
+                                    id                  BIGINT          NOT NULL,
+                                    tenant_id           BIGINT          NOT NULL,
+                                    resource_code       VARCHAR(50)     NOT NULL,
+                                    usage_value         BIGINT          NOT NULL,
+                                    business_type       VARCHAR(50)     DEFAULT '',
+                                    business_id         BIGINT          DEFAULT 0,
+                                    usage_time          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                    remark              VARCHAR(500)    DEFAULT '',
+                                    PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_resource_usage IS '资源使用计量表 - 记录租户资源消耗流水';
+COMMENT ON COLUMN sys_resource_usage.id IS '主键 ID';
+COMMENT ON COLUMN sys_resource_usage.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_resource_usage.resource_code IS '资源类型代码';
+COMMENT ON COLUMN sys_resource_usage.usage_value IS '消耗数值';
+COMMENT ON COLUMN sys_resource_usage.business_type IS '业务类型';
+COMMENT ON COLUMN sys_resource_usage.business_id IS '关联业务 ID';
+COMMENT ON COLUMN sys_resource_usage.usage_time IS '消耗时间';
+COMMENT ON COLUMN sys_resource_usage.remark IS '备注';
 
--- ----------------------------
--- Table structure for sys_tenant
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_tenant";
-CREATE TABLE "public"."sys_tenant" (
-                                       "id" int8 NOT NULL,
-                                       "tenant_code" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "tenant_name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "tenant_type" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "tenant_desc" varchar(500) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "tenant_logo_url" varchar(500) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "parent_id" int8 NOT NULL,
-                                       "parent_code" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "parent_name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "path" varchar(1000) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "contact_name" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "contact_phone" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "status" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "expire_time" timestamp(6) NOT NULL,
-                                       "package_id" varchar(50) COLLATE "pg_catalog"."default",
-                                       "package_name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "ext_attributes" jsonb DEFAULT '{}'::jsonb,
-                                       "has_children" bool NOT NULL,
-                                       "create_by" int8 NOT NULL,
-                                       "create_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                       "update_by" int8 NOT NULL,
-                                       "update_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                       "is_deleted" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                       "deleted_at" timestamp(6)
-)
-;
-COMMENT ON COLUMN "public"."sys_tenant"."id" IS '主键ID';
-COMMENT ON COLUMN "public"."sys_tenant"."tenant_code" IS '租户编码';
-COMMENT ON COLUMN "public"."sys_tenant"."tenant_name" IS '租户名称';
-COMMENT ON COLUMN "public"."sys_tenant"."tenant_type" IS '租户类型';
-COMMENT ON COLUMN "public"."sys_tenant"."tenant_desc" IS '租户描述信息';
-COMMENT ON COLUMN "public"."sys_tenant"."tenant_logo_url" IS '租户LOGO访问地址';
-COMMENT ON COLUMN "public"."sys_tenant"."parent_id" IS '父租户ID';
-COMMENT ON COLUMN "public"."sys_tenant"."parent_code" IS '父租户编码';
-COMMENT ON COLUMN "public"."sys_tenant"."parent_name" IS '父租户名称';
-COMMENT ON COLUMN "public"."sys_tenant"."path" IS '租户层级路径';
-COMMENT ON COLUMN "public"."sys_tenant"."contact_name" IS '联系人姓名';
-COMMENT ON COLUMN "public"."sys_tenant"."contact_phone" IS '联系人电话';
-COMMENT ON COLUMN "public"."sys_tenant"."status" IS '租户状态';
-COMMENT ON COLUMN "public"."sys_tenant"."expire_time" IS '租户过期时间';
-COMMENT ON COLUMN "public"."sys_tenant"."package_id" IS '租户套餐ID';
-COMMENT ON COLUMN "public"."sys_tenant"."package_name" IS '租户套餐名称';
-COMMENT ON COLUMN "public"."sys_tenant"."ext_attributes" IS '扩展属性，JSON格式';
-COMMENT ON COLUMN "public"."sys_tenant"."has_children" IS '是否存在子租户';
-COMMENT ON COLUMN "public"."sys_tenant"."create_by" IS '创建人ID';
-COMMENT ON COLUMN "public"."sys_tenant"."create_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_tenant"."update_by" IS '更新人ID';
-COMMENT ON COLUMN "public"."sys_tenant"."update_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_tenant"."is_deleted" IS '删除状态';
-COMMENT ON COLUMN "public"."sys_tenant"."deleted_at" IS '删除时间';
-COMMENT ON TABLE "public"."sys_tenant" IS '租户信息表';
+-- 订单表
+CREATE TABLE bill_order (
+                            id                  BIGINT          NOT NULL,
+                            tenant_id           BIGINT          NOT NULL,
+                            order_no            VARCHAR(64)     NOT NULL,
+                            product_type        SMALLINT        DEFAULT 1,
+                            product_id          BIGINT          DEFAULT 0,
+                            total_amount        DECIMAL(10,2)   NOT NULL,
+                            pay_amount          DECIMAL(10,2)   DEFAULT 0.00,
+                            status              SMALLINT        DEFAULT 0,
+                            pay_time            TIMESTAMP       DEFAULT NULL,
+                            pay_channel         VARCHAR(50)     DEFAULT '',
+                            order_items         JSONB           DEFAULT '[]'::jsonb,
+                            ext_attributes      JSONB           DEFAULT '{}'::jsonb,
+                            create_by           BIGINT          DEFAULT 0,
+                            create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                            update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                            is_deleted          SMALLINT        DEFAULT 0,
+                            PRIMARY KEY (id)
+);
+COMMENT ON TABLE bill_order IS '订单表 - 记录租户购买订单';
+COMMENT ON COLUMN bill_order.id IS '主键 ID';
+COMMENT ON COLUMN bill_order.tenant_id IS '租户 ID';
+COMMENT ON COLUMN bill_order.order_no IS '订单号';
+COMMENT ON COLUMN bill_order.product_type IS '产品类型 (1-套餐 2-配额包)';
+COMMENT ON COLUMN bill_order.product_id IS '产品 ID';
+COMMENT ON COLUMN bill_order.total_amount IS '订单总金额';
+COMMENT ON COLUMN bill_order.pay_amount IS '实际支付金额';
+COMMENT ON COLUMN bill_order.status IS '订单状态 (0-未付 1-已付 2-取消)';
+COMMENT ON COLUMN bill_order.pay_time IS '支付时间';
+COMMENT ON COLUMN bill_order.pay_channel IS '支付渠道';
+COMMENT ON COLUMN bill_order.order_items IS '订单明细 (JSONB，商品/服务列表)';
+COMMENT ON COLUMN bill_order.ext_attributes IS '行业扩展属性 (JSONB，存储行业特有订单字段)';
+COMMENT ON COLUMN bill_order.create_by IS '创建人 ID';
+COMMENT ON COLUMN bill_order.create_time IS '创建时间';
+COMMENT ON COLUMN bill_order.update_time IS '更新时间';
+COMMENT ON COLUMN bill_order.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Records of sys_tenant
--- ----------------------------
-INSERT INTO "public"."sys_tenant" VALUES (9, 'GRP_A_NORTH', '集团A-华北分公司', '互联网', '二级分公司', '/logo/north.png', 2, 'GRP_A', '集团A', '/1/2/9/', '吴经理', '13800000024', 'ENABLED', '2027-06-30 00:00:00', NULL, '商业版', '{}', 't', 2, '2025-02-01 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (10, 'GRP_A_NORTH_DEV', '华北-研发部', '互联网', '三级部门', '/logo/dev.png', 9, 'GRP_A_NORTH', '集团A-华北分公司', '/1/2/9/10/', '郑主管', '13800000025', 'ENABLED', '2027-06-30 00:00:00', NULL, '基础版', '{}', 'f', 2, '2025-02-15 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (11, 'GRP_B', '集团B', '餐饮', '已停用租户', '/logo/grp_b.png', 1, 'PLAT', '平台运营方', '/1/11/', '陈总', '13800000005', 'DISABLED', '2025-01-01 00:00:00', NULL, '基础版', '{}', 'f', 1, '2025-01-20 00:00:00', 1, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (12, 'GRP_C', '集团C', '制造', '已过期租户', '/logo/grp_c.png', 1, 'PLAT', '平台运营方', '/1/12/', '周总', '13800000006', 'EXPIRED', '2024-12-31 00:00:00', NULL, '基础版', '{}', 'f', 1, '2024-06-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (13, 'GRP_D', '集团D', '互联网', '二级集团', '/logo/grp_d.png', 1, 'PLAT', '平台运营方', '/1/13/', '冯总', '13800000030', 'ENABLED', '2027-12-31 00:00:00', NULL, '企业版', '{"industry": "教育"}', 't', 1, '2025-03-01 00:00:00', 1, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (14, 'GRP_D_EDU', '集团D-教育事业部', '互联网', '二级分公司', '/logo/edu.png', 13, 'GRP_D', '集团D', '/1/13/14/', '褚经理', '13800000031', 'ENABLED', '2027-12-31 00:00:00', NULL, '商业版', '{}', 'f', 13, '2025-03-15 00:00:00', 13, '2025-03-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (15, 'GRP_DELETED', '已删除集团', '互联网', '逻辑删除演示', '/logo/del.png', 1, 'PLAT', '平台运营方', '/1/15/', '卫总', '13800000007', 'ENABLED', '2026-12-31 00:00:00', NULL, '基础版', '{}', 'f', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'DELETED', '2025-04-01 00:00:00');
-INSERT INTO "public"."sys_tenant" VALUES (1, 'PLAT', '平台运营方', '互联网', '平台顶级租户', '/logo/plat.png', 0, '-', '-', '/1/', '管理员', '13800000001', 'ENABLED', '2099-12-31 00:00:00', NULL, '旗舰版', '{}', 't', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (2, 'GRP_A', '集团A', '互联网', '一级企业租户', '/logo/grp_a.png', 1, 'PLAT', '平台运营方', '/1/2/', '张总', '13800000002', 'ENABLED', '2027-06-30 00:00:00', NULL, '企业版', '{"scale": "500+", "industry": "电商"}', 't', 1, '2025-01-15 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (3, 'GRP_A_EAST', '集团A-华东分公司', '互联网', '二级分公司', '/logo/east.png', 2, 'GRP_A', '集团A', '/1/2/3/', '李经理', '13800000003', 'ENABLED', '2027-06-30 00:00:00', NULL, '商业版', '{}', 't', 2, '2025-02-01 00:00:00', 3, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (4, 'GRP_A_EAST_TECH', '华东-技术部', '互联网', '三级部门', '/logo/tech.png', 3, 'GRP_A_EAST', '集团A-华东分公司', '/1/2/3/4/', '王主管', '13800000004', 'ENABLED', '2027-06-30 00:00:00', NULL, '基础版', '{}', 'f', 3, '2025-02-15 00:00:00', 4, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (5, 'GRP_A_EAST_SALE', '华东-销售部', '互联网', '三级部门', '/logo/sale.png', 3, 'GRP_A_EAST', '集团A-华东分公司', '/1/2/3/5/', '赵主管', '13800000020', 'ENABLED', '2027-06-30 00:00:00', NULL, '基础版', '{}', 'f', 3, '2025-02-15 00:00:00', 3, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (6, 'GRP_A_EAST_HR', '华东-人事部', '互联网', '三级部门', '/logo/hr.png', 3, 'GRP_A_EAST', '集团A-华东分公司', '/1/2/3/6/', '钱主管', '13800000021', 'ENABLED', '2027-06-30 00:00:00', NULL, '基础版', '{}', 'f', 3, '2025-02-15 00:00:00', 3, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (7, 'GRP_A_SOUTH', '集团A-华南分公司', '互联网', '二级分公司', '/logo/south.png', 2, 'GRP_A', '集团A', '/1/2/7/', '孙经理', '13800000022', 'ENABLED', '2027-06-30 00:00:00', NULL, '商业版', '{}', 't', 2, '2025-02-01 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant" VALUES (8, 'GRP_A_SOUTH_FIN', '华南-财务部', '互联网', '三级部门', '/logo/fin.png', 7, 'GRP_A_SOUTH', '集团A-华南分公司', '/1/2/7/8/', '周主管', '13800000023', 'ENABLED', '2027-06-30 00:00:00', NULL, '基础版', '{}', 'f', 2, '2025-02-15 00:00:00', 2, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
+-- 发票管理表
+CREATE TABLE bill_invoice (
+                              id                  BIGINT          NOT NULL,
+                              tenant_id           BIGINT          NOT NULL,
+                              order_id            BIGINT          NOT NULL,
+                              invoice_no          VARCHAR(64)     DEFAULT '',
+                              invoice_type        SMALLINT        DEFAULT 1,
+                              invoice_title       VARCHAR(200)    NOT NULL,
+                              tax_id              VARCHAR(50)     NOT NULL,
+                              amount              DECIMAL(10,2)   NOT NULL,
+                              status              SMALLINT        DEFAULT 0,
+                              invoice_url         VARCHAR(500)    DEFAULT '',
+                              create_by           BIGINT          DEFAULT 0,
+                              create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                              update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                              is_deleted          SMALLINT        DEFAULT 0,
+                              PRIMARY KEY (id)
+);
+COMMENT ON TABLE bill_invoice IS '发票管理表 - 记录租户发票申请与开具';
+COMMENT ON COLUMN bill_invoice.id IS '主键 ID';
+COMMENT ON COLUMN bill_invoice.tenant_id IS '租户 ID';
+COMMENT ON COLUMN bill_invoice.order_id IS '关联订单 ID';
+COMMENT ON COLUMN bill_invoice.invoice_no IS '发票号码';
+COMMENT ON COLUMN bill_invoice.invoice_type IS '发票类型 (1-普票 2-专票 3-电子发票)';
+COMMENT ON COLUMN bill_invoice.invoice_title IS '发票抬头';
+COMMENT ON COLUMN bill_invoice.tax_id IS '税号';
+COMMENT ON COLUMN bill_invoice.amount IS '发票金额';
+COMMENT ON COLUMN bill_invoice.status IS '状态 (0-待开具 1-已开具 2-已邮寄 3-已作废)';
+COMMENT ON COLUMN bill_invoice.invoice_url IS '发票文件 URL';
+COMMENT ON COLUMN bill_invoice.create_by IS '创建人 ID';
+COMMENT ON COLUMN bill_invoice.create_time IS '创建时间';
+COMMENT ON COLUMN bill_invoice.update_time IS '更新时间';
+COMMENT ON COLUMN bill_invoice.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Table structure for sys_tenant_subscription
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_tenant_subscription";
-CREATE TABLE "public"."sys_tenant_subscription" (
-                                                    "id" int8 NOT NULL,
-                                                    "subscription_code" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                                    "tenant_id" int8 NOT NULL,
-                                                    "tenant_code" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                                    "tenant_name" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                                    "package_id" int8 NOT NULL,
-                                                    "subscription_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                                    "start_time" timestamp(6) NOT NULL,
-                                                    "end_time" timestamp(6) NOT NULL,
-                                                    "status" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                                    "is_auto_renew" bool NOT NULL,
-                                                    "source_type" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                                    "parent_id" int8 NOT NULL,
-                                                    "create_by" int8 NOT NULL,
-                                                    "create_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                                    "update_by" int8 NOT NULL,
-                                                    "update_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                                    "is_deleted" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                                    "deleted_at" timestamp(6)
-)
-;
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."id" IS '主键ID';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."subscription_code" IS '订阅单编码';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."tenant_id" IS '租户ID';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."tenant_code" IS '租户编码';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."tenant_name" IS '租户名称';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."package_id" IS '套餐ID';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."subscription_type" IS '订阅类型';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."start_time" IS '订阅开始时间';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."end_time" IS '订阅结束时间';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."status" IS '订阅状态';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."is_auto_renew" IS '是否自动续费';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."source_type" IS '订阅来源';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."parent_id" IS '父订阅ID';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."create_by" IS '创建人ID';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."create_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."update_by" IS '更新人ID';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."update_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."is_deleted" IS '删除状态';
-COMMENT ON COLUMN "public"."sys_tenant_subscription"."deleted_at" IS '删除时间';
-COMMENT ON TABLE "public"."sys_tenant_subscription" IS '租户套餐订阅记录表';
+-- =============================================================================
+-- 3. 身份与访问控制域 (IAM & Permission)
+-- =============================================================================
 
--- ----------------------------
--- Records of sys_tenant_subscription
--- ----------------------------
-INSERT INTO "public"."sys_tenant_subscription" VALUES (1, 'SUB-2025-001', 2, 'GRP_A', '集团A', 101, 'NEW', '2025-01-15 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 't', 'DIRECT', 0, 1, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (2, 'SUB-2025-002', 3, 'GRP_A_EAST', '集团A-华东分公司', 102, 'NEW', '2025-02-01 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 't', 'PARENT_GRANT', 1, 2, '2025-02-01 00:00:00', 3, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (3, 'SUB-2025-003', 4, 'GRP_A_EAST_TECH', '华东-技术部', 103, 'NEW', '2025-02-15 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 'f', 'ADMIN_ASSIGN', 2, 3, '2025-02-15 00:00:00', 4, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (4, 'SUB-2025-004', 5, 'GRP_A_EAST_SALE', '华东-销售部', 103, 'NEW', '2025-02-15 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 'f', 'ADMIN_ASSIGN', 2, 3, '2025-02-15 00:00:00', 3, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (5, 'SUB-2025-005', 6, 'GRP_A_EAST_HR', '华东-人事部', 103, 'NEW', '2025-02-15 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 'f', 'ADMIN_ASSIGN', 2, 3, '2025-02-15 00:00:00', 3, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (6, 'SUB-2025-006', 7, 'GRP_A_SOUTH', '集团A-华南分公司', 102, 'NEW', '2025-02-01 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 't', 'PARENT_GRANT', 1, 2, '2025-02-01 00:00:00', 2, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (7, 'SUB-2025-007', 8, 'GRP_A_SOUTH_FIN', '华南-财务部', 103, 'NEW', '2025-02-15 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 'f', 'ADMIN_ASSIGN', 6, 7, '2025-02-15 00:00:00', 2, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (8, 'SUB-2025-008', 9, 'GRP_A_NORTH', '集团A-华北分公司', 102, 'NEW', '2025-02-01 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 't', 'PARENT_GRANT', 1, 2, '2025-02-01 00:00:00', 2, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (9, 'SUB-2025-009', 10, 'GRP_A_NORTH_DEV', '华北-研发部', 103, 'NEW', '2025-02-15 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 'f', 'ADMIN_ASSIGN', 8, 9, '2025-02-15 00:00:00', 2, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (10, 'SUB-2025-010', 2, 'GRP_A', '集团A', 104, 'UPGRADE', '2025-06-01 00:00:00', '2027-06-30 00:00:00', 'ACTIVE', 't', 'DIRECT', 0, 2, '2025-06-01 00:00:00', 2, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (11, 'SUB-2025-011', 2, 'GRP_A', '集团A', 101, 'RENEWAL', '2026-01-15 00:00:00', '2028-01-15 00:00:00', 'PENDING', 't', 'DIRECT', 0, 2, '2025-12-01 00:00:00', 2, '2025-12-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (12, 'SUB-2025-012', 2, 'GRP_A', '集团A', 103, 'DOWNGRADE', '2025-04-01 00:00:00', '2025-05-01 00:00:00', 'CANCELLED', 'f', 'DIRECT', 0, 2, '2025-04-01 00:00:00', 2, '2025-04-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (13, 'SUB-2024-001', 12, 'GRP_C', '集团C', 103, 'NEW', '2024-01-01 00:00:00', '2024-12-31 00:00:00', 'EXPIRED', 'f', 'DIRECT', 0, 1, '2024-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_tenant_subscription" VALUES (14, 'SUB-2025-013', 13, 'GRP_D', '集团D', 101, 'NEW', '2025-03-01 00:00:00', '2027-12-31 00:00:00', 'ACTIVE', 't', 'DIRECT', 0, 1, '2025-03-01 00:00:00', 13, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
+-- 用户基础表
+CREATE TABLE sys_user (
+                          id                  BIGINT          NOT NULL,
+                          username            VARCHAR(50)     NOT NULL,
+                          password            VARCHAR(100)    NOT NULL,
+                          nickname            VARCHAR(50)     DEFAULT '',
+                          email               VARCHAR(100)    DEFAULT '',
+                          phone               VARCHAR(20)     DEFAULT '',
+                          avatar              VARCHAR(255)    DEFAULT '',
+                          status              SMALLINT        DEFAULT 1,
+                          login_ip            VARCHAR(50)     DEFAULT '',
+                          login_date          TIMESTAMP       DEFAULT NULL,
+                          create_by           BIGINT          DEFAULT 0,
+                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted          SMALLINT        DEFAULT 0,
+                          PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_user IS '用户基础表 - 存储全局用户信息 (不区分租户)';
+COMMENT ON COLUMN sys_user.id IS '主键 ID';
+COMMENT ON COLUMN sys_user.username IS '用户名';
+COMMENT ON COLUMN sys_user.password IS '加密密码';
+COMMENT ON COLUMN sys_user.nickname IS '昵称';
+COMMENT ON COLUMN sys_user.email IS '邮箱';
+COMMENT ON COLUMN sys_user.phone IS '手机号';
+COMMENT ON COLUMN sys_user.avatar IS '头像地址';
+COMMENT ON COLUMN sys_user.status IS '全局状态 (1-正常 0-禁用)';
+COMMENT ON COLUMN sys_user.login_ip IS '最后登录 IP';
+COMMENT ON COLUMN sys_user.login_date IS '最后登录时间';
+COMMENT ON COLUMN sys_user.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_user.create_time IS '创建时间';
+COMMENT ON COLUMN sys_user.update_time IS '更新时间';
+COMMENT ON COLUMN sys_user.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Table structure for sys_user
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_user";
-CREATE TABLE "public"."sys_user" (
-                                     "id" int8 NOT NULL,
-                                     "user_code" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "user_name" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "password" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "nick_name" varchar(50) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "email" varchar(100) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "phone" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "avatar" varchar(500) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "status" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "login_ip" varchar(45) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "login_date" timestamp(6) NOT NULL,
-                                     "create_by" int8 NOT NULL,
-                                     "create_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                     "update_by" int8 NOT NULL,
-                                     "update_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                     "is_deleted" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                     "deleted_at" timestamp(6)
-)
-;
-COMMENT ON COLUMN "public"."sys_user"."id" IS '主键ID';
-COMMENT ON COLUMN "public"."sys_user"."user_code" IS '用户编码';
-COMMENT ON COLUMN "public"."sys_user"."user_name" IS '登录用户名';
-COMMENT ON COLUMN "public"."sys_user"."password" IS '加密密码';
-COMMENT ON COLUMN "public"."sys_user"."nick_name" IS '用户昵称';
-COMMENT ON COLUMN "public"."sys_user"."email" IS '邮箱';
-COMMENT ON COLUMN "public"."sys_user"."phone" IS '手机号码';
-COMMENT ON COLUMN "public"."sys_user"."avatar" IS '头像地址';
-COMMENT ON COLUMN "public"."sys_user"."status" IS '用户状态';
-COMMENT ON COLUMN "public"."sys_user"."login_ip" IS '最后登录IP';
-COMMENT ON COLUMN "public"."sys_user"."login_date" IS '最后登录时间';
-COMMENT ON COLUMN "public"."sys_user"."create_by" IS '创建人ID';
-COMMENT ON COLUMN "public"."sys_user"."create_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_user"."update_by" IS '更新人ID';
-COMMENT ON COLUMN "public"."sys_user"."update_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_user"."is_deleted" IS '删除状态';
-COMMENT ON COLUMN "public"."sys_user"."deleted_at" IS '删除时间';
-COMMENT ON TABLE "public"."sys_user" IS '系统用户基础信息表';
+-- 用户 - 租户关联表
+CREATE TABLE sys_user_tenant_rel (
+                                     id                  BIGINT          NOT NULL,
+                                     user_id             BIGINT          NOT NULL,
+                                     tenant_id           BIGINT          NOT NULL,
+                                     dept_id             BIGINT          DEFAULT 0,
+                                     is_admin            BOOLEAN         DEFAULT FALSE,
+                                     join_time           TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                     is_deleted          SMALLINT        DEFAULT 0,
+                                     PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_user_tenant_rel IS '用户 - 租户关联表 - 实现用户与多租户绑定';
+COMMENT ON COLUMN sys_user_tenant_rel.id IS '主键 ID';
+COMMENT ON COLUMN sys_user_tenant_rel.user_id IS '用户 ID';
+COMMENT ON COLUMN sys_user_tenant_rel.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_user_tenant_rel.dept_id IS '主部门 ID (必须属于当前租户)';
+COMMENT ON COLUMN sys_user_tenant_rel.is_admin IS '是否租户管理员(解决一个人在 A 公司是管理员、在 B 公司是普通员工，is_admin不等于角色)';
+COMMENT ON COLUMN sys_user_tenant_rel.join_time IS '加入时间';
+COMMENT ON COLUMN sys_user_tenant_rel.create_time IS '创建时间';
+COMMENT ON COLUMN sys_user_tenant_rel.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Records of sys_user
--- ----------------------------
-INSERT INTO "public"."sys_user" VALUES (1, 'U001', 'admin', '$2a$10$h1', '超级管理员', 'admin@nexusix.com', '13800000001', '/avatar/admin.png', 'ENABLED', '10.0.0.1', '2025-06-01 09:00:00', 1, '2025-01-01 00:00:00', 1, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (2, 'U002', 'zhang_zong', '$2a$10$h2', '张总', 'zhang@grpa.com', '13800000002', '/avatar/zhang.png', 'ENABLED', '10.0.1.1', '2025-06-01 10:00:00', 1, '2025-01-15 00:00:00', 2, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (3, 'U003', 'li_jingli', '$2a$10$h3', '李经理', 'li@east.com', '13800000003', '/avatar/li.png', 'ENABLED', '10.0.2.1', '2025-06-01 11:00:00', 2, '2025-02-01 00:00:00', 3, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (4, 'U004', 'wang_zhuguan', '$2a$10$h4', '王主管', 'wang@tech.com', '13800000004', '/avatar/wang.png', 'ENABLED', '10.0.3.1', '2025-06-01 12:00:00', 3, '2025-02-15 00:00:00', 4, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (5, 'U005', 'zhang_san', '$2a$10$h5', '张三', 'zhangsan@grpa.com', '13800000010', '/avatar/zs.png', 'ENABLED', '10.0.1.10', '2025-06-01 14:00:00', 2, '2025-03-01 00:00:00', 5, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (6, 'U006', 'li_si', '$2a$10$h6', '李四', 'lisi@east.com', '13800000011', '/avatar/ls.png', 'ENABLED', '10.0.2.10', '2025-06-01 15:00:00', 3, '2025-03-01 00:00:00', 6, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (7, 'U007', 'wang_wu', '$2a$10$h7', '王五', 'wangwu@tech.com', '13800000012', '/avatar/ww.png', 'ENABLED', '10.0.3.10', '2025-06-01 16:00:00', 4, '2025-03-01 00:00:00', 7, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (8, 'U008', 'zhao_liu', '$2a$10$h8', '赵六', 'zhaoliu@sale.com', '13800000013', '/avatar/zl.png', 'ENABLED', '10.0.3.20', '2025-06-01 17:00:00', 3, '2025-03-01 00:00:00', 8, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (9, 'U009', 'sun_qi', '$2a$10$h9', '孙七', 'sunqi@grpa.com', '13800000014', '/avatar/sq.png', 'ENABLED', '10.0.1.20', '2025-06-01 18:00:00', 2, '2025-03-01 00:00:00', 9, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (10, 'U010', 'zhou_ba', '$2a$10$h10', '周八', 'zhouba@fin.com', '13800000015', '/avatar/zb.png', 'ENABLED', '10.0.4.10', '2025-06-01 19:00:00', 2, '2025-03-01 00:00:00', 10, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (11, 'U011', 'wu_jiu', '$2a$10$h11', '吴九', 'wujiu@north.com', '13800000016', '/avatar/wj.png', 'ENABLED', '10.0.5.10', '2025-06-01 20:00:00', 2, '2025-03-01 00:00:00', 11, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (12, 'U012', 'zheng_shi', '$2a$10$h12', '郑十', 'zhengshi@dev.com', '13800000017', '/avatar/zs2.png', 'ENABLED', '10.0.6.10', '2025-06-01 21:00:00', 2, '2025-03-01 00:00:00', 12, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (13, 'U013', 'qian_yi', '$2a$10$h13', '钱一', 'qianyi@hr.com', '13800000018', '/avatar/qy.png', 'ENABLED', '10.0.3.30', '2025-06-01 22:00:00', 3, '2025-03-01 00:00:00', 13, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (14, 'U014', 'chen_er', '$2a$10$h14', '陈二', 'chener@grpa.com', '13800000019', '/avatar/ce.png', 'ENABLED', '10.0.1.30', '2025-06-01 23:00:00', 2, '2025-03-01 00:00:00', 14, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (15, 'U015', 'feng_san', '$2a$10$h15', '冯三', 'fengsan@grpd.com', '13800000032', '/avatar/fs.png', 'ENABLED', '10.0.7.10', '2025-06-02 09:00:00', 1, '2025-03-01 00:00:00', 15, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (16, 'U016', 'chu_si', '$2a$10$h16', '褚四', 'chusi@edu.com', '13800000033', '/avatar/cs.png', 'ENABLED', '10.0.7.20', '2025-06-02 10:00:00', 13, '2025-03-15 00:00:00', 16, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (17, 'U017', 'zhao_liu_dis', '$2a$10$h17', '赵六(禁用)', 'zhaoliu2@grpa.com', '13800000040', '/avatar/zl2.png', 'DISABLED', '10.0.1.40', '2025-04-01 09:00:00', 2, '2025-03-01 00:00:00', 2, '2025-05-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (18, 'U018', 'sun_deleted', '$2a$10$h18', '孙(已删)', 'sundel@grpa.com', '13800000041', '/avatar/sd.png', 'ENABLED', '10.0.1.50', '2025-05-20 10:00:00', 2, '2025-03-01 00:00:00', 2, '2025-05-20 00:00:00', 'DELETED', '2025-05-20 00:00:00');
-INSERT INTO "public"."sys_user" VALUES (19, 'U019', 'huang_auditor', '$2a$10$h19', '黄审计', 'huang@grpa.com', '13800000042', '/avatar/hx.png', 'ENABLED', '10.0.1.60', '2025-06-01 08:00:00', 2, '2025-03-01 00:00:00', 19, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user" VALUES (20, 'U020', 'xu_readonly', '$2a$10$h20', '徐只读', 'xu@east.com', '13800000043', '/avatar/xz.png', 'ENABLED', '10.0.2.20', '2025-06-01 07:00:00', 3, '2025-03-01 00:00:00', 20, '2025-06-01 00:00:00', 'NOT_DELETED', NULL);
+-- 角色表
+CREATE TABLE sys_role (
+                          id                  BIGINT          NOT NULL,
+                          role_name           VARCHAR(50)     NOT NULL,
+                          role_code           VARCHAR(50)     NOT NULL,
+                          role_level          SMALLINT        DEFAULT 2,
+                          tenant_id           BIGINT          DEFAULT 0,
+                          data_scope          SMALLINT        DEFAULT 1,
+                          status              SMALLINT        DEFAULT 1,
+                          sort_order          INT             DEFAULT 0,
+                          create_by           BIGINT          DEFAULT 0,
+                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted          SMALLINT        DEFAULT 0,
+                          PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_role IS '角色表 - 定义系统/租户/用户级角色';
+COMMENT ON COLUMN sys_role.id IS '主键 ID';
+COMMENT ON COLUMN sys_role.role_name IS '角色名称';
+COMMENT ON COLUMN sys_role.role_code IS '角色编码';
+COMMENT ON COLUMN sys_role.role_level IS '角色层级 (1-系统 2-租户 3-用户)';
+COMMENT ON COLUMN sys_role.tenant_id IS '所属租户 ID (系统级为 0)';
+COMMENT ON COLUMN sys_role.data_scope IS '数据范围 (1-全部 2-本部门 3-本人 4-自定义)';
+COMMENT ON COLUMN sys_role.status IS '状态 (1-正常 0-禁用)';
+COMMENT ON COLUMN sys_role.sort_order IS '排序';
+COMMENT ON COLUMN sys_role.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_role.create_time IS '创建时间';
+COMMENT ON COLUMN sys_role.update_time IS '更新时间';
+COMMENT ON COLUMN sys_role.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Table structure for sys_user_perm_rel
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_user_perm_rel";
-CREATE TABLE "public"."sys_user_perm_rel" (
-                                              "id" int8 NOT NULL,
-                                              "user_id" int8 NOT NULL,
-                                              "policy_id" int8 NOT NULL,
-                                              "create_by" int8 NOT NULL,
-                                              "create_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                              "update_by" int8 NOT NULL,
-                                              "update_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                              "is_deleted" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                              "deleted_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP
-)
-;
-COMMENT ON COLUMN "public"."sys_user_perm_rel"."id" IS '主键ID';
-COMMENT ON COLUMN "public"."sys_user_perm_rel"."user_id" IS '用户ID';
-COMMENT ON COLUMN "public"."sys_user_perm_rel"."policy_id" IS '权限策略ID';
-COMMENT ON COLUMN "public"."sys_user_perm_rel"."create_by" IS '创建人ID';
-COMMENT ON COLUMN "public"."sys_user_perm_rel"."create_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_user_perm_rel"."update_by" IS '更新人ID';
-COMMENT ON COLUMN "public"."sys_user_perm_rel"."update_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_user_perm_rel"."is_deleted" IS '删除状态';
-COMMENT ON COLUMN "public"."sys_user_perm_rel"."deleted_at" IS '删除时间';
-COMMENT ON TABLE "public"."sys_user_perm_rel" IS '用户与权限策略直接关联表';
+-- 权限/资源表
+CREATE TABLE sys_permission (
+                                id                  BIGINT          NOT NULL,
+                                perm_name           VARCHAR(50)     NOT NULL,
+                                perm_code           VARCHAR(100)    NOT NULL,
+                                perm_type           SMALLINT        DEFAULT 1,
+                                parent_id           BIGINT          DEFAULT 0,
+                                path                VARCHAR(200)    DEFAULT '',
+                                status              SMALLINT        DEFAULT 1,
+                                create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                is_deleted          SMALLINT        DEFAULT 0,
+                                PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_permission IS '权限/资源表 - 定义系统所有可授权资源';
+COMMENT ON COLUMN sys_permission.id IS '主键 ID';
+COMMENT ON COLUMN sys_permission.perm_name IS '权限名称';
+COMMENT ON COLUMN sys_permission.perm_code IS '权限标识 (如 system:user:add)';
+COMMENT ON COLUMN sys_permission.perm_type IS '类型 (1-菜单 2-按钮 3-接口 4-数据字段)';
+COMMENT ON COLUMN sys_permission.parent_id IS '父权限 ID';
+COMMENT ON COLUMN sys_permission.path IS '资源路径';
+COMMENT ON COLUMN sys_permission.status IS '状态 (1-正常 0-禁用)';
+COMMENT ON COLUMN sys_permission.create_time IS '创建时间';
+COMMENT ON COLUMN sys_permission.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Records of sys_user_perm_rel
--- ----------------------------
-INSERT INTO "public"."sys_user_perm_rel" VALUES (1, 2, 1, 1, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (2, 2, 3, 1, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (3, 2, 7, 1, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (4, 2, 8, 1, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (5, 2, 9, 1, '2025-01-15 00:00:00', 2, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (6, 2, 12, 1, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (7, 2, 16, 1, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (8, 2, 17, 1, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (9, 3, 1, 2, '2025-02-01 00:00:00', 3, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (10, 3, 7, 2, '2025-02-01 00:00:00', 3, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (11, 3, 10, 2, '2025-02-01 00:00:00', 3, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (12, 3, 12, 2, '2025-02-01 00:00:00', 3, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (13, 3, 16, 2, '2025-02-01 00:00:00', 3, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (14, 4, 1, 3, '2025-02-15 00:00:00', 4, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (15, 4, 11, 3, '2025-02-15 00:00:00', 4, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (16, 5, 1, 2, '2025-03-01 00:00:00', 5, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (17, 5, 6, 2, '2025-03-01 00:00:00', 5, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (18, 5, 3, 2, '2025-03-01 00:00:00', 5, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (19, 5, 9, 2, '2025-03-01 00:00:00', 5, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (20, 5, 16, 2, '2025-03-01 00:00:00', 5, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (21, 5, 17, 2, '2025-03-01 00:00:00', 5, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (22, 6, 1, 3, '2025-03-01 00:00:00', 6, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (23, 6, 10, 3, '2025-03-01 00:00:00', 6, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (24, 6, 16, 3, '2025-03-01 00:00:00', 6, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (25, 7, 1, 4, '2025-03-01 00:00:00', 7, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (26, 7, 11, 4, '2025-03-01 00:00:00', 7, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (27, 8, 1, 3, '2025-03-01 00:00:00', 8, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (28, 8, 10, 3, '2025-03-01 00:00:00', 8, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (29, 9, 1, 2, '2025-03-01 00:00:00', 9, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (30, 9, 3, 2, '2025-03-01 00:00:00', 9, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (31, 9, 15, 2, '2025-03-01 00:00:00', 9, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (32, 10, 1, 2, '2025-03-01 00:00:00', 10, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (33, 10, 22, 2, '2025-03-01 00:00:00', 10, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (34, 11, 1, 2, '2025-03-01 00:00:00', 11, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (35, 14, 1, 2, '2025-03-01 00:00:00', 14, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (36, 14, 16, 2, '2025-03-01 00:00:00', 14, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (37, 14, 20, 2, '2025-03-01 00:00:00', 14, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (38, 19, 1, 2, '2025-03-01 00:00:00', 19, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (39, 19, 16, 2, '2025-03-01 00:00:00', 19, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_perm_rel" VALUES (40, 20, 1, 3, '2025-03-01 00:00:00', 20, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
+-- 权限策略控制表
+CREATE TABLE sys_permission_policy (
+                                       id                  BIGINT          NOT NULL,
+                                       target_type         SMALLINT        NOT NULL,
+                                       target_id           BIGINT          NOT NULL,
+                                       permission_id       BIGINT          NOT NULL,
+                                       action              SMALLINT        NOT NULL,
+                                       priority            INT             DEFAULT 0,
+                                       inheritance_enabled BOOLEAN         DEFAULT TRUE,
+                                       create_by           BIGINT          DEFAULT 0,
+                                       create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                       is_deleted          SMALLINT        DEFAULT 0,
+                                       PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_permission_policy IS '权限策略控制表 - 实现四层权限及禁用继承逻辑';
+COMMENT ON COLUMN sys_permission_policy.id IS '主键 ID';
+COMMENT ON COLUMN sys_permission_policy.target_type IS '目标类型 (1-系统 2-租户 3-角色 4-用户)';
+COMMENT ON COLUMN sys_permission_policy.target_id IS '目标 ID (对应租户/角色/用户 ID)';
+COMMENT ON COLUMN sys_permission_policy.permission_id IS '关联权限 ID';
+COMMENT ON COLUMN sys_permission_policy.action IS '动作 (1-允许 2-拒绝)';
+COMMENT ON COLUMN sys_permission_policy.priority IS '优先级 (数字越大优先级越高)';
+COMMENT ON COLUMN sys_permission_policy.inheritance_enabled IS '是否向下继承';
+COMMENT ON COLUMN sys_permission_policy.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_permission_policy.create_time IS '创建时间';
+COMMENT ON COLUMN sys_permission_policy.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Table structure for sys_user_tenant_rel
--- ----------------------------
-DROP TABLE IF EXISTS "public"."sys_user_tenant_rel";
-CREATE TABLE "public"."sys_user_tenant_rel" (
-                                                "id" int8 NOT NULL,
-                                                "user_id" int8 NOT NULL,
-                                                "tenant_id" int8 NOT NULL,
-                                                "dept_id" int8 NOT NULL,
-                                                "is_admin" bool NOT NULL,
-                                                "join_time" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                                "is_default" bool NOT NULL,
-                                                "create_by" int8 NOT NULL,
-                                                "create_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                                "update_by" int8 NOT NULL,
-                                                "update_at" timestamp(6) DEFAULT CURRENT_TIMESTAMP,
-                                                "is_deleted" varchar(20) COLLATE "pg_catalog"."default" NOT NULL,
-                                                "deleted_at" timestamp(6)
-)
-;
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."id" IS '主键ID';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."user_id" IS '用户ID';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."tenant_id" IS '租户ID';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."dept_id" IS '部门ID';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."is_admin" IS '是否为该租户管理员';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."join_time" IS '加入租户时间';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."is_default" IS '是否默认租户';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."create_by" IS '创建人ID';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."create_at" IS '创建时间';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."update_by" IS '更新人ID';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."update_at" IS '更新时间';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."is_deleted" IS '删除状态';
-COMMENT ON COLUMN "public"."sys_user_tenant_rel"."deleted_at" IS '删除时间';
-COMMENT ON TABLE "public"."sys_user_tenant_rel" IS '用户与租户的关联关系';
+-- 用户角色关联表
+CREATE TABLE sys_user_role_rel (
+                                   id                  BIGINT          NOT NULL,
+                                   user_id             BIGINT          NOT NULL,
+                                   role_id             BIGINT          NOT NULL,
+                                   tenant_id           BIGINT          NOT NULL,
+                                   create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                   PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_user_role_rel IS '用户角色关联表 - 用户与角色的绑定关系';
+COMMENT ON COLUMN sys_user_role_rel.id IS '主键 ID';
+COMMENT ON COLUMN sys_user_role_rel.user_id IS '用户 ID';
+COMMENT ON COLUMN sys_user_role_rel.role_id IS '角色 ID';
+COMMENT ON COLUMN sys_user_role_rel.tenant_id IS '租户 ID (角色必须属于此租户)';
+COMMENT ON COLUMN sys_user_role_rel.create_time IS '创建时间';
 
--- ----------------------------
--- Records of sys_user_tenant_rel
--- ----------------------------
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (1, 1, 1, 0, 't', '2025-01-01 00:00:00', 't', 1, '2025-01-01 00:00:00', 1, '2025-01-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (2, 2, 2, 0, 't', '2025-01-15 00:00:00', 't', 1, '2025-01-15 00:00:00', 2, '2025-01-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (3, 3, 3, 0, 't', '2025-02-01 00:00:00', 't', 2, '2025-02-01 00:00:00', 3, '2025-02-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (4, 4, 4, 0, 't', '2025-02-15 00:00:00', 't', 3, '2025-02-15 00:00:00', 4, '2025-02-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (5, 5, 2, 0, 'f', '2025-03-01 00:00:00', 't', 2, '2025-03-01 00:00:00', 5, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (6, 6, 3, 0, 'f', '2025-03-01 00:00:00', 't', 3, '2025-03-01 00:00:00', 6, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (7, 7, 4, 0, 'f', '2025-03-01 00:00:00', 't', 4, '2025-03-01 00:00:00', 7, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (8, 8, 5, 0, 'f', '2025-03-01 00:00:00', 't', 3, '2025-03-01 00:00:00', 8, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (9, 9, 2, 0, 'f', '2025-03-01 00:00:00', 't', 2, '2025-03-01 00:00:00', 9, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (10, 10, 8, 0, 'f', '2025-03-01 00:00:00', 't', 2, '2025-03-01 00:00:00', 10, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (11, 11, 9, 0, 'f', '2025-03-01 00:00:00', 't', 2, '2025-03-01 00:00:00', 11, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (12, 12, 10, 0, 'f', '2025-03-01 00:00:00', 't', 2, '2025-03-01 00:00:00', 12, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (13, 13, 6, 0, 'f', '2025-03-01 00:00:00', 't', 3, '2025-03-01 00:00:00', 13, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (14, 14, 2, 0, 'f', '2025-03-01 00:00:00', 't', 2, '2025-03-01 00:00:00', 14, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (15, 15, 13, 0, 't', '2025-03-01 00:00:00', 't', 1, '2025-03-01 00:00:00', 15, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (16, 16, 14, 0, 't', '2025-03-15 00:00:00', 't', 13, '2025-03-15 00:00:00', 16, '2025-03-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (17, 17, 2, 0, 'f', '2025-03-01 00:00:00', 't', 2, '2025-03-01 00:00:00', 2, '2025-05-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (18, 18, 2, 0, 'f', '2025-03-01 00:00:00', 't', 2, '2025-03-01 00:00:00', 2, '2025-05-20 00:00:00', 'DELETED', '2025-05-20 00:00:00');
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (19, 19, 2, 0, 'f', '2025-03-01 00:00:00', 't', 2, '2025-03-01 00:00:00', 19, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (20, 20, 3, 0, 'f', '2025-03-01 00:00:00', 't', 3, '2025-03-01 00:00:00', 20, '2025-03-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (21, 5, 3, 0, 'f', '2025-04-01 00:00:00', 'f', 5, '2025-04-01 00:00:00', 5, '2025-04-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (22, 9, 3, 0, 'f', '2025-04-01 00:00:00', 'f', 9, '2025-04-01 00:00:00', 9, '2025-04-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (23, 14, 3, 0, 'f', '2025-04-01 00:00:00', 'f', 14, '2025-04-01 00:00:00', 14, '2025-04-01 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (24, 6, 4, 0, 'f', '2025-04-15 00:00:00', 'f', 6, '2025-04-15 00:00:00', 6, '2025-04-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (25, 7, 5, 0, 'f', '2025-04-15 00:00:00', 'f', 7, '2025-04-15 00:00:00', 7, '2025-04-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (26, 10, 2, 0, 'f', '2025-04-15 00:00:00', 'f', 10, '2025-04-15 00:00:00', 10, '2025-04-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (27, 11, 2, 0, 'f', '2025-04-15 00:00:00', 'f', 11, '2025-04-15 00:00:00', 11, '2025-04-15 00:00:00', 'NOT_DELETED', NULL);
-INSERT INTO "public"."sys_user_tenant_rel" VALUES (28, 12, 9, 0, 'f', '2025-04-15 00:00:00', 'f', 12, '2025-04-15 00:00:00', 12, '2025-04-15 00:00:00', 'NOT_DELETED', NULL);
+-- 租户安全策略配置表
+CREATE TABLE sys_tenant_security (
+                                     id                  BIGINT          NOT NULL,
+                                     tenant_id           BIGINT          NOT NULL,
+                                     pwd_min_length      INT             DEFAULT 6,
+                                     pwd_complexity      SMALLINT        DEFAULT 0,
+                                     pwd_expire_days     INT             DEFAULT 0,
+                                     login_fail_limit    INT             DEFAULT 5,
+                                     lock_duration       INT             DEFAULT 30,
+                                     update_by           BIGINT          DEFAULT 0,
+                                     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                     PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_tenant_security IS '租户安全策略配置表 - 定义租户密码策略和登录限制';
+COMMENT ON COLUMN sys_tenant_security.id IS '主键 ID';
+COMMENT ON COLUMN sys_tenant_security.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_tenant_security.pwd_min_length IS '密码最小长度';
+COMMENT ON COLUMN sys_tenant_security.pwd_complexity IS '密码复杂度 (0-无 1-字母 + 数字 2-字母 + 数字 + 特殊字符)';
+COMMENT ON COLUMN sys_tenant_security.pwd_expire_days IS '密码过期天数 (0-永不过期)';
+COMMENT ON COLUMN sys_tenant_security.login_fail_limit IS '登录失败锁定次数';
+COMMENT ON COLUMN sys_tenant_security.lock_duration IS '锁定时长 (分钟)';
+COMMENT ON COLUMN sys_tenant_security.update_by IS '更新人 ID';
+COMMENT ON COLUMN sys_tenant_security.update_time IS '更新时间';
 
--- ----------------------------
--- Primary Key structure for table sys_perm
--- ----------------------------
-ALTER TABLE "public"."sys_perm" ADD CONSTRAINT "sys_perm_pkey" PRIMARY KEY ("id");
+-- 用户 Token 记录表
+CREATE TABLE sys_user_token (
+                                id                  BIGINT          NOT NULL,
+                                user_id             BIGINT          NOT NULL,
+                                tenant_id           BIGINT          NOT NULL,
+                                token               VARCHAR(255)    NOT NULL,
+                                device_info         VARCHAR(200)    DEFAULT '',
+                                login_time          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                expire_time         TIMESTAMP       NOT NULL,
+                                status              SMALLINT        DEFAULT 1,
+                                PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_user_token IS '用户 Token 记录表 - 用于多端登录管理和强制下线';
+COMMENT ON COLUMN sys_user_token.id IS '主键 ID';
+COMMENT ON COLUMN sys_user_token.user_id IS '用户 ID';
+COMMENT ON COLUMN sys_user_token.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_user_token.token IS '登录令牌';
+COMMENT ON COLUMN sys_user_token.device_info IS '设备信息';
+COMMENT ON COLUMN sys_user_token.login_time IS '登录时间';
+COMMENT ON COLUMN sys_user_token.expire_time IS '过期时间';
+COMMENT ON COLUMN sys_user_token.status IS '状态 (1-有效 0-失效)';
 
--- ----------------------------
--- Primary Key structure for table sys_perm_policy
--- ----------------------------
-ALTER TABLE "public"."sys_perm_policy" ADD CONSTRAINT "sys_perm_policy_pkey" PRIMARY KEY ("id");
+-- =============================================================================
+-- 4. 组织架构域 (Organization)
+-- =============================================================================
 
--- ----------------------------
--- Primary Key structure for table sys_tenant
--- ----------------------------
-ALTER TABLE "public"."sys_tenant" ADD CONSTRAINT "sys_tenant_pkey" PRIMARY KEY ("id");
+-- 部门表
+CREATE TABLE sys_dept (
+                          id                  BIGINT          NOT NULL,
+                          dept_name           VARCHAR(50)     NOT NULL,
+                          parent_id           BIGINT          DEFAULT 0,
+                          ancestors           VARCHAR(500)    DEFAULT '',
+                          tenant_id           BIGINT          NOT NULL,
+                          leader_id           BIGINT          DEFAULT 0,
+                          phone               VARCHAR(20)     DEFAULT '',
+                          sort_order          INT             DEFAULT 0,
+                          status              SMALLINT        DEFAULT 1,
+                          create_by           BIGINT          DEFAULT 0,
+                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted          SMALLINT        DEFAULT 0,
+                          PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_dept IS '部门表 - 存储租户组织架构，支持无限层级';
+COMMENT ON COLUMN sys_dept.id IS '主键 ID';
+COMMENT ON COLUMN sys_dept.dept_name IS '部门名称';
+COMMENT ON COLUMN sys_dept.parent_id IS '父部门 ID';
+COMMENT ON COLUMN sys_dept.ancestors IS '祖级列表 (物化路径)';
+COMMENT ON COLUMN sys_dept.tenant_id IS '所属租户 ID';
+COMMENT ON COLUMN sys_dept.leader_id IS '部门负责人 ID';
+COMMENT ON COLUMN sys_dept.phone IS '部门电话';
+COMMENT ON COLUMN sys_dept.sort_order IS '排序';
+COMMENT ON COLUMN sys_dept.status IS '状态 (1-正常 0-停用)';
+COMMENT ON COLUMN sys_dept.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_dept.create_time IS '创建时间';
+COMMENT ON COLUMN sys_dept.update_time IS '更新时间';
+COMMENT ON COLUMN sys_dept.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Primary Key structure for table sys_tenant_subscription
--- ----------------------------
-ALTER TABLE "public"."sys_tenant_subscription" ADD CONSTRAINT "sys_tenant_subscription_pkey" PRIMARY KEY ("id");
+-- 岗位表
+CREATE TABLE sys_post (
+                          id                  BIGINT          NOT NULL,
+                          post_name           VARCHAR(50)     NOT NULL,
+                          post_code           VARCHAR(50)     NOT NULL,
+                          dept_id             BIGINT          NOT NULL,
+                          tenant_id           BIGINT          NOT NULL,
+                          sort_order          INT             DEFAULT 0,
+                          status              SMALLINT        DEFAULT 1,
+                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted          SMALLINT        DEFAULT 0,
+                          PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_post IS '岗位表 - 部门下的具体职位';
+COMMENT ON COLUMN sys_post.id IS '主键 ID';
+COMMENT ON COLUMN sys_post.post_name IS '岗位名称';
+COMMENT ON COLUMN sys_post.post_code IS '岗位编码';
+COMMENT ON COLUMN sys_post.dept_id IS '所属部门 ID';
+COMMENT ON COLUMN sys_post.tenant_id IS '所属租户 ID';
+COMMENT ON COLUMN sys_post.sort_order IS '排序';
+COMMENT ON COLUMN sys_post.status IS '状态 (1-正常 0-停用)';
+COMMENT ON COLUMN sys_post.create_time IS '创建时间';
+COMMENT ON COLUMN sys_post.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Primary Key structure for table sys_user
--- ----------------------------
-ALTER TABLE "public"."sys_user" ADD CONSTRAINT "sys_user_pkey" PRIMARY KEY ("id");
+-- 用户组表
+CREATE TABLE sys_user_group (
+                                id                  BIGINT          NOT NULL,
+                                group_name          VARCHAR(50)     NOT NULL,
+                                group_type          SMALLINT        DEFAULT 1,
+                                tenant_id           BIGINT          NOT NULL,
+                                description         VARCHAR(200)    DEFAULT '',
+                                create_by           BIGINT          DEFAULT 0,
+                                create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                is_deleted          SMALLINT        DEFAULT 0,
+                                PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_user_group IS '用户组表 - 虚拟组，用于跨部门权限分配';
+COMMENT ON COLUMN sys_user_group.id IS '主键 ID';
+COMMENT ON COLUMN sys_user_group.group_name IS '组名称';
+COMMENT ON COLUMN sys_user_group.group_type IS '组类型 (1-静态 2-动态)';
+COMMENT ON COLUMN sys_user_group.tenant_id IS '所属租户 ID';
+COMMENT ON COLUMN sys_user_group.description IS '描述';
+COMMENT ON COLUMN sys_user_group.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_user_group.create_time IS '创建时间';
+COMMENT ON COLUMN sys_user_group.is_deleted IS '逻辑删除';
 
--- ----------------------------
--- Primary Key structure for table sys_user_perm_rel
--- ----------------------------
-ALTER TABLE "public"."sys_user_perm_rel" ADD CONSTRAINT "sys_user_perm_rel_pkey" PRIMARY KEY ("id");
+-- 用户组成员表
+CREATE TABLE sys_user_group_rel (
+                                    id                  BIGINT          NOT NULL,
+                                    group_id            BIGINT          NOT NULL,
+                                    user_id             BIGINT          NOT NULL,
+                                    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                    PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_user_group_rel IS '用户组成员表 - 用户与用户组的关联';
+COMMENT ON COLUMN sys_user_group_rel.id IS '主键 ID';
+COMMENT ON COLUMN sys_user_group_rel.group_id IS '用户组 ID';
+COMMENT ON COLUMN sys_user_group_rel.user_id IS '用户 ID';
+COMMENT ON COLUMN sys_user_group_rel.create_time IS '创建时间';
 
--- ----------------------------
--- Primary Key structure for table sys_user_tenant_rel
--- ----------------------------
-ALTER TABLE "public"."sys_user_tenant_rel" ADD CONSTRAINT "sys_user_tenant_rel_pkey" PRIMARY KEY ("id");
+-- 角色数据权限关联表（本质上是当角色的数据范围 = 自定义部门时，能看哪些部门的数据）
+CREATE TABLE sys_role_dept_rel (
+                                   id                  BIGINT          NOT NULL,
+                                   role_id             BIGINT          NOT NULL,
+                                   dept_id             BIGINT          NOT NULL,
+                                   tenant_id           BIGINT          NOT NULL,
+                                   create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                   PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_role_dept_rel IS '角色数据权限关联表 - 角色自定义数据范围时关联的部门';
+COMMENT ON COLUMN sys_role_dept_rel.id IS '主键 ID';
+COMMENT ON COLUMN sys_role_dept_rel.role_id IS '角色 ID';
+COMMENT ON COLUMN sys_role_dept_rel.dept_id IS '部门 ID（针对数据可见度为自定义时解决如何知道该用户能看哪些部门）';
+COMMENT ON COLUMN sys_role_dept_rel.tenant_id IS '租户 ID（这里解决用户每次登录，只能选择一个租户进入，进入租户 A，就只能看到租户 A 的数据，进入租户 B，就只能看到租户 B 的数据，绝对不允许在租户 A 里看到租户 B 的部门 / 角色 / 权限）';
+COMMENT ON COLUMN sys_role_dept_rel.create_time IS '创建时间';
+
+-- =============================================================================
+-- 5. 动态配置域 (Dynamic Configuration)
+-- =============================================================================
+
+-- 动态表单配置表
+CREATE TABLE sys_form_config (
+                                 id                  BIGINT          NOT NULL,
+                                 tenant_id           BIGINT          NOT NULL,
+                                 biz_type            VARCHAR(50)     NOT NULL,
+                                 form_name           VARCHAR(100)    NOT NULL,
+                                 form_schema         JSONB           NOT NULL,
+                                 status              SMALLINT        DEFAULT 1,
+                                 version             INT             DEFAULT 1,
+                                 create_by           BIGINT          DEFAULT 0,
+                                 create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                 update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                 is_deleted          SMALLINT        DEFAULT 0,
+                                 PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_form_config IS '动态表单配置表 - 实现不同行业表单字段动态配置';
+COMMENT ON COLUMN sys_form_config.id IS '主键 ID';
+COMMENT ON COLUMN sys_form_config.tenant_id IS '所属租户 ID';
+COMMENT ON COLUMN sys_form_config.biz_type IS '业务类型 (如：education_order, restaurant_order)';
+COMMENT ON COLUMN sys_form_config.form_name IS '表单名称';
+COMMENT ON COLUMN sys_form_config.form_schema IS '表单结构配置 (JSONB，定义字段类型/校验/选项)';
+COMMENT ON COLUMN sys_form_config.status IS '状态 (1-启用 0-停用)';
+COMMENT ON COLUMN sys_form_config.version IS '版本号 (支持表单版本管理)';
+COMMENT ON COLUMN sys_form_config.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_form_config.create_time IS '创建时间';
+COMMENT ON COLUMN sys_form_config.update_time IS '更新时间';
+COMMENT ON COLUMN sys_form_config.is_deleted IS '逻辑删除';
+
+-- 动态数据源配置表
+CREATE TABLE sys_datasource_config (
+                                       id                  BIGINT          NOT NULL,
+                                       tenant_id           BIGINT          NOT NULL,
+                                       datasource_code     VARCHAR(50)     NOT NULL,
+                                       datasource_name     VARCHAR(100)    NOT NULL,
+                                       datasource_type     SMALLINT        NOT NULL,
+                                       datasource_config   JSONB           NOT NULL,
+                                       cache_enabled       BOOLEAN         DEFAULT TRUE,
+                                       cache_expire        INT             DEFAULT 300,
+                                       status              SMALLINT        DEFAULT 1,
+                                       create_by           BIGINT          DEFAULT 0,
+                                       create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                       update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                       is_deleted          SMALLINT        DEFAULT 0,
+                                       PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_datasource_config IS '动态数据源配置表 - 实现下拉框数据来源动态配置';
+COMMENT ON COLUMN sys_datasource_config.id IS '主键 ID';
+COMMENT ON COLUMN sys_datasource_config.tenant_id IS '所属租户 ID';
+COMMENT ON COLUMN sys_datasource_config.datasource_code IS '数据源编码 (如：dish_list, part_list)';
+COMMENT ON COLUMN sys_datasource_config.datasource_name IS '数据源名称';
+COMMENT ON COLUMN sys_datasource_config.datasource_type IS '数据源类型 (1-业务表 2-API 接口 3-字典 4-SQL 查询)';
+COMMENT ON COLUMN sys_datasource_config.datasource_config IS '数据源配置 (JSONB，定义表名/字段/条件)';
+COMMENT ON COLUMN sys_datasource_config.cache_enabled IS '是否启用缓存';
+COMMENT ON COLUMN sys_datasource_config.cache_expire IS '缓存过期时间 (秒)';
+COMMENT ON COLUMN sys_datasource_config.status IS '状态 (1-启用 0-停用)';
+COMMENT ON COLUMN sys_datasource_config.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_datasource_config.create_time IS '创建时间';
+COMMENT ON COLUMN sys_datasource_config.update_time IS '更新时间';
+COMMENT ON COLUMN sys_datasource_config.is_deleted IS '逻辑删除';
+
+-- 打印模板配置表
+CREATE TABLE sys_print_template (
+                                    id                  BIGINT          NOT NULL,
+                                    tenant_id           BIGINT          NOT NULL,
+                                    template_code       VARCHAR(50)     NOT NULL,
+                                    template_name       VARCHAR(100)    NOT NULL,
+                                    biz_type            VARCHAR(50)     NOT NULL,
+                                    template_type       SMALLINT        NOT NULL,
+                                    template_content    TEXT            NOT NULL,
+                                    template_config     JSONB           DEFAULT '{}'::jsonb,
+                                    paper_size          VARCHAR(20)     DEFAULT 'A4',
+                                    orientation         VARCHAR(10)     DEFAULT 'portrait',
+                                    status              SMALLINT        DEFAULT 1,
+                                    is_default          BOOLEAN         DEFAULT FALSE,
+                                    version             INT             DEFAULT 1,
+                                    create_by           BIGINT          DEFAULT 0,
+                                    create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                    update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                    is_deleted          SMALLINT        DEFAULT 0,
+                                    PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_print_template IS '打印模板配置表 - 实现不同行业打印/PDF 模板动态配置';
+COMMENT ON COLUMN sys_print_template.id IS '主键 ID';
+COMMENT ON COLUMN sys_print_template.tenant_id IS '所属租户 ID';
+COMMENT ON COLUMN sys_print_template.template_code IS '模板编码 (如：education_contract, restaurant_receipt)';
+COMMENT ON COLUMN sys_print_template.template_name IS '模板名称';
+COMMENT ON COLUMN sys_print_template.biz_type IS '业务类型';
+COMMENT ON COLUMN sys_print_template.template_type IS '模板类型 (1-HTML 2-Markdown 3-JSON 配置)';
+COMMENT ON COLUMN sys_print_template.template_content IS '模板内容 (HTML/模板引擎语法)';
+COMMENT ON COLUMN sys_print_template.template_config IS '模板配置 (JSONB，定义变量/条件显示)';
+COMMENT ON COLUMN sys_print_template.paper_size IS '纸张大小 (A4/A5/80mm 热敏纸等)';
+COMMENT ON COLUMN sys_print_template.orientation IS '纸张方向 (portrait/landscape)';
+COMMENT ON COLUMN sys_print_template.status IS '状态 (1-启用 0-停用)';
+COMMENT ON COLUMN sys_print_template.is_default IS '是否默认模板';
+COMMENT ON COLUMN sys_print_template.version IS '版本号';
+COMMENT ON COLUMN sys_print_template.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_print_template.create_time IS '创建时间';
+COMMENT ON COLUMN sys_print_template.update_time IS '更新时间';
+COMMENT ON COLUMN sys_print_template.is_deleted IS '逻辑删除';
+
+-- =============================================================================
+-- 6. 系统支撑域 (System Support)
+-- =============================================================================
+
+-- 菜单表
+CREATE TABLE sys_menu (
+                          id                  BIGINT          NOT NULL,
+                          menu_name           VARCHAR(50)     NOT NULL,
+                          menu_type           SMALLINT        DEFAULT 1,
+                          parent_id           BIGINT          DEFAULT 0,
+                          path                VARCHAR(200)    DEFAULT '',
+                          component           VARCHAR(200)    DEFAULT '',
+                          perm_code           VARCHAR(100)    DEFAULT '',
+                          visible             BOOLEAN         DEFAULT TRUE,
+                          status              SMALLINT        DEFAULT 1,
+                          sort_order          INT             DEFAULT 0,
+                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted          SMALLINT        DEFAULT 0,
+                          PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_menu IS '菜单表 - 前端导航与按钮权限映射';
+COMMENT ON COLUMN sys_menu.id IS '主键 ID';
+COMMENT ON COLUMN sys_menu.menu_name IS '菜单名称';
+COMMENT ON COLUMN sys_menu.menu_type IS '类型 (1-目录 2-菜单 3-按钮)';
+COMMENT ON COLUMN sys_menu.parent_id IS '父菜单 ID';
+COMMENT ON COLUMN sys_menu.path IS '路由地址';
+COMMENT ON COLUMN sys_menu.component IS '组件路径';
+COMMENT ON COLUMN sys_menu.perm_code IS '权限标识';
+COMMENT ON COLUMN sys_menu.visible IS '是否可见';
+COMMENT ON COLUMN sys_menu.status IS '状态 (1-正常 0-停用)';
+COMMENT ON COLUMN sys_menu.sort_order IS '排序';
+COMMENT ON COLUMN sys_menu.create_time IS '创建时间';
+COMMENT ON COLUMN sys_menu.is_deleted IS '逻辑删除';
+
+-- 字典类型表
+CREATE TABLE sys_dict (
+                          id                  BIGINT          NOT NULL,
+                          dict_name           VARCHAR(100)    NOT NULL,
+                          dict_type           VARCHAR(100)    NOT NULL,
+                          tenant_id           BIGINT          DEFAULT 0,
+                          status              SMALLINT        DEFAULT 1,
+                          remark              VARCHAR(500)    DEFAULT '',
+                          create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted          SMALLINT        DEFAULT 0,
+                          PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_dict IS '字典类型表 - 定义系统常量类型';
+COMMENT ON COLUMN sys_dict.id IS '主键 ID';
+COMMENT ON COLUMN sys_dict.dict_name IS '字典名称';
+COMMENT ON COLUMN sys_dict.dict_type IS '字典类型';
+COMMENT ON COLUMN sys_dict.tenant_id IS '所属租户 (0 为系统字典)';
+COMMENT ON COLUMN sys_dict.status IS '状态 (1-正常 0-停用)';
+COMMENT ON COLUMN sys_dict.remark IS '备注';
+COMMENT ON COLUMN sys_dict.create_time IS '创建时间';
+COMMENT ON COLUMN sys_dict.is_deleted IS '逻辑删除';
+
+-- 字典数据表
+CREATE TABLE sys_dict_item (
+                               id                  BIGINT          NOT NULL,
+                               dict_id             BIGINT          NOT NULL,
+                               dict_label          VARCHAR(100)    NOT NULL,
+                               dict_value          VARCHAR(100)    NOT NULL,
+                               sort_order          INT             DEFAULT 0,
+                               status              SMALLINT        DEFAULT 1,
+                               create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                               is_deleted          SMALLINT        DEFAULT 0,
+                               PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_dict_item IS '字典数据表 - 字典具体键值对';
+COMMENT ON COLUMN sys_dict_item.id IS '主键 ID';
+COMMENT ON COLUMN sys_dict_item.dict_id IS '关联字典类型 ID';
+COMMENT ON COLUMN sys_dict_item.dict_label IS '字典标签';
+COMMENT ON COLUMN sys_dict_item.dict_value IS '字典值';
+COMMENT ON COLUMN sys_dict_item.sort_order IS '排序';
+COMMENT ON COLUMN sys_dict_item.status IS '状态 (1-正常 0-停用)';
+COMMENT ON COLUMN sys_dict_item.create_time IS '创建时间';
+COMMENT ON COLUMN sys_dict_item.is_deleted IS '逻辑删除';
+
+-- 文件资源表
+CREATE TABLE sys_file (
+                          id                  BIGINT          NOT NULL,
+                          tenant_id           BIGINT          NOT NULL,
+                          file_name           VARCHAR(255)    NOT NULL,
+                          file_path           VARCHAR(500)    NOT NULL,
+                          file_url            VARCHAR(500)    NOT NULL,
+                          file_size           BIGINT          DEFAULT 0,
+                          file_type           VARCHAR(50)     DEFAULT '',
+                          upload_by           BIGINT          DEFAULT 0,
+                          upload_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted          SMALLINT        DEFAULT 0,
+                          PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_file IS '文件资源表 - 存储上传的文件信息';
+COMMENT ON COLUMN sys_file.id IS '主键 ID';
+COMMENT ON COLUMN sys_file.tenant_id IS '所属租户 ID';
+COMMENT ON COLUMN sys_file.file_name IS '文件名称';
+COMMENT ON COLUMN sys_file.file_path IS '文件存储路径';
+COMMENT ON COLUMN sys_file.file_url IS '文件访问 URL';
+COMMENT ON COLUMN sys_file.file_size IS '文件大小 (字节)';
+COMMENT ON COLUMN sys_file.file_type IS '文件类型';
+COMMENT ON COLUMN sys_file.upload_by IS '上传人 ID';
+COMMENT ON COLUMN sys_file.upload_time IS '上传时间';
+COMMENT ON COLUMN sys_file.is_deleted IS '逻辑删除';
+
+-- 通知公告表
+CREATE TABLE sys_notice (
+                            id                  BIGINT          NOT NULL,
+                            notice_title        VARCHAR(100)    NOT NULL,
+                            notice_type         SMALLINT        DEFAULT 1,
+                            notice_content      TEXT            DEFAULT NULL,
+                            status              SMALLINT        DEFAULT 1,
+                            target_type         SMALLINT        DEFAULT 1,
+                            target_ids          VARCHAR(1000)   DEFAULT '',
+                            tenant_id           BIGINT          DEFAULT 0,
+                            create_by           BIGINT          DEFAULT 0,
+                            create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                            is_deleted          SMALLINT        DEFAULT 0,
+                            PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_notice IS '通知公告表 - 系统公告与站内信';
+COMMENT ON COLUMN sys_notice.id IS '主键 ID';
+COMMENT ON COLUMN sys_notice.notice_title IS '公告标题';
+COMMENT ON COLUMN sys_notice.notice_type IS '类型 (1-公告 2-通知)';
+COMMENT ON COLUMN sys_notice.notice_content IS '公告内容';
+COMMENT ON COLUMN sys_notice.status IS '状态 (1-发布 0-下架)';
+COMMENT ON COLUMN sys_notice.target_type IS '目标类型 (1-全员 2-指定租户 3-指定用户)';
+COMMENT ON COLUMN sys_notice.target_ids IS '目标 ID 集合 (逗号分隔)';
+COMMENT ON COLUMN sys_notice.tenant_id IS '所属租户 (0 为系统公告)';
+COMMENT ON COLUMN sys_notice.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_notice.create_time IS '创建时间';
+COMMENT ON COLUMN sys_notice.is_deleted IS '逻辑删除';
+
+-- 用户公告阅读状态表
+CREATE TABLE sys_notice_user_rel (
+                                     id                  BIGINT          NOT NULL,
+                                     notice_id           BIGINT          NOT NULL,
+                                     user_id             BIGINT          NOT NULL,
+                                     tenant_id           BIGINT          NOT NULL,
+                                     read_status         SMALLINT        DEFAULT 0,
+                                     read_time           TIMESTAMP       DEFAULT NULL,
+                                     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                     PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_notice_user_rel IS '用户公告阅读状态表 - 记录用户公告已读/未读状态';
+COMMENT ON COLUMN sys_notice_user_rel.id IS '主键 ID';
+COMMENT ON COLUMN sys_notice_user_rel.notice_id IS '公告 ID';
+COMMENT ON COLUMN sys_notice_user_rel.user_id IS '用户 ID';
+COMMENT ON COLUMN sys_notice_user_rel.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_notice_user_rel.read_status IS '阅读状态 (0-未读 1-已读)';
+COMMENT ON COLUMN sys_notice_user_rel.read_time IS '阅读时间';
+COMMENT ON COLUMN sys_notice_user_rel.create_time IS '创建时间';
+
+-- 操作日志表
+CREATE TABLE sys_oper_log (
+                              id                  BIGINT          NOT NULL,
+                              tenant_id           BIGINT          DEFAULT 0,
+                              module              VARCHAR(50)     DEFAULT '',
+                              business_type       SMALLINT        DEFAULT 0,
+                              method              VARCHAR(100)    DEFAULT '',
+                              request_method      VARCHAR(10)     DEFAULT '',
+                              operator_name       VARCHAR(50)     DEFAULT '',
+                              operator_id         BIGINT          DEFAULT 0,
+                              dept_name           VARCHAR(50)     DEFAULT '',
+                              oper_url            VARCHAR(255)    DEFAULT '',
+                              oper_ip             VARCHAR(128)    DEFAULT '',
+                              oper_location       VARCHAR(255)    DEFAULT '',
+                              oper_param          VARCHAR(2000)   DEFAULT '',
+                              json_result         VARCHAR(2000)   DEFAULT '',
+                              status              SMALLINT        DEFAULT 1,
+                              error_msg           VARCHAR(2000)   DEFAULT '',
+                              oper_time           TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                              PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_oper_log IS '操作日志表 - 审计用户操作行为';
+COMMENT ON COLUMN sys_oper_log.id IS '主键 ID';
+COMMENT ON COLUMN sys_oper_log.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_oper_log.module IS '操作模块';
+COMMENT ON COLUMN sys_oper_log.business_type IS '业务类型';
+COMMENT ON COLUMN sys_oper_log.method IS '请求方法';
+COMMENT ON COLUMN sys_oper_log.request_method IS '请求方式 (GET/POST)';
+COMMENT ON COLUMN sys_oper_log.operator_name IS '操作人员姓名';
+COMMENT ON COLUMN sys_oper_log.operator_id IS '操作人员 ID';
+COMMENT ON COLUMN sys_oper_log.dept_name IS '部门名称';
+COMMENT ON COLUMN sys_oper_log.oper_url IS '请求 URL';
+COMMENT ON COLUMN sys_oper_log.oper_ip IS '操作 IP';
+COMMENT ON COLUMN sys_oper_log.oper_location IS '操作地点';
+COMMENT ON COLUMN sys_oper_log.oper_param IS '请求参数';
+COMMENT ON COLUMN sys_oper_log.json_result IS '返回结果';
+COMMENT ON COLUMN sys_oper_log.status IS '操作状态 (1-正常 0-失败)';
+COMMENT ON COLUMN sys_oper_log.error_msg IS '错误消息';
+COMMENT ON COLUMN sys_oper_log.oper_time IS '操作时间';
+
+-- 登录日志表
+CREATE TABLE sys_login_log (
+                               id                  BIGINT          NOT NULL,
+                               user_id             BIGINT          DEFAULT 0,
+                               username            VARCHAR(50)     DEFAULT '',
+                               tenant_id           BIGINT          DEFAULT 0,
+                               ip_address          VARCHAR(128)    DEFAULT '',
+                               login_location      VARCHAR(255)    DEFAULT '',
+                               browser             VARCHAR(50)     DEFAULT '',
+                               os                  VARCHAR(50)     DEFAULT '',
+                               status              SMALLINT        DEFAULT 1,
+                               msg                 VARCHAR(255)    DEFAULT '',
+                               login_time          TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                               PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_login_log IS '登录日志表 - 记录用户登录信息';
+COMMENT ON COLUMN sys_login_log.id IS '主键 ID';
+COMMENT ON COLUMN sys_login_log.user_id IS '用户 ID';
+COMMENT ON COLUMN sys_login_log.username IS '用户名';
+COMMENT ON COLUMN sys_login_log.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_login_log.ip_address IS '登录 IP';
+COMMENT ON COLUMN sys_login_log.login_location IS '登录地点';
+COMMENT ON COLUMN sys_login_log.browser IS '浏览器';
+COMMENT ON COLUMN sys_login_log.os IS '操作系统';
+COMMENT ON COLUMN sys_login_log.status IS '状态 (1-成功 0-失败)';
+COMMENT ON COLUMN sys_login_log.msg IS '提示消息';
+COMMENT ON COLUMN sys_login_log.login_time IS '登录时间';
+
+-- 数据变更审计表
+CREATE TABLE sys_data_audit_log (
+                                    id                  BIGINT          NOT NULL,
+                                    tenant_id           BIGINT          NOT NULL,
+                                    table_name          VARCHAR(50)     NOT NULL,
+                                    record_id           BIGINT          NOT NULL,
+                                    operator_id         BIGINT          NOT NULL,
+                                    operate_type        SMALLINT        DEFAULT 1,
+                                    old_value           JSONB           DEFAULT '{}'::jsonb,
+                                    new_value           JSONB           DEFAULT '{}'::jsonb,
+                                    operate_time        TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                    PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_data_audit_log IS '数据变更审计表 - 记录数据字段变更详情';
+COMMENT ON COLUMN sys_data_audit_log.id IS '主键 ID';
+COMMENT ON COLUMN sys_data_audit_log.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_data_audit_log.table_name IS '表名';
+COMMENT ON COLUMN sys_data_audit_log.record_id IS '记录 ID';
+COMMENT ON COLUMN sys_data_audit_log.operator_id IS '操作人 ID';
+COMMENT ON COLUMN sys_data_audit_log.operate_type IS '操作类型 (1-更新 2-删除)';
+COMMENT ON COLUMN sys_data_audit_log.old_value IS '修改前数据 (JSONB)';
+COMMENT ON COLUMN sys_data_audit_log.new_value IS '修改后数据 (JSONB)';
+COMMENT ON COLUMN sys_data_audit_log.operate_time IS '操作时间';
+
+-- =============================================================================
+-- 7. 消息通知中心 (Notification Center) - 精简版
+-- =============================================================================
+
+-- 消息模板表
+CREATE TABLE sys_message_template (
+                                      id                  BIGINT          NOT NULL,
+                                      template_code       VARCHAR(100)    NOT NULL,
+                                      template_name       VARCHAR(100)    NOT NULL,
+                                      tenant_id           BIGINT          DEFAULT 0,
+                                      biz_type            VARCHAR(50)     DEFAULT '',
+                                      message_type        SMALLINT        DEFAULT 1,
+                                      template_title      VARCHAR(200)    DEFAULT '',
+                                      template_content    TEXT            NOT NULL,
+                                      template_example    JSONB           DEFAULT '{}'::jsonb,
+                                      variables           JSONB           DEFAULT '[]'::jsonb,
+                                      status              SMALLINT        DEFAULT 1,
+                                      version             INT             DEFAULT 1,
+                                      language            VARCHAR(20)     DEFAULT 'zh-CN',
+                                      create_by           BIGINT          DEFAULT 0,
+                                      create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                      update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                      is_deleted          SMALLINT        DEFAULT 0,
+                                      PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_message_template IS '消息模板表 - 定义各类消息的内容模板';
+COMMENT ON COLUMN sys_message_template.id IS '主键 ID';
+COMMENT ON COLUMN sys_message_template.template_code IS '模板编码 (如：ORDER_PAID, PACKAGE_EXPIRE_WARNING)';
+COMMENT ON COLUMN sys_message_template.template_name IS '模板名称';
+COMMENT ON COLUMN sys_message_template.tenant_id IS '所属租户 ID (0 为系统模板)';
+COMMENT ON COLUMN sys_message_template.biz_type IS '业务类型 (如：order, subscription, system)';
+COMMENT ON COLUMN sys_message_template.message_type IS '消息类型 (1-通知 2-营销 3-验证 4-提醒)';
+COMMENT ON COLUMN sys_message_template.template_title IS '模板标题';
+COMMENT ON COLUMN sys_message_template.template_content IS '模板内容 (支持变量占位符，如 ${userName})';
+COMMENT ON COLUMN sys_message_template.template_example IS '示例数据 (JSONB，用于测试预览)';
+COMMENT ON COLUMN sys_message_template.variables IS '变量定义 (JSONB，定义变量名/类型/必填)';
+COMMENT ON COLUMN sys_message_template.status IS '状态 (1-启用 0-停用)';
+COMMENT ON COLUMN sys_message_template.version IS '版本号';
+COMMENT ON COLUMN sys_message_template.language IS '语言 (zh-CN/en-US 等)';
+COMMENT ON COLUMN sys_message_template.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_message_template.create_time IS '创建时间';
+COMMENT ON COLUMN sys_message_template.update_time IS '更新时间';
+COMMENT ON COLUMN sys_message_template.is_deleted IS '逻辑删除';
+
+-- 用户消息订阅配置表
+-- CREATE TABLE sys_user_subscription (
+--     id                  BIGINT          NOT NULL,
+--     user_id             BIGINT          NOT NULL,
+--     tenant_id           BIGINT          NOT NULL,
+--     subscription_type   SMALLINT        NOT NULL,
+--     enabled_types       JSONB           DEFAULT '{"system":true,"billing":true,"approval":false}'::jsonb,
+--     frequency           SMALLINT        DEFAULT 1,
+--     quiet_start         TIME            DEFAULT '22:00:00',
+--     quiet_end           TIME            DEFAULT '08:00:00',
+--     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     PRIMARY KEY (id)
+-- );
+-- COMMENT ON TABLE sys_user_subscription IS '用户消息订阅配置表 - 用户可自定义接收哪些类型的消息';
+-- COMMENT ON COLUMN sys_user_subscription.id IS '主键 ID';
+-- COMMENT ON COLUMN sys_user_subscription.user_id IS '用户 ID';
+-- COMMENT ON COLUMN sys_user_subscription.tenant_id IS '租户 ID';
+-- COMMENT ON COLUMN sys_user_subscription.subscription_type IS '订阅类型 (1-系统通知 2-营销消息 3-账单提醒 4-审批通知)';
+-- COMMENT ON COLUMN sys_user_subscription.enabled_types IS '启用的消息类型 (JSONB)';
+-- COMMENT ON COLUMN sys_user_subscription.frequency IS '发送频率 (1-实时 2-每小时汇总 3-每日汇总)';
+-- COMMENT ON COLUMN sys_user_subscription.quiet_start IS '免打扰开始时间';
+-- COMMENT ON COLUMN sys_user_subscription.quiet_end IS '免打扰结束时间';
+-- COMMENT ON COLUMN sys_user_subscription.create_time IS '创建时间';
+-- COMMENT ON COLUMN sys_user_subscription.update_time IS '更新时间';
+
+-- 站内信收件箱表
+CREATE TABLE sys_inbox_message (
+                                   id                  BIGINT          NOT NULL,
+                                   user_id             BIGINT          NOT NULL,
+                                   tenant_id           BIGINT          NOT NULL,
+                                   message_type        SMALLINT        DEFAULT 1,
+                                   title               VARCHAR(200)    NOT NULL,
+                                   content             TEXT            NOT NULL,
+                                   priority            SMALLINT        DEFAULT 1,
+                                   is_read             BOOLEAN         DEFAULT FALSE,
+                                   read_time           TIMESTAMP       DEFAULT NULL,
+                                   is_archived         BOOLEAN         DEFAULT FALSE,
+                                   archived_time       TIMESTAMP       DEFAULT NULL,
+                                   expire_time         TIMESTAMP       DEFAULT NULL,
+                                   action_url          VARCHAR(500)    DEFAULT '',
+                                   action_text         VARCHAR(50)     DEFAULT '',
+                                   create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                   PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_inbox_message IS '站内信收件箱表 - 用户个人消息 inbox';
+COMMENT ON COLUMN sys_inbox_message.id IS '主键 ID';
+COMMENT ON COLUMN sys_inbox_message.user_id IS '用户 ID';
+COMMENT ON COLUMN sys_inbox_message.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_inbox_message.message_type IS '消息类型 (1-系统通知 2-审批通知 3-账单提醒 4-营销活动)';
+COMMENT ON COLUMN sys_inbox_message.title IS '消息标题';
+COMMENT ON COLUMN sys_inbox_message.content IS '消息内容';
+COMMENT ON COLUMN sys_inbox_message.priority IS '优先级 (1-普通 2-重要 3-紧急)';
+COMMENT ON COLUMN sys_inbox_message.is_read IS '是否已读';
+COMMENT ON COLUMN sys_inbox_message.read_time IS '阅读时间';
+COMMENT ON COLUMN sys_inbox_message.is_archived IS '是否已归档';
+COMMENT ON COLUMN sys_inbox_message.archived_time IS '归档时间';
+COMMENT ON COLUMN sys_inbox_message.expire_time IS '过期时间 (NULL 为永不过期)';
+COMMENT ON COLUMN sys_inbox_message.action_url IS '操作按钮 URL';
+COMMENT ON COLUMN sys_inbox_message.action_text IS '操作按钮文案';
+COMMENT ON COLUMN sys_inbox_message.create_time IS '创建时间';
+
+-- 定时消息任务表
+CREATE TABLE sys_message_schedule (
+                                      id                  BIGINT          NOT NULL,
+                                      task_name           VARCHAR(100)    NOT NULL,
+                                      tenant_id           BIGINT          DEFAULT 0,
+                                      template_id         BIGINT          NOT NULL,
+                                      target_type         SMALLINT        NOT NULL,
+                                      target_ids          VARCHAR(1000)   DEFAULT '',
+                                      trigger_type        SMALLINT        DEFAULT 1,
+                                      trigger_condition   JSONB           DEFAULT '{}'::jsonb,
+                                      execute_time        TIMESTAMP       NOT NULL,
+                                      repeat_rule         JSONB           DEFAULT '{}'::jsonb,
+                                      status              SMALLINT        DEFAULT 0,
+                                      executed_count      INT             DEFAULT 0,
+                                      last_execute_time   TIMESTAMP       DEFAULT NULL,
+                                      create_by           BIGINT          DEFAULT 0,
+                                      create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                      update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+                                      is_deleted          SMALLINT        DEFAULT 0,
+                                      PRIMARY KEY (id)
+);
+COMMENT ON TABLE sys_message_schedule IS '定时消息任务表 - 预约发送或周期性发送的消息';
+COMMENT ON COLUMN sys_message_schedule.id IS '主键 ID';
+COMMENT ON COLUMN sys_message_schedule.task_name IS '任务名称';
+COMMENT ON COLUMN sys_message_schedule.tenant_id IS '租户 ID';
+COMMENT ON COLUMN sys_message_schedule.template_id IS '消息模板 ID';
+COMMENT ON COLUMN sys_message_schedule.target_type IS '目标类型 (1-指定用户 2-指定租户 3-符合条件的所有用户)';
+COMMENT ON COLUMN sys_message_schedule.target_ids IS '目标 ID 集合 (逗号分隔)';
+COMMENT ON COLUMN sys_message_schedule.trigger_type IS '触发类型 (1-单次定时 2-周期循环 3-事件触发)';
+COMMENT ON COLUMN sys_message_schedule.trigger_condition IS '触发条件 (JSONB，定义时间/事件规则)';
+COMMENT ON COLUMN sys_message_schedule.execute_time IS '计划执行时间';
+COMMENT ON COLUMN sys_message_schedule.repeat_rule IS '重复规则 (JSONB，如{"type":"daily","interval":1})';
+COMMENT ON COLUMN sys_message_schedule.status IS '状态 (0-待执行 1-执行中 2-已完成 3-已取消)';
+COMMENT ON COLUMN sys_message_schedule.executed_count IS '已执行次数';
+COMMENT ON COLUMN sys_message_schedule.last_execute_time IS '最后执行时间';
+COMMENT ON COLUMN sys_message_schedule.create_by IS '创建人 ID';
+COMMENT ON COLUMN sys_message_schedule.create_time IS '创建时间';
+COMMENT ON COLUMN sys_message_schedule.update_time IS '更新时间';
+COMMENT ON COLUMN sys_message_schedule.is_deleted IS '逻辑删除';
+
+-- =============================================================================
+-- 8. 数据分析报表 (Analytics & Reporting) - 后续扩展
+-- =============================================================================
+
+-- 报表定义表
+-- CREATE TABLE sys_report_definition (
+--     id                  BIGINT          NOT NULL,
+--     report_code         VARCHAR(100)    NOT NULL,
+--     report_name         VARCHAR(100)    NOT NULL,
+--     tenant_id           BIGINT          DEFAULT 0,
+--     biz_domain          VARCHAR(50)     NOT NULL,
+--     report_type         SMALLINT        DEFAULT 1,
+--     data_source_type    SMALLINT        DEFAULT 1,
+--     data_source_config  JSONB           NOT NULL,
+--     dimensions          JSONB           DEFAULT '[]'::jsonb,
+--     metrics             JSONB           DEFAULT '[]'::jsonb,
+--     filters             JSONB           DEFAULT '[]'::jsonb,
+--     chart_config        JSONB           DEFAULT '{}'::jsonb,
+--     refresh_type        SMALLINT        DEFAULT 1,
+--     refresh_interval    INT             DEFAULT 3600,
+--     cache_expire        INT             DEFAULT 1800,
+--     status              SMALLINT        DEFAULT 1,
+--     sort_order          INT             DEFAULT 0,
+--     is_public           BOOLEAN         DEFAULT FALSE,
+--     visible_roles       JSONB           DEFAULT '[]'::jsonb,
+--     create_by           BIGINT          DEFAULT 0,
+--     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     is_deleted          SMALLINT        DEFAULT 0,
+--     PRIMARY KEY (id)
+-- );
+-- COMMENT ON TABLE sys_report_definition IS '报表定义表 - 定义报表的结构、数据源、维度指标';
+-- COMMENT ON COLUMN sys_report_definition.id IS '主键 ID';
+-- COMMENT ON COLUMN sys_report_definition.report_code IS '报表编码 (如：revenue_daily, tenant_growth)';
+-- COMMENT ON COLUMN sys_report_definition.report_name IS '报表名称';
+-- COMMENT ON COLUMN sys_report_definition.tenant_id IS '所属租户 ID (0 为系统报表)';
+-- COMMENT ON COLUMN sys_report_definition.biz_domain IS '业务域 (如：billing, user, resource)';
+-- COMMENT ON COLUMN sys_report_definition.report_type IS '报表类型 (1-列表 2-图表 3-透视表 4-仪表盘)';
+-- COMMENT ON COLUMN sys_report_definition.data_source_type IS '数据源类型 (1-SQL 查询 2-API 接口 3-聚合表)';
+-- COMMENT ON COLUMN sys_report_definition.data_source_config IS '数据源配置 (JSONB，SQL/API 定义)';
+-- COMMENT ON COLUMN sys_report_definition.dimensions IS '维度定义 (JSONB，如时间/地区/套餐类型)';
+-- COMMENT ON COLUMN sys_report_definition.metrics IS '指标定义 (JSONB，如金额/数量/增长率)';
+-- COMMENT ON COLUMN sys_report_definition.filters IS '筛选条件 (JSONB，默认过滤条件)';
+-- COMMENT ON COLUMN sys_report_definition.chart_config IS '图表配置 (JSONB，ECharts/AntV 配置)';
+-- COMMENT ON COLUMN sys_report_definition.refresh_type IS '刷新类型 (1-实时 2-定时 3-手动)';
+-- COMMENT ON COLUMN sys_report_definition.refresh_interval IS '刷新间隔 (秒)';
+-- COMMENT ON COLUMN sys_report_definition.cache_expire IS '缓存过期时间 (秒)';
+-- COMMENT ON COLUMN sys_report_definition.status IS '状态 (1-启用 0-停用)';
+-- COMMENT ON COLUMN sys_report_definition.sort_order IS '排序';
+-- COMMENT ON COLUMN sys_report_definition.is_public IS '是否公开';
+-- COMMENT ON COLUMN sys_report_definition.visible_roles IS '可见角色 (JSONB，角色 ID 列表)';
+-- COMMENT ON COLUMN sys_report_definition.create_by IS '创建人 ID';
+-- COMMENT ON COLUMN sys_report_definition.create_time IS '创建时间';
+-- COMMENT ON COLUMN sys_report_definition.update_time IS '更新时间';
+-- COMMENT ON COLUMN sys_report_definition.is_deleted IS '逻辑删除';
+--
+-- -- 报表实例数据表
+-- CREATE TABLE sys_report_instance (
+--     id                  BIGINT          NOT NULL,
+--     report_id           BIGINT          NOT NULL,
+--     tenant_id           BIGINT          NOT NULL,
+--     snapshot_time       TIMESTAMP       NOT NULL,
+--     data_period_start   TIMESTAMP       DEFAULT NULL,
+--     data_period_end     TIMESTAMP       DEFAULT NULL,
+--     row_data            JSONB           NOT NULL,
+--     summary_data        JSONB           DEFAULT '{}'::jsonb,
+--     total_rows          INT             DEFAULT 0,
+--     total_pages         INT             DEFAULT 0,
+--     generate_duration   INT             DEFAULT 0,
+--     cache_expire_time   TIMESTAMP       DEFAULT NULL,
+--     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     PRIMARY KEY (id)
+-- );
+-- COMMENT ON TABLE sys_report_instance IS '报表实例数据表 - 存储生成的报表数据快照';
+-- COMMENT ON COLUMN sys_report_instance.id IS '主键 ID';
+-- COMMENT ON COLUMN sys_report_instance.report_id IS '关联报表定义 ID';
+-- COMMENT ON COLUMN sys_report_instance.tenant_id IS '租户 ID';
+-- COMMENT ON COLUMN sys_report_instance.snapshot_time IS '数据快照时间';
+-- COMMENT ON COLUMN sys_report_instance.data_period_start IS '数据起始时间';
+-- COMMENT ON COLUMN sys_report_instance.data_period_end IS '数据结束时间';
+-- COMMENT ON COLUMN sys_report_instance.row_data IS '明细数据 (JSONB 数组)';
+-- COMMENT ON COLUMN sys_report_instance.summary_data IS '汇总数据 (JSONB，如总计/平均值)';
+-- COMMENT ON COLUMN sys_report_instance.total_rows IS '总行数';
+-- COMMENT ON COLUMN sys_report_instance.total_pages IS '总页数';
+-- COMMENT ON COLUMN sys_report_instance.generate_duration IS '生成耗时 (毫秒)';
+-- COMMENT ON COLUMN sys_report_instance.cache_expire_time IS '缓存过期时间';
+-- COMMENT ON COLUMN sys_report_instance.create_time IS '创建时间';
+--
+-- -- 仪表板配置表（可删除）
+-- CREATE TABLE sys_dashboard (
+--     id                  BIGINT          NOT NULL,
+--     dashboard_code      VARCHAR(100)    NOT NULL,
+--     dashboard_name      VARCHAR(100)    NOT NULL,
+--     tenant_id           BIGINT          DEFAULT 0,
+--     description         VARCHAR(500)    DEFAULT '',
+--     layout_config       JSONB           NOT NULL,
+--     widgets             JSONB           NOT NULL,
+--     refresh_interval    INT             DEFAULT 60,
+--     theme               VARCHAR(50)     DEFAULT 'light',
+--     status              SMALLINT        DEFAULT 1,
+--     is_public           BOOLEAN         DEFAULT FALSE,
+--     visible_roles       JSONB           DEFAULT '[]'::jsonb,
+--     create_by           BIGINT          DEFAULT 0,
+--     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     is_deleted          SMALLINT        DEFAULT 0,
+--     PRIMARY KEY (id)
+-- );
+-- COMMENT ON TABLE sys_dashboard IS '仪表板配置表 - 定义数据看板的布局和组件';
+-- COMMENT ON COLUMN sys_dashboard.id IS '主键 ID';
+-- COMMENT ON COLUMN sys_dashboard.dashboard_code IS '仪表板编码';
+-- COMMENT ON COLUMN sys_dashboard.dashboard_name IS '仪表板名称';
+-- COMMENT ON COLUMN sys_dashboard.tenant_id IS '所属租户 ID (0 为系统仪表板)';
+-- COMMENT ON COLUMN sys_dashboard.description IS '描述';
+-- COMMENT ON COLUMN sys_dashboard.layout_config IS '布局配置 (JSONB，行列数/栅格系统)';
+-- COMMENT ON COLUMN sys_dashboard.widgets IS '组件列表 (JSONB，每个组件的位置/大小/关联报表)';
+-- COMMENT ON COLUMN sys_dashboard.refresh_interval IS '刷新间隔 (秒)';
+-- COMMENT ON COLUMN sys_dashboard.theme IS '主题 (light/dark)';
+-- COMMENT ON COLUMN sys_dashboard.status IS '状态 (1-启用 0-停用)';
+-- COMMENT ON COLUMN sys_dashboard.is_public IS '是否公开';
+-- COMMENT ON COLUMN sys_dashboard.visible_roles IS '可见角色';
+-- COMMENT ON COLUMN sys_dashboard.create_by IS '创建人 ID';
+-- COMMENT ON COLUMN sys_dashboard.create_time IS '创建时间';
+-- COMMENT ON COLUMN sys_dashboard.update_time IS '更新时间';
+-- COMMENT ON COLUMN sys_dashboard.is_deleted IS '逻辑删除';
+--
+-- -- 数据导出任务表（可删除）
+-- CREATE TABLE sys_export_task (
+--     id                  BIGINT          NOT NULL,
+--     task_no             VARCHAR(64)     NOT NULL,
+--     tenant_id           BIGINT          NOT NULL,
+--     export_type         SMALLINT        DEFAULT 1,
+--     source_id           BIGINT          DEFAULT 0,
+--     file_name           VARCHAR(255)    NOT NULL,
+--     file_format         SMALLINT        DEFAULT 1,
+--     file_size           BIGINT          DEFAULT 0,
+--     row_count           INT             DEFAULT 0,
+--     export_status       SMALLINT        DEFAULT 0,
+--     progress            INT             DEFAULT 0,
+--     error_msg           VARCHAR(500)    DEFAULT '',
+--     download_url        VARCHAR(500)    DEFAULT '',
+--     download_count      INT             DEFAULT 0,
+--     expire_time         TIMESTAMP       DEFAULT NULL,
+--     create_by           BIGINT          DEFAULT 0,
+--     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     finish_time         TIMESTAMP       DEFAULT NULL,
+--     is_deleted          SMALLINT        DEFAULT 0,
+--     PRIMARY KEY (id)
+-- );
+-- COMMENT ON TABLE sys_export_task IS '数据导出任务表 - 异步导出 Excel/CSV 文件';
+-- COMMENT ON COLUMN sys_export_task.id IS '主键 ID';
+-- COMMENT ON COLUMN sys_export_task.task_no IS '任务编号';
+-- COMMENT ON COLUMN sys_export_task.tenant_id IS '租户 ID';
+-- COMMENT ON COLUMN sys_export_task.export_type IS '导出类型 (1-报表数据 2-原始数据 3-自定义查询)';
+-- COMMENT ON COLUMN sys_export_task.source_id IS '来源 ID (报表 ID/其他业务 ID)';
+-- COMMENT ON COLUMN sys_export_task.file_name IS '文件名';
+-- COMMENT ON COLUMN sys_export_task.file_format IS '文件格式 (1-Excel 2-Csv 3-Pdf)';
+-- COMMENT ON COLUMN sys_export_task.file_size IS '文件大小 (字节)';
+-- COMMENT ON COLUMN sys_export_task.row_count IS '数据行数';
+-- COMMENT ON COLUMN sys_export_task.export_status IS '导出状态 (0-待处理 1-处理中 2-完成 3-失败)';
+-- COMMENT ON COLUMN sys_export_task.progress IS '进度百分比 (0-100)';
+-- COMMENT ON COLUMN sys_export_task.error_msg IS '错误信息';
+-- COMMENT ON COLUMN sys_export_task.download_url IS '下载 URL';
+-- COMMENT ON COLUMN sys_export_task.download_count IS '下载次数';
+-- COMMENT ON COLUMN sys_export_task.expire_time IS '过期时间 (7 天后自动清理)';
+-- COMMENT ON COLUMN sys_export_task.create_by IS '创建人 ID';
+-- COMMENT ON COLUMN sys_export_task.create_time IS '创建时间';
+-- COMMENT ON COLUMN sys_export_task.finish_time IS '完成时间';
+-- COMMENT ON COLUMN sys_export_task.is_deleted IS '逻辑删除';
+--
+-- -- 数据统计聚合表 (按天汇总)
+-- CREATE TABLE sys_stat_daily (
+--     id                  BIGINT          NOT NULL,
+--     tenant_id           BIGINT          NOT NULL,
+--     stat_date           DATE            NOT NULL,
+--     stat_type           VARCHAR(50)     NOT NULL,
+--     stat_dimension      VARCHAR(100)    DEFAULT '',
+--     dimension_value     VARCHAR(500)    DEFAULT '',
+--     metric_code         VARCHAR(50)     NOT NULL,
+--     metric_value        DECIMAL(20,4)   DEFAULT 0,
+--     metric_delta        DECIMAL(20,4)   DEFAULT 0,
+--     compare_value       DECIMAL(20,4)   DEFAULT 0,
+--     compare_ratio       DECIMAL(10,4)   DEFAULT 0,
+--     ext_data            JSONB           DEFAULT '{}'::jsonb,
+--     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     PRIMARY KEY (id)
+-- );
+-- COMMENT ON TABLE sys_stat_daily IS '数据统计聚合表 - 按天汇总的关键指标';
+-- COMMENT ON COLUMN sys_stat_daily.id IS '主键 ID';
+-- COMMENT ON COLUMN sys_stat_daily.tenant_id IS '租户 ID';
+-- COMMENT ON COLUMN sys_stat_daily.stat_date IS '统计日期';
+-- COMMENT ON COLUMN sys_stat_daily.stat_type IS '统计类型 (如：revenue, user, order, resource)';
+-- COMMENT ON COLUMN sys_stat_daily.stat_dimension IS '统计维度 (如：package_type, industry)';
+-- COMMENT ON COLUMN sys_stat_daily.dimension_value IS '维度值';
+-- COMMENT ON COLUMN sys_stat_daily.metric_code IS '指标编码 (如：total_amount, new_count)';
+-- COMMENT ON COLUMN sys_stat_daily.metric_value IS '指标值';
+-- COMMENT ON COLUMN sys_stat_daily.metric_delta IS '较昨日增量';
+-- COMMENT ON COLUMN sys_stat_daily.compare_value IS '对比值 (上周同期/上月同期)';
+-- COMMENT ON COLUMN sys_stat_daily.compare_ratio IS '对比增长率';
+-- COMMENT ON COLUMN sys_stat_daily.ext_data IS '扩展数据 (JSONB)';
+-- COMMENT ON COLUMN sys_stat_daily.create_time IS '创建时间';
+-- COMMENT ON COLUMN sys_stat_daily.update_time IS '更新时间';
+--
+-- -- 数据统计聚合表 (按月汇总)
+-- CREATE TABLE sys_stat_monthly (
+--     id                  BIGINT          NOT NULL,
+--     tenant_id           BIGINT          NOT NULL,
+--     stat_month          DATE            NOT NULL,
+--     stat_type           VARCHAR(50)     NOT NULL,
+--     stat_dimension      VARCHAR(100)    DEFAULT '',
+--     dimension_value     VARCHAR(500)    DEFAULT '',
+--     metric_code         VARCHAR(50)     NOT NULL,
+--     metric_value        DECIMAL(20,4)   DEFAULT 0,
+--     metric_delta        DECIMAL(20,4)   DEFAULT 0,
+--     compare_value       DECIMAL(20,4)   DEFAULT 0,
+--     compare_ratio       DECIMAL(10,4)   DEFAULT 0,
+--     ext_data            JSONB           DEFAULT '{}'::jsonb,
+--     create_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     update_time         TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
+--     PRIMARY KEY (id)
+-- );
+-- COMMENT ON TABLE sys_stat_monthly IS '数据统计聚合表 - 按月汇总的关键指标';
+-- COMMENT ON COLUMN sys_stat_monthly.id IS '主键 ID';
+-- COMMENT ON COLUMN sys_stat_monthly.tenant_id IS '租户 ID';
+-- COMMENT ON COLUMN sys_stat_monthly.stat_month IS '统计月份 (月初日期)';
+-- COMMENT ON COLUMN sys_stat_monthly.stat_type IS '统计类型';
+-- COMMENT ON COLUMN sys_stat_monthly.stat_dimension IS '统计维度';
+-- COMMENT ON COLUMN sys_stat_monthly.dimension_value IS '维度值';
+-- COMMENT ON COLUMN sys_stat_monthly.metric_code IS '指标编码';
+-- COMMENT ON COLUMN sys_stat_monthly.metric_value IS '指标值';
+-- COMMENT ON COLUMN sys_stat_monthly.metric_delta IS '较上月增量';
+-- COMMENT ON COLUMN sys_stat_monthly.compare_value IS '对比值 (去年同期)';
+-- COMMENT ON COLUMN sys_stat_monthly.compare_ratio IS '对比增长率';
+-- COMMENT ON COLUMN sys_stat_monthly.ext_data IS '扩展数据';
+-- COMMENT ON COLUMN sys_stat_monthly.create_time IS '创建时间';
+-- COMMENT ON COLUMN sys_stat_monthly.update_time IS '更新时间';

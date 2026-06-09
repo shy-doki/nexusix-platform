@@ -7,7 +7,7 @@
 | 项目 | 内容 |
 |------|------|
 | 项目名称 | NexusIX-Platform 多租户 SaaS 平台底座 |
-| 文档版本 | V1.0 |
+| 文档版本 | V2.0 |
 | 编写日期 | 2026-05-23 |
 | 技术栈 | Spring Boot 3 + MyBatis-Plus + PostgreSQL 17 + Sa-Token + Redis |
 | 包根路径 | `com.shy.nexusix` |
@@ -102,7 +102,10 @@ classDiagram
     }
     class PermPolicyStatus {
         ACTIVE
-        INACTIVE
+        DISABLED_SYSTEM_LEVEL
+        DISABLED_TENANT_LEVEL
+        DISABLED_ROLE_LEVEL
+        DISABLED_USER_LEVEL
     }
     class PermPolicyTargetType {
         TENANT
@@ -799,15 +802,861 @@ classDiagram
 @Mapper(componentModel = "spring")
 public interface SysTenantConverter {
     @Mapping(source = "createBy", target = "createByName")
-    @Mapping(source = "createAt", target = "createTime")
+    @Mapping(source = "createAt", target = "createAt")
     @Mapping(source = "updateBy", target = "updateByName")
-    @Mapping(source = "updateAt", target = "updateTime")
-    @Mapping(source = "deletedAt", target = "deleteTime")
+    @Mapping(source = "updateAt", target = "updateAt")
+    @Mapping(source = "deletedAt", target = "deletedAt")
     SysTenantCommonVO toCommonVO(SysTenant entity);
 }
 ```
 
 采用 MapStruct 编译期代码生成，零运行时反射开销。`componentModel = "spring"` 使生成的实现类自动注册为 Spring Bean。
+
+---
+
+### 2.5 nexusix-org 模块
+
+- **模块名称**：nexusix-org
+- **包路径**：`com.shy.nexusix.org`
+- **负责数据表**：`sys_dept`、`sys_post`、`sys_user_group`、`sys_user_group_rel`、`sys_role_dept_rel`
+
+#### 2.5.1 类图
+
+```mermaid
+classDiagram
+    direction TB
+
+    class SysDeptController {
+        -ISysDeptService iSysDeptService
+    }
+    class SysPostController {
+        -ISysPostService iSysPostService
+    }
+    class SysUserGroupController {
+        -ISysUserGroupService iSysUserGroupService
+    }
+    class SysUserGroupRelController {
+        -ISysUserGroupRelService iSysUserGroupRelService
+    }
+    class SysRoleDeptRelController {
+        -ISysRoleDeptRelService iSysRoleDeptRelService
+    }
+
+    class ISysDeptService {
+        <<interface>>
+    }
+    class SysDeptServiceImpl
+    class ISysPostService {
+        <<interface>>
+    }
+    class SysPostServiceImpl
+    class ISysUserGroupService {
+        <<interface>>
+    }
+    class SysUserGroupServiceImpl
+    class ISysUserGroupRelService {
+        <<interface>>
+    }
+    class SysUserGroupRelServiceImpl
+    class ISysRoleDeptRelService {
+        <<interface>>
+    }
+    class SysRoleDeptRelServiceImpl
+
+    class SysDeptMapper
+    class SysPostMapper
+    class SysUserGroupMapper
+    class SysUserGroupRelMapper
+    class SysRoleDeptRelMapper
+
+    class SysDept {
+        -Long id
+        -String deptName
+        -Long parentId
+        -String path
+        -Long tenantId
+        -String tenantCode
+        -Long leaderId
+        -String phone
+        -Integer sortOrder
+        -String status
+        -String deptDesc
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysPost {
+        -Long id
+        -String postName
+        -String postCode
+        -Long deptId
+        -Long tenantId
+        -String tenantCode
+        -Integer sortOrder
+        -String status
+        -String postDesc
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysUserGroup {
+        -Long id
+        -String groupName
+        -String groupType
+        -Long tenantId
+        -String tenantCode
+        -String description
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysUserGroupRel {
+        -Long id
+        -Long groupId
+        -Long userId
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysRoleDeptRel {
+        -Long id
+        -Long roleId
+        -Long deptId
+        -Long tenantId
+        -String tenantCode
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+
+    SysDeptController --> ISysDeptService
+    SysPostController --> ISysPostService
+    SysUserGroupController --> ISysUserGroupService
+    SysUserGroupRelController --> ISysUserGroupRelService
+    SysRoleDeptRelController --> ISysRoleDeptRelService
+
+    ISysDeptService <|.. SysDeptServiceImpl
+    ISysPostService <|.. SysPostServiceImpl
+    ISysUserGroupService <|.. SysUserGroupServiceImpl
+    ISysUserGroupRelService <|.. SysUserGroupRelServiceImpl
+    ISysRoleDeptRelService <|.. SysRoleDeptRelServiceImpl
+
+    SysDeptServiceImpl --> SysDeptMapper
+    SysPostServiceImpl --> SysPostMapper
+    SysUserGroupServiceImpl --> SysUserGroupMapper
+    SysUserGroupRelServiceImpl --> SysUserGroupRelMapper
+    SysRoleDeptRelServiceImpl --> SysRoleDeptRelMapper
+
+    SysDeptMapper --> SysDept
+    SysPostMapper --> SysPost
+    SysUserGroupMapper --> SysUserGroup
+    SysUserGroupRelMapper --> SysUserGroupRel
+    SysRoleDeptRelMapper --> SysRoleDeptRel
+```
+
+#### 2.5.2 Controller 路由表
+
+| Controller | 路由前缀 | 核心接口 |
+|-----------|---------|---------|
+| `SysDeptController` | `/dept` | CRUD + 树形查询 |
+| `SysPostController` | `/post` | CRUD + 批量操作 |
+| `SysUserGroupController` | `/user-group` | CRUD + 批量操作 |
+| `SysUserGroupRelController` | `/user-group-rel` | CRUD |
+| `SysRoleDeptRelController` | `/role-dept-rel` | CRUD |
+
+---
+
+### 2.6 nexusix-billing 模块
+
+- **模块名称**：nexusix-billing
+- **包路径**：`com.shy.nexusix.billing`
+- **负责数据表**：`prod_package`、`prod_package_quota`、`bill_order`、`bill_invoice`
+
+#### 2.6.1 类图
+
+```mermaid
+classDiagram
+    direction TB
+
+    class ProdPackageController {
+        -IProdPackageService iProdPackageService
+    }
+    class ProdPackageQuotaController {
+        -IProdPackageQuotaService iProdPackageQuotaService
+    }
+    class BillOrderController {
+        -IBillOrderService iBillOrderService
+    }
+    class BillInvoiceController {
+        -IBillInvoiceService iBillInvoiceService
+    }
+
+    class IProdPackageService {
+        <<interface>>
+    }
+    class ProdPackageServiceImpl
+    class IProdPackageQuotaService {
+        <<interface>>
+    }
+    class ProdPackageQuotaServiceImpl
+    class IBillOrderService {
+        <<interface>>
+    }
+    class BillOrderServiceImpl
+    class IBillInvoiceService {
+        <<interface>>
+    }
+    class BillInvoiceServiceImpl
+
+    class ProdPackageMapper
+    class ProdPackageQuotaMapper
+    class BillOrderMapper
+    class BillInvoiceMapper
+
+    class ProdPackage {
+        -Long id
+        -String packageName
+        -String packageCode
+        -String description
+        -BigDecimal price
+        -String cycleType
+        -Integer cycleValue
+        -String status
+        -Integer sortOrder
+        -String extAttributes
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class ProdPackageQuota {
+        -Long id
+        -Long packageId
+        -String resourceCode
+        -String resourceName
+        -String quotaValue
+        -String unit
+        -Boolean isAllowOverage
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class BillOrder {
+        -Long id
+        -Long tenantId
+        -String tenantCode
+        -String tenantName
+        -String orderNo
+        -String productType
+        -Long productId
+        -BigDecimal totalAmount
+        -BigDecimal payAmount
+        -String status
+        -LocalDateTime payTime
+        -String payChannel
+        -String orderItems
+        -String extAttributes
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class BillInvoice {
+        -Long id
+        -Long tenantId
+        -String tenantCode
+        -String tenantName
+        -Long orderId
+        -String invoiceNo
+        -String invoiceType
+        -String invoiceTitle
+        -String taxId
+        -BigDecimal amount
+        -String status
+        -String invoiceUrl
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+
+    ProdPackageController --> IProdPackageService
+    ProdPackageQuotaController --> IProdPackageQuotaService
+    BillOrderController --> IBillOrderService
+    BillInvoiceController --> IBillInvoiceService
+
+    IProdPackageService <|.. ProdPackageServiceImpl
+    IProdPackageQuotaService <|.. ProdPackageQuotaServiceImpl
+    IBillOrderService <|.. BillOrderServiceImpl
+    IBillInvoiceService <|.. BillInvoiceServiceImpl
+
+    ProdPackageServiceImpl --> ProdPackageMapper
+    ProdPackageQuotaServiceImpl --> ProdPackageQuotaMapper
+    BillOrderServiceImpl --> BillOrderMapper
+    BillInvoiceServiceImpl --> BillInvoiceMapper
+
+    ProdPackageMapper --> ProdPackage
+    ProdPackageQuotaMapper --> ProdPackageQuota
+    BillOrderMapper --> BillOrder
+    BillInvoiceMapper --> BillInvoice
+```
+
+#### 2.6.2 Controller 路由表
+
+| Controller | 路由前缀 | 核心接口 |
+|-----------|---------|---------|
+| `ProdPackageController` | `/prod-package` | CRUD + 批量操作 |
+| `ProdPackageQuotaController` | `/prod-package-quota` | CRUD |
+| `BillOrderController` | `/bill-order` | CRUD + 支付回调 |
+| `BillInvoiceController` | `/bill-invoice` | CRUD + 开票 |
+
+---
+
+### 2.7 nexusix-system 模块
+
+- **模块名称**：nexusix-system
+- **包路径**：`com.shy.nexusix.system`
+- **负责数据表**：`sys_menu`、`sys_dict`、`sys_dict_item`、`sys_file`
+
+#### 2.7.1 类图
+
+```mermaid
+classDiagram
+    direction TB
+
+    class SysMenuController {
+        -ISysMenuService iSysMenuService
+    }
+    class SysDictController {
+        -ISysDictService iSysDictService
+    }
+    class SysDictItemController {
+        -ISysDictItemService iSysDictItemService
+    }
+    class SysFileController {
+        -ISysFileService iSysFileService
+    }
+
+    class ISysMenuService {
+        <<interface>>
+    }
+    class SysMenuServiceImpl
+    class ISysDictService {
+        <<interface>>
+    }
+    class SysDictServiceImpl
+    class ISysDictItemService {
+        <<interface>>
+    }
+    class SysDictItemServiceImpl
+    class ISysFileService {
+        <<interface>>
+    }
+    class SysFileServiceImpl
+
+    class SysMenuMapper
+    class SysDictMapper
+    class SysDictItemMapper
+    class SysFileMapper
+
+    class SysMenu {
+        -Long id
+        -String menuName
+        -String menuType
+        -Long parentId
+        -String parentName
+        -String path
+        -String component
+        -String permCode
+        -String visible
+        -String status
+        -Integer sortOrder
+        -String menuDesc
+        -String icon
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysDict {
+        -Long id
+        -String dictName
+        -String dictType
+        -Long tenantId
+        -String tenantCode
+        -String status
+        -String remark
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysDictItem {
+        -Long id
+        -Long dictId
+        -String dictLabel
+        -String dictValue
+        -Integer sortOrder
+        -String status
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysFile {
+        -Long id
+        -Long tenantId
+        -String tenantCode
+        -String fileName
+        -String filePath
+        -String fileUrl
+        -Long fileSize
+        -String fileType
+        -String uploadBy
+        -LocalDateTime uploadTime
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+
+    SysMenuController --> ISysMenuService
+    SysDictController --> ISysDictService
+    SysDictItemController --> ISysDictItemService
+    SysFileController --> ISysFileService
+
+    ISysMenuService <|.. SysMenuServiceImpl
+    ISysDictService <|.. SysDictServiceImpl
+    ISysDictItemService <|.. SysDictItemServiceImpl
+    ISysFileService <|.. SysFileServiceImpl
+
+    SysMenuServiceImpl --> SysMenuMapper
+    SysDictServiceImpl --> SysDictMapper
+    SysDictItemServiceImpl --> SysDictItemMapper
+    SysFileServiceImpl --> SysFileMapper
+
+    SysMenuMapper --> SysMenu
+    SysDictMapper --> SysDict
+    SysDictItemMapper --> SysDictItem
+    SysFileMapper --> SysFile
+```
+
+#### 2.7.2 Controller 路由表
+
+| Controller | 路由前缀 | 核心接口 |
+|-----------|---------|---------|
+| `SysMenuController` | `/menu` | CRUD + 树形查询 |
+| `SysDictController` | `/dict` | CRUD + 批量操作 |
+| `SysDictItemController` | `/dict-item` | CRUD |
+| `SysFileController` | `/file` | 上传 + 下载 + CRUD |
+
+---
+
+### 2.8 nexusix-notify 模块
+
+- **模块名称**：nexusix-notify
+- **包路径**：`com.shy.nexusix.notify`
+- **负责数据表**：`sys_message_template`、`sys_inbox_message`、`sys_message_schedule`
+
+#### 2.8.1 类图
+
+```mermaid
+classDiagram
+    direction TB
+
+    class SysMessageTemplateController {
+        -ISysMessageTemplateService iSysMessageTemplateService
+    }
+    class SysInboxMessageController {
+        -ISysInboxMessageService iSysInboxMessageService
+    }
+    class SysMessageScheduleController {
+        -ISysMessageScheduleService iSysMessageScheduleService
+    }
+
+    class ISysMessageTemplateService {
+        <<interface>>
+    }
+    class SysMessageTemplateServiceImpl
+    class ISysInboxMessageService {
+        <<interface>>
+    }
+    class SysInboxMessageServiceImpl
+    class ISysMessageScheduleService {
+        <<interface>>
+    }
+    class SysMessageScheduleServiceImpl
+
+    class SysMessageTemplateMapper
+    class SysInboxMessageMapper
+    class SysMessageScheduleMapper
+
+    class SysMessageTemplate {
+        -Long id
+        -String templateCode
+        -String templateName
+        -Long tenantId
+        -String tenantCode
+        -String bizType
+        -String messageType
+        -String templateTitle
+        -String templateContent
+        -String templateExample
+        -String variables
+        -String status
+        -Integer version
+        -String language
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysInboxMessage {
+        -Long id
+        -Long userId
+        -Long tenantId
+        -String tenantCode
+        -String messageType
+        -String title
+        -String content
+        -String priority
+        -Boolean isRead
+        -LocalDateTime readTime
+        -Boolean isArchived
+        -LocalDateTime archivedTime
+        -LocalDateTime expireTime
+        -String actionUrl
+        -String actionText
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysMessageSchedule {
+        -Long id
+        -String taskName
+        -Long tenantId
+        -String tenantCode
+        -Long templateId
+        -String targetType
+        -String targetIds
+        -String triggerType
+        -String triggerCondition
+        -LocalDateTime executeTime
+        -String repeatRule
+        -String status
+        -Integer executedCount
+        -LocalDateTime lastExecuteTime
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+
+    SysMessageTemplateController --> ISysMessageTemplateService
+    SysInboxMessageController --> ISysInboxMessageService
+    SysMessageScheduleController --> ISysMessageScheduleService
+
+    ISysMessageTemplateService <|.. SysMessageTemplateServiceImpl
+    ISysInboxMessageService <|.. SysInboxMessageServiceImpl
+    ISysMessageScheduleService <|.. SysMessageScheduleServiceImpl
+
+    SysMessageTemplateServiceImpl --> SysMessageTemplateMapper
+    SysInboxMessageServiceImpl --> SysInboxMessageMapper
+    SysMessageScheduleServiceImpl --> SysMessageScheduleMapper
+
+    SysMessageTemplateMapper --> SysMessageTemplate
+    SysInboxMessageMapper --> SysInboxMessage
+    SysMessageScheduleMapper --> SysMessageSchedule
+```
+
+#### 2.8.2 Controller 路由表
+
+| Controller | 路由前缀 | 核心接口 |
+|-----------|---------|---------|
+| `SysMessageTemplateController` | `/message-template` | CRUD + 批量操作 |
+| `SysInboxMessageController` | `/inbox-message` | CRUD + 已读/归档/批量已读 |
+| `SysMessageScheduleController` | `/message-schedule` | CRUD + 执行/取消 |
+
+---
+
+### 2.9 nexusix-audit 模块
+
+- **模块名称**：nexusix-audit
+- **包路径**：`com.shy.nexusix.audit`
+- **负责数据表**：`sys_oper_log`、`sys_login_log`、`sys_data_audit_log`
+
+#### 2.9.1 类图
+
+```mermaid
+classDiagram
+    direction TB
+
+    class SysOperLogController {
+        -ISysOperLogService iSysOperLogService
+    }
+    class SysLoginLogController {
+        -ISysLoginLogService iSysLoginLogService
+    }
+    class SysDataAuditLogController {
+        -ISysDataAuditLogService iSysDataAuditLogService
+    }
+
+    class ISysOperLogService {
+        <<interface>>
+    }
+    class SysOperLogServiceImpl
+    class ISysLoginLogService {
+        <<interface>>
+    }
+    class SysLoginLogServiceImpl
+    class ISysDataAuditLogService {
+        <<interface>>
+    }
+    class SysDataAuditLogServiceImpl
+
+    class SysOperLogMapper
+    class SysLoginLogMapper
+    class SysDataAuditLogMapper
+
+    class SysOperLog {
+        -Long id
+        -Long tenantId
+        -String tenantCode
+        -String module
+        -String businessType
+        -String method
+        -String requestMethod
+        -String operatorName
+        -Long operatorId
+        -String deptName
+        -String operUrl
+        -String operIp
+        -String operLocation
+        -String operParam
+        -String jsonResult
+        -String status
+        -String errorMsg
+        -LocalDateTime operTime
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysLoginLog {
+        -Long id
+        -Long userId
+        -String username
+        -Long tenantId
+        -String tenantCode
+        -String ipAddress
+        -String loginLocation
+        -String browser
+        -String os
+        -String status
+        -String msg
+        -LocalDateTime loginTime
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysDataAuditLog {
+        -Long id
+        -Long tenantId
+        -String tenantCode
+        -String tableName
+        -Long recordId
+        -Long operatorId
+        -String operateType
+        -String oldValue
+        -String newValue
+        -LocalDateTime operateTime
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+
+    SysOperLogController --> ISysOperLogService
+    SysLoginLogController --> ISysLoginLogService
+    SysDataAuditLogController --> ISysDataAuditLogService
+
+    ISysOperLogService <|.. SysOperLogServiceImpl
+    ISysLoginLogService <|.. SysLoginLogServiceImpl
+    ISysDataAuditLogService <|.. SysDataAuditLogServiceImpl
+
+    SysOperLogServiceImpl --> SysOperLogMapper
+    SysLoginLogServiceImpl --> SysLoginLogMapper
+    SysDataAuditLogServiceImpl --> SysDataAuditLogMapper
+
+    SysOperLogMapper --> SysOperLog
+    SysLoginLogMapper --> SysLoginLog
+    SysDataAuditLogMapper --> SysDataAuditLog
+```
+
+#### 2.9.2 Controller 路由表
+
+| Controller | 路由前缀 | 核心接口 |
+|-----------|---------|---------|
+| `SysOperLogController` | `/oper-log` | 分页查询 + 详情 + 清理 |
+| `SysLoginLogController` | `/login-log` | 分页查询 + 详情 + 清理 |
+| `SysDataAuditLogController` | `/data-audit-log` | 分页查询 + 详情 |
+
+---
+
+### 2.10 nexusix-dynamic 模块
+
+- **模块名称**：nexusix-dynamic
+- **包路径**：`com.shy.nexusix.dynamic`
+- **负责数据表**：`sys_form_config`、`sys_datasource_config`、`sys_print_template`
+
+#### 2.10.1 类图
+
+```mermaid
+classDiagram
+    direction TB
+
+    class SysFormConfigController {
+        -ISysFormConfigService iSysFormConfigService
+    }
+    class SysDatasourceConfigController {
+        -ISysDatasourceConfigService iSysDatasourceConfigService
+    }
+    class SysPrintTemplateController {
+        -ISysPrintTemplateService iSysPrintTemplateService
+    }
+
+    class ISysFormConfigService {
+        <<interface>>
+    }
+    class SysFormConfigServiceImpl
+    class ISysDatasourceConfigService {
+        <<interface>>
+    }
+    class SysDatasourceConfigServiceImpl
+    class ISysPrintTemplateService {
+        <<interface>>
+    }
+    class SysPrintTemplateServiceImpl
+
+    class SysFormConfigMapper
+    class SysDatasourceConfigMapper
+    class SysPrintTemplateMapper
+
+    class SysFormConfig {
+        -Long id
+        -Long tenantId
+        -String tenantCode
+        -String bizType
+        -String formName
+        -String formSchema
+        -String status
+        -Integer version
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysDatasourceConfig {
+        -Long id
+        -Long tenantId
+        -String tenantCode
+        -String datasourceCode
+        -String datasourceName
+        -String datasourceType
+        -String datasourceConfig
+        -Boolean cacheEnabled
+        -Integer cacheExpire
+        -String status
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+    class SysPrintTemplate {
+        -Long id
+        -Long tenantId
+        -String tenantCode
+        -String templateCode
+        -String templateName
+        -String bizType
+        -String templateType
+        -String templateContent
+        -String templateConfig
+        -String paperSize
+        -String orientation
+        -String status
+        -Boolean isDefault
+        -Integer version
+        -String createBy
+        -LocalDateTime createAt
+        -String updateBy
+        -LocalDateTime updateAt
+        -String isDeleted
+        -LocalDateTime deletedAt
+    }
+
+    SysFormConfigController --> ISysFormConfigService
+    SysDatasourceConfigController --> ISysDatasourceConfigService
+    SysPrintTemplateController --> ISysPrintTemplateService
+
+    ISysFormConfigService <|.. SysFormConfigServiceImpl
+    ISysDatasourceConfigService <|.. SysDatasourceConfigServiceImpl
+    ISysPrintTemplateService <|.. SysPrintTemplateServiceImpl
+
+    SysFormConfigServiceImpl --> SysFormConfigMapper
+    SysDatasourceConfigServiceImpl --> SysDatasourceConfigMapper
+    SysPrintTemplateServiceImpl --> SysPrintTemplateMapper
+
+    SysFormConfigMapper --> SysFormConfig
+    SysDatasourceConfigMapper --> SysDatasourceConfig
+    SysPrintTemplateMapper --> SysPrintTemplate
+```
+
+#### 2.10.2 Controller 路由表
+
+| Controller | 路由前缀 | 核心接口 |
+|-----------|---------|---------|
+| `SysFormConfigController` | `/form-config` | CRUD + 版本管理 |
+| `SysDatasourceConfigController` | `/datasource-config` | CRUD + 连接测试 |
+| `SysPrintTemplateController` | `/print-template` | CRUD + 版本管理 + 预览 |
 
 ---
 
@@ -876,24 +1725,40 @@ FUNCTION login(LoginRTO param):
     FOR perm IN permList:
         permIdToCodeMap[perm.id] = perm.permCode
 
-    // 单次遍历分离 ACTIVE/INACTIVE 策略的 permId
-    activePolicyPermIdSet = {}
-    inactivePolicyPermIdSet = {}
+    // 单次遍历按策略状态五值分离 permId
+    activePolicyPermIdSet = {}           // ACTIVE：有效权限
+    disabledSystemPermIdSet = {}         // DISABLED_SYSTEM_LEVEL：系统级禁用，不可覆盖
+    disabledTenantPermIdSet = {}         // DISABLED_TENANT_LEVEL：租户级禁用
+    disabledRolePermIdSet = {}           // DISABLED_ROLE_LEVEL：角色级禁用
+    disabledUserPermIdSet = {}           // DISABLED_USER_LEVEL：用户级禁用
     FOR policy IN permPolicyList:
         IF policy.status == 'ACTIVE':
             activePolicyPermIdSet.add(policy.permId)
-        ELSE IF policy.status == 'INACTIVE':
-            inactivePolicyPermIdSet.add(policy.permId)
+        ELSE IF policy.status == 'DISABLED_SYSTEM_LEVEL':
+            disabledSystemPermIdSet.add(policy.permId)
+        ELSE IF policy.status == 'DISABLED_TENANT_LEVEL':
+            disabledTenantPermIdSet.add(policy.permId)
+        ELSE IF policy.status == 'DISABLED_ROLE_LEVEL':
+            disabledRolePermIdSet.add(policy.permId)
+        ELSE IF policy.status == 'DISABLED_USER_LEVEL':
+            disabledUserPermIdSet.add(policy.permId)
 
-    // 提取有效/无效权限编码
+    // 提取有效/无效权限编码（禁用优先级：系统级 > 租户级 > 角色级 > 用户级）
     allPermCodeList = []
     validPermCodeList = []
     invalidPermCodeList = []
     FOR perm IN permList:
         allPermCodeList.add(perm.permCode)
-        IF perm.id IN activePolicyPermIdSet:
+        IF perm.id IN activePolicyPermIdSet
+           AND perm.id NOT IN disabledSystemPermIdSet
+           AND perm.id NOT IN disabledTenantPermIdSet
+           AND perm.id NOT IN disabledRolePermIdSet
+           AND perm.id NOT IN disabledUserPermIdSet:
             validPermCodeList.add(perm.permCode)
-        ELSE IF perm.id IN inactivePolicyPermIdSet:
+        ELSE IF perm.id IN disabledSystemPermIdSet
+                OR perm.id IN disabledTenantPermIdSet
+                OR perm.id IN disabledRolePermIdSet
+                OR perm.id IN disabledUserPermIdSet:
             invalidPermCodeList.add(perm.permCode)
 
     // ===== 第5层：字段权限构建 =====
@@ -904,6 +1769,9 @@ FUNCTION login(LoginRTO param):
     FOR policy IN permPolicyList:
         IF policy.fieldOperates IS NULL OR policy.fieldOperates.isEmpty():
             CONTINUE
+
+        // field_operates 为数组格式: ["field1", "field2"]
+        fields = JSON.parseArray(policy.fieldOperates, String.class)
 
         // 根据access_type选择目标Map
         IF policy.accessType == 'QUERY':
@@ -917,12 +1785,18 @@ FUNCTION login(LoginRTO param):
 
         // 获取或创建该表的字段权限对象
         fieldPerm = targetMap.computeIfAbsent(policy.tableName, k -> new EntityFieldPerm())
-        fields = JSON.parseArray(policy.fieldOperates, String.class)
 
-        // 根据策略状态合并到可见/不可见字段列表
+        // 根据策略状态五值合并到可见/不可见字段列表
         IF policy.status == 'ACTIVE':
             fieldPerm.visibleFields.addAll(fields)
-        ELSE IF policy.status == 'INACTIVE':
+        ELSE IF policy.status == 'DISABLED_SYSTEM_LEVEL':
+            // 系统级禁用，不可覆盖，强制加入不可见列表
+            fieldPerm.invisibleFields.addAll(fields)
+        ELSE IF policy.status == 'DISABLED_TENANT_LEVEL':
+            fieldPerm.invisibleFields.addAll(fields)
+        ELSE IF policy.status == 'DISABLED_ROLE_LEVEL':
+            fieldPerm.invisibleFields.addAll(fields)
+        ELSE IF policy.status == 'DISABLED_USER_LEVEL':
             fieldPerm.invisibleFields.addAll(fields)
 
     // ===== 组装 UserContextDTO =====
@@ -976,7 +1850,7 @@ flowchart TD
     F2 --> F3[批量查询 sys_perm_policy]
     F3 --> F4[批量查询 sys_perm]
     F4 --> F5[构建 permId→permCode 映射]
-    F5 --> F6[单次遍历分离 ACTIVE/INACTIVE]
+    F5 --> F6[单次遍历按五值状态分离策略]
     F6 --> F7[提取有效/无效权限编码列表]
 
     F7 --> H[第5层: 构建字段权限]
@@ -987,7 +1861,7 @@ flowchart TD
     H3 --> H4[按 table_name 获取/创建 EntityFieldPerm]
     H4 --> H5{status == ACTIVE?}
     H5 -- 是 --> H6[合并到 visibleFields]
-    H5 -- 否 --> H7[合并到 invisibleFields]
+    H5 -- 否 --> H7[按禁用级别合并到 invisibleFields]
     H6 --> H1
     H7 --> H1
 
@@ -1004,7 +1878,7 @@ flowchart TD
 
 #### 3.2.1 算法概述
 
-权限策略按四层优先级收集：系统层 → 租户层 → 角色层 → 用户层。每层策略包含 ACTIVE（允许）和 INACTIVE（拒绝）两种状态。合并规则：**拒绝优先于允许**，`inheritance_enabled` 控制是否继承上层策略。
+权限策略按四层优先级收集：系统层 → 租户层 → 角色层 → 用户层。每层策略包含 ACTIVE（允许）和四种禁用状态（DISABLED_SYSTEM_LEVEL / DISABLED_TENANT_LEVEL / DISABLED_ROLE_LEVEL / DISABLED_USER_LEVEL）。合并规则：**禁用优先于允许**，系统级禁用不可覆盖，`inheritance_enabled` 控制是否继承上层策略。
 
 #### 3.2.2 伪代码
 
@@ -1013,43 +1887,59 @@ FUNCTION mergePermPolicies(userId, tenantId, roleIds):
     // 收集四层策略
     systemPolicies = SELECT * FROM sys_perm_policy
                      WHERE target_type = 'SYSTEM'
-                     AND status IN ('ACTIVE', 'INACTIVE')
+                     AND status IN ('ACTIVE', 'DISABLED_SYSTEM_LEVEL')
 
     tenantPolicies = SELECT * FROM sys_perm_policy
                      WHERE target_type = 'TENANT' AND target_id = tenantId
-                     AND status IN ('ACTIVE', 'INACTIVE')
+                     AND status IN ('ACTIVE', 'DISABLED_TENANT_LEVEL')
 
     rolePolicies = SELECT * FROM sys_perm_policy
                    WHERE target_type = 'ROLE' AND target_id IN roleIds
-                   AND status IN ('ACTIVE', 'INACTIVE')
+                   AND status IN ('ACTIVE', 'DISABLED_ROLE_LEVEL')
 
     userPolicies = SELECT * FROM sys_perm_policy
                    WHERE target_type = 'USER' AND target_id = userId
-                   AND status IN ('ACTIVE', 'INACTIVE')
+                   AND status IN ('ACTIVE', 'DISABLED_USER_LEVEL')
 
     // 按 priority 排序（数值越小优先级越高）
     allPolicies = systemPolicies + tenantPolicies + rolePolicies + userPolicies
     SORT allPolicies BY priority ASC
 
-    // 合并：拒绝优先于允许
+    // 合并：禁用优先于允许
     resultPermSet = {}       // 最终生效的权限编码集合
     resultFieldPerm = {}     // 最终生效的字段权限
+    systemDisabledSet = {}   // 系统级禁用集合，不可覆盖
 
     FOR policy IN allPolicies:
         IF policy.inheritance_enabled == false:
-            // 不继承上层，清空之前的结果
+            // 不继承上层，清空之前的结果（系统级禁用除外）
             resultPermSet.clear()
             resultFieldPerm.clear()
 
-        IF policy.status == 'INACTIVE':
-            // 拒绝策略：从结果集中移除
+        IF policy.status == 'DISABLED_SYSTEM_LEVEL':
+            // 系统级禁用：不可覆盖，从结果集中移除并记录
             resultPermSet.remove(policy.permCode)
-            // 字段级拒绝：加入 invisibleFields
+            systemDisabledSet.add(policy.permCode)
+            mergeFieldPerm(resultFieldPerm, policy, INVISIBLE)
+        ELSE IF policy.status == 'DISABLED_TENANT_LEVEL':
+            // 租户级禁用：从结果集中移除
+            IF policy.permCode NOT IN systemDisabledSet:
+                resultPermSet.remove(policy.permCode)
+            mergeFieldPerm(resultFieldPerm, policy, INVISIBLE)
+        ELSE IF policy.status == 'DISABLED_ROLE_LEVEL':
+            // 角色级禁用：从结果集中移除
+            IF policy.permCode NOT IN systemDisabledSet:
+                resultPermSet.remove(policy.permCode)
+            mergeFieldPerm(resultFieldPerm, policy, INVISIBLE)
+        ELSE IF policy.status == 'DISABLED_USER_LEVEL':
+            // 用户级禁用：从结果集中移除
+            IF policy.permCode NOT IN systemDisabledSet:
+                resultPermSet.remove(policy.permCode)
             mergeFieldPerm(resultFieldPerm, policy, INVISIBLE)
         ELSE IF policy.status == 'ACTIVE':
-            // 允许策略：加入结果集
-            resultPermSet.add(policy.permCode)
-            // 字段级允许：加入 visibleFields
+            // 允许策略：系统级禁用的权限不可恢复
+            IF policy.permCode NOT IN systemDisabledSet:
+                resultPermSet.add(policy.permCode)
             mergeFieldPerm(resultFieldPerm, policy, VISIBLE)
 
     RETURN resultPermSet, resultFieldPerm
@@ -1064,21 +1954,29 @@ flowchart TD
     C --> D[收集角色层策略]
     D --> E[收集用户层策略]
     E --> F[按 priority 排序]
-    F --> G[初始化结果集]
+    F --> G[初始化结果集 + systemDisabledSet]
 
     G --> H{遍历策略列表}
     H --> I{inheritance_enabled?}
     I -- 否 --> J[清空已有结果]
-    I -- 是 --> K{status == INACTIVE?}
+    I -- 是 --> K{status 类型判断}
     J --> K
-    K -- 是 --> L[拒绝: 从结果集移除权限编码]
-    L --> M[字段级拒绝: 合并到 invisibleFields]
-    K -- 否 --> N[允许: 加入结果集权限编码]
-    N --> O[字段级允许: 合并到 visibleFields]
+    K -- DISABLED_SYSTEM_LEVEL --> L1[系统级禁用: 移除权限 + 记录到 systemDisabledSet]
+    L1 --> M[字段级禁用: 合并到 invisibleFields]
+    K -- DISABLED_TENANT_LEVEL --> L2[租户级禁用: 移除权限]
+    L2 --> M
+    K -- DISABLED_ROLE_LEVEL --> L3[角色级禁用: 移除权限]
+    L3 --> M
+    K -- DISABLED_USER_LEVEL --> L4[用户级禁用: 移除权限]
+    L4 --> M
+    K -- ACTIVE --> N{权限在 systemDisabledSet 中?}
+    N -- 是 --> H
+    N -- 否 --> O[允许: 加入结果集权限编码]
+    O --> P[字段级允许: 合并到 visibleFields]
     M --> H
-    O --> H
+    P --> H
 
-    H -- 遍历完成 --> P[返回合并后的权限集和字段权限]
+    H -- 遍历完成 --> Q[返回合并后的权限集和字段权限]
 ```
 
 ---
@@ -1157,7 +2055,7 @@ flowchart TD
 
 #### 3.4.1 算法概述
 
-租户表 `sys_tenant` 采用物化路径（Materialized Path）模式存储层级关系。`parent_id` 记录直接父节点，`path` 字段存储从根到当前节点的完整路径（如 `rootTenant/GROUP001/EAST001`）。移动节点时需递归更新所有子节点的 path。
+租户表 `sys_tenant` 采用物化路径（Materialized Path）模式存储层级关系。`parent_id` 记录直接父节点，`path` 字段存储从根到当前节点的 ID 路径（如 `/1/5/12/`，以斜杠分隔的租户ID序列，前后均有斜杠）。移动节点时需递归更新所有子节点的 path。
 
 #### 3.4.2 伪代码
 
@@ -1174,9 +2072,9 @@ FUNCTION assignParentTenant(assignParam):
         parent = SELECT parent_id FROM sys_tenant WHERE id = currentId
         currentId = parent.parent_id
 
-    // 2. 计算新路径
+    // 2. 计算新路径（ID路径格式 /1/5/12/）
     newParent = SELECT * FROM sys_tenant WHERE id = newParentId
-    newPath = newParent.path + "/" + tenant.tenantCode
+    newPath = newParent.path + tenantId + "/"
 
     // 3. 更新当前节点
     UPDATE sys_tenant SET
@@ -1187,7 +2085,7 @@ FUNCTION assignParentTenant(assignParam):
 
     // 4. 递归更新所有子节点的 path
     oldPathPrefix = tenant.path
-    children = SELECT * FROM sys_tenant WHERE path LIKE oldPathPrefix + "/%"
+    children = SELECT * FROM sys_tenant WHERE path LIKE oldPathPrefix + "%"
     FOR child IN children:
         child.path = newPath + child.path.substring(oldPathPrefix.length)
         UPDATE sys_tenant SET path = child.path WHERE id = child.id
@@ -1203,9 +2101,9 @@ flowchart TD
     A[输入: tenantId, newParentId] --> B[循环验证: 检查新父节点是否为当前节点的子孙]
     B --> B1{形成环?}
     B1 -- 是 --> E[抛出: 不能将租户移动到自身子节点下]
-    B1 -- 否 --> C[计算新路径: newParent.path + / + tenantCode]
+    B1 -- 否 --> C[计算新路径: newParent.path + tenantId + /]
     C --> D[更新当前节点: parent_id/path/parent_name]
-    D --> F[查询所有子节点: path LIKE oldPath + /%]
+    D --> F[查询所有子节点: path LIKE oldPath + %]
     F --> G{遍历子节点}
     G --> H[替换子节点 path 前缀]
     H --> G
@@ -1305,7 +2203,7 @@ UserContextDTO
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `visibleFields` | `List<String>` | 允许访问的字段列表（策略状态为 ACTIVE 时合并） |
-| `invisibleFields` | `List<String>` | 禁止访问的字段列表（策略状态为 INACTIVE 时合并） |
+| `invisibleFields` | `List<String>` | 禁止访问的字段列表（策略状态为 DISABLED_*_LEVEL 时合并） |
 
 **设计要点**：
 - Map 的 key 为 `table_name`，支持动态扩展任意表，无需修改 DTO 代码
