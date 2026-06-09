@@ -8,6 +8,7 @@ import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.core.entity.dto.UserContextDTO;
 import com.shy.nexusix.iam.dto.UserLoginJoinDTO;
 import com.shy.nexusix.iam.dto.UserPermJoinDTO;
+import com.shy.nexusix.iam.dto.UserTenantItemDTO;
 import com.shy.nexusix.iam.mapper.SysUserPermRelMapper;
 import com.shy.nexusix.iam.mapper.SysUserTenantRelMapper;
 import com.shy.nexusix.iam.rto.LoginRTO;
@@ -276,16 +277,40 @@ public class AuthServiceImpl implements IAuthService {
 
         // 实例化[租户上下文信息]对象 用于封装用户所属租户数据
         UserContextDTO.TenantInfo tenantInfoCache = new UserContextDTO.TenantInfo();
+        // 设置租户ID
+        tenantInfoCache.setTenantId(loginJoinInfo.getTenantId());
         // 设置租户名称
         tenantInfoCache.setTenantName(loginJoinInfo.getTenantName());
         // 设置租户编码
         tenantInfoCache.setTenantCode(loginJoinInfo.getTenantCode());
+        // 设置租户状态
+        tenantInfoCache.setTenantStatus(loginJoinInfo.getTenantStatus());
 
+        // 查询当前用户关联的所有租户，按状态分类为有效租户和无效租户
+        List<UserTenantItemDTO> allTenantList = iSysUserTenantRelService.queryUserAllTenants(loginJoinInfo.getUserId());
+        List<UserContextDTO.TenantItemInfo> validTenants = new ArrayList<>();
+        List<UserContextDTO.TenantItemInfo> invalidTenants = new ArrayList<>();
+        for (UserTenantItemDTO item : allTenantList) {
+            UserContextDTO.TenantItemInfo tenantItem = new UserContextDTO.TenantItemInfo();
+            tenantItem.setTenantId(item.getTenantId());
+            tenantItem.setTenantCode(item.getTenantCode());
+            tenantItem.setTenantName(item.getTenantName());
+            tenantItem.setTenantStatus(item.getTenantStatus());
+            if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(item.getTenantStatus())) {
+                validTenants.add(tenantItem);
+            } else {
+                invalidTenants.add(tenantItem);
+            }
+        }
 
         // 实例化[用户上下文信息]对象 整合所有用户登录后的核心信息
         UserContextDTO userContext = new UserContextDTO();
         // 为用户上下文设置租户信息
         userContext.setTenantInfo(tenantInfoCache);
+        // 为用户上下文设置有效租户列表
+        userContext.setValidTenants(validTenants);
+        // 为用户上下文设置无效租户列表
+        userContext.setInvalidTenants(invalidTenants);
         // 为用户上下文设置权限信息
         userContext.setPermInfo(permInfo);
 

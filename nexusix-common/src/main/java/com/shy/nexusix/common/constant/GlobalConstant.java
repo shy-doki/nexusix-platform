@@ -208,7 +208,8 @@ public class GlobalConstant {
                 Map.entry("tenant_logo_url", List.of("tenantLogoUrl")),
                 Map.entry("path", List.of("path")),
                 Map.entry("ext_attributes", List.of("extAttributes")),
-                Map.entry("parent_id", List.of("parentCode"))
+                Map.entry("parent_id", List.of("parentCode")),
+                Map.entry("disable_reason", List.of("disableReason"))
         );
 
     }

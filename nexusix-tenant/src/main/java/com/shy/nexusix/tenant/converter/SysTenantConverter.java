@@ -331,6 +331,7 @@ public interface SysTenantConverter {
         if (!allowedVoFields.contains("contactName")) vo.setContactName(null);
         if (!allowedVoFields.contains("contactPhone")) vo.setContactPhone(null);
         if (!allowedVoFields.contains("status")) vo.setStatus(null);
+        if (!allowedVoFields.contains("disableReason")) vo.setDisableReason(null);
         if (!allowedVoFields.contains("expireTime")) vo.setExpireTime(null);
         if (!allowedVoFields.contains("hasChildren")) vo.setHasChildren(null);
         if (!allowedVoFields.contains("packageName")) vo.setPackageName(null);

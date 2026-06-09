@@ -549,6 +549,7 @@ public final class GlobalEnum {
      * </p>
      */
     public enum TenantStatus implements BaseEnum {
+        PENDING("PENDING", "待审核"),
         ENABLED("ENABLED", "启用"),
         DISABLED("DISABLED", "停用"),
         EXPIRED("EXPIRED", "过期");
@@ -639,6 +640,44 @@ public final class GlobalEnum {
             } catch (BusinessException e) {
                 return false;
             }
+        }
+
+        /**
+         * 校验状态转换是否合法
+         * <p>合法的状态转换规则：</p>
+         * <ul>
+         *   <li>PENDING → ENABLED（审核通过）</li>
+         *   <li>PENDING → DISABLED（审核拒绝）</li>
+         *   <li>ENABLED → DISABLED（停用）</li>
+         *   <li>DISABLED → ENABLED（恢复/续费）</li>
+         *   <li>ENABLED → EXPIRED（过期）</li>
+         *   <li>EXPIRED → ENABLED（续费）</li>
+         * </ul>
+         *
+         * @param currentStatus 当前状态编码
+         * @param targetStatus  目标状态编码
+         * @return 是否为合法的状态转换
+         */
+        public static boolean isValidTransition(String currentStatus, String targetStatus) {
+            if (currentStatus == null || targetStatus == null) return false;
+            if (currentStatus.equals(targetStatus)) return false;
+            // PENDING → ENABLED 或 DISABLED
+            if (PENDING.getCode().equals(currentStatus)) {
+                return ENABLED.getCode().equals(targetStatus) || DISABLED.getCode().equals(targetStatus);
+            }
+            // ENABLED → DISABLED 或 EXPIRED
+            if (ENABLED.getCode().equals(currentStatus)) {
+                return DISABLED.getCode().equals(targetStatus) || EXPIRED.getCode().equals(targetStatus);
+            }
+            // DISABLED → ENABLED
+            if (DISABLED.getCode().equals(currentStatus)) {
+                return ENABLED.getCode().equals(targetStatus);
+            }
+            // EXPIRED → ENABLED
+            if (EXPIRED.getCode().equals(currentStatus)) {
+                return ENABLED.getCode().equals(targetStatus);
+            }
+            return false;
         }
     }
 

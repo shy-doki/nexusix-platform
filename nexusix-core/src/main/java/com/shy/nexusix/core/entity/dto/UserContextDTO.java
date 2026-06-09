@@ -15,6 +15,16 @@ public class UserContextDTO {
     private TenantInfo tenantInfo;
 
     /**
+     * 有效租户列表，状态为 ENABLED 的租户
+     */
+    private List<TenantItemInfo> validTenants;
+
+    /**
+     * 无效租户列表，状态为 DISABLED/EXPIRED/PENDING 的租户
+     */
+    private List<TenantItemInfo> invalidTenants;
+
+    /**
      * 权限信息，包含用户全部权限编码、有效/无效权限、级联禁用详情及字段级权限
      */
     private PermInfo permInfo;
@@ -29,6 +39,10 @@ public class UserContextDTO {
     @Data
     public static class TenantInfo {
         /**
+         * 租户ID
+         */
+        private Long tenantId;
+        /**
          * 租户编码，租户的唯一标识符
          */
         private String tenantCode;
@@ -36,6 +50,37 @@ public class UserContextDTO {
          * 租户名称，用于前端展示
          */
         private String tenantName;
+        /**
+         * 租户状态（ENABLED/DISABLED/EXPIRED/PENDING）
+         */
+        private String tenantStatus;
+    }
+
+    /**
+     * <p>
+     * 租户列表项信息，用于缓存用户关联的所有租户。
+     * </p>
+     *
+     * <p>登录时从 sys_user_tenant_rel 和 sys_tenant 表联合查询，按租户状态分类到 validTenants 或 invalidTenants。</p>
+     */
+    @Data
+    public static class TenantItemInfo {
+        /**
+         * 租户ID
+         */
+        private Long tenantId;
+        /**
+         * 租户编码，租户的唯一标识符
+         */
+        private String tenantCode;
+        /**
+         * 租户名称，用于前端展示
+         */
+        private String tenantName;
+        /**
+         * 租户状态（ENABLED/DISABLED/EXPIRED/PENDING）
+         */
+        private String tenantStatus;
     }
 
     /**

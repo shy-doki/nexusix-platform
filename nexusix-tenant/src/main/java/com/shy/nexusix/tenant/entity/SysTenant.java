@@ -78,6 +78,10 @@ public class SysTenant implements Serializable {
     @TableField(value = "status")
     private String status;
 
+    @Schema(description = "禁用原因", example = "ADMIN_DISABLE")
+    @TableField(value = "disable_reason")
+    private String disableReason;
+
     @Schema(description = "服务过期时间", example = "2026-12-31T23:59:59")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @TableField(value = "expire_time")

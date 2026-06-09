@@ -7,6 +7,9 @@ import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
 import com.shy.nexusix.tenant.rto.SysTenantAssignRTO;
 import com.shy.nexusix.tenant.rto.SysTenantQueryRTO;
+import com.shy.nexusix.tenant.rto.SysTenantRegisterRTO;
+import com.shy.nexusix.tenant.rto.SysTenantReviewRTO;
+import com.shy.nexusix.tenant.rto.SysTenantSwitchRTO;
 import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.service.ISysTenantService;
 import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
@@ -415,6 +418,66 @@ public class SysTenantController {
     public ApiResponse assignParentTenant(@Valid @RequestBody SysTenantAssignRTO assignParam) {
         Integer affectedRows = iSysTenantService.assignParentTenant(assignParam);
         return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 租户自助注册
+     * </p>
+     * <p>
+     * 企业用户自助注册租户，注册后租户状态为PENDING（待审核），
+     * 需要平台管理员审核通过后才能正常使用。
+     * </p>
+     *
+     * @param registerParam 注册信息
+     * @return 新增结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当注册信息不合法或租户编码已存在时抛出
+     */
+    @PostMapping("/register")
+    @Operation(summary = "租户自助注册", description = "企业用户自助注册租户，注册后需平台审核")
+    public ApiResponse registerTenant(@Valid @RequestBody SysTenantRegisterRTO registerParam) {
+        Integer affectedRows = iSysTenantService.registerTenant(registerParam);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 审核租户注册
+     * </p>
+     * <p>
+     * 平台管理员审核租户注册申请，审核通过则状态变为ENABLED，
+     * 审核拒绝则状态变为DISABLED。
+     * </p>
+     *
+     * @param reviewParam 审核信息
+     * @return 审核结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 当租户不存在或状态非PENDING时抛出
+     */
+    @PutMapping("/review")
+    @Operation(summary = "审核租户注册", description = "平台管理员审核租户注册申请")
+    public ApiResponse reviewTenant(@Valid @RequestBody SysTenantReviewRTO reviewParam) {
+        Integer affectedRows = iSysTenantService.reviewTenant(reviewParam);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>
+     * 切换租户
+     * </p>
+     * <p>
+     * 切换当前用户的工作租户上下文，验证用户是否属于目标租户，
+     * 验证目标租户状态，重新构建权限上下文。
+     * </p>
+     *
+     * @param switchParam 切换参数
+     * @return 切换后的租户信息
+     * @throws com.shy.nexusix.common.exception.BusinessException 当用户不属于目标租户或租户状态异常时抛出
+     */
+    @PostMapping("/switch")
+    @Operation(summary = "切换租户", description = "切换当前用户的工作租户上下文")
+    public ApiResponse switchTenant(@Valid @RequestBody SysTenantSwitchRTO switchParam) {
+        SysTenantCommonVO tenantInfo = iSysTenantService.switchTenant(switchParam);
+        return ApiResponse.success(tenantInfo);
     }
 
 }

@@ -53,6 +53,12 @@ public class SysTenantCommonVO {
     private String status;
 
     /**
+     * 禁用原因
+     */
+    @Schema(description = "禁用原因", example = "ADMIN_DISABLE")
+    private String disableReason;
+
+    /**
      * 服务过期时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

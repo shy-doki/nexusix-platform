@@ -18,6 +18,9 @@ import com.shy.nexusix.tenant.mapper.SysTenantMapper;
 import com.shy.nexusix.tenant.rto.SysTenantAddRTO;
 import com.shy.nexusix.tenant.rto.SysTenantAssignRTO;
 import com.shy.nexusix.tenant.rto.SysTenantQueryRTO;
+import com.shy.nexusix.tenant.rto.SysTenantRegisterRTO;
+import com.shy.nexusix.tenant.rto.SysTenantReviewRTO;
+import com.shy.nexusix.tenant.rto.SysTenantSwitchRTO;
 import com.shy.nexusix.tenant.rto.SysTenantUpdateRTO;
 import com.shy.nexusix.tenant.service.ISysTenantService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -822,6 +825,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("租户已处于该状态，无需重复操作");
         }
 
+        // 校验状态转换是否合法
+        if (!GlobalEnum.TenantStatus.isValidTransition(tenant.getStatus(), status)) {
+            throw new BusinessException("不允许从" + GlobalEnum.TenantStatus.getByCode(tenant.getStatus()).getDesc()
+                    + "状态转换为" + GlobalEnum.TenantStatus.getByCode(status).getDesc() + "状态");
+        }
+
         // 启用租户时校验父租户状态 若父租户处于停用状态，则不允许启用子租户
         if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(status)
                 && tenant.getParentId() != null
@@ -836,12 +845,19 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 更新当前租户状态 审核字段updateBy和updateAt由系统自动设置
-        this.update(new LambdaUpdateWrapper<SysTenant>()
+        // 停用时记录禁用原因为管理员主动停用，启用时清除禁用原因
+        LambdaUpdateWrapper<SysTenant> updateWrapper = new LambdaUpdateWrapper<SysTenant>()
                 .eq(SysTenant::getId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .set(SysTenant::getStatus, status)
                 .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
-                .set(SysTenant::getUpdateAt, LocalDateTime.now()));
+                .set(SysTenant::getUpdateAt, LocalDateTime.now());
+        if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(status)) {
+            updateWrapper.set(SysTenant::getDisableReason, "ADMIN_DISABLE");
+        } else if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(status)) {
+            updateWrapper.set(SysTenant::getDisableReason, null);
+        }
+        this.update(updateWrapper);
 
         int updatedCount = 1;
 
@@ -852,6 +868,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .ne(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
                     .set(SysTenant::getStatus, status)
+                    .set(SysTenant::getDisableReason, "PARENT_CASCADE:" + id)
                     .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now());
             updatedCount += this.update(childUpdateWrapper) ? 1 : 0;
@@ -1203,6 +1220,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 continue;
             }
 
+            // 校验状态转换是否合法
+            if (!GlobalEnum.TenantStatus.isValidTransition(tenant.getStatus(), status)) {
+                continue;
+            }
+
             // 启用租户时校验父租户状态：若父租户处于停用状态，则不允许启用子租户
             if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(status)
                     && tenant.getParentId() != null
@@ -1217,12 +1239,19 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 更新当前租户状态 审核字段updateBy和updateAt由系统自动设置
-            this.update(new LambdaUpdateWrapper<SysTenant>()
+            // 停用时记录禁用原因，启用时清除禁用原因
+            LambdaUpdateWrapper<SysTenant> batchUpdateWrapper = new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, id)
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .set(SysTenant::getStatus, status)
                     .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
-                    .set(SysTenant::getUpdateAt, LocalDateTime.now()));
+                    .set(SysTenant::getUpdateAt, LocalDateTime.now());
+            if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(status)) {
+                batchUpdateWrapper.set(SysTenant::getDisableReason, "ADMIN_DISABLE");
+            } else if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(status)) {
+                batchUpdateWrapper.set(SysTenant::getDisableReason, null);
+            }
+            this.update(batchUpdateWrapper);
             totalUpdated++;
 
             // 如果是停用操作 利用path前缀匹配级联停用所有子租户
@@ -1232,6 +1261,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                         .ne(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
                         .set(SysTenant::getStatus, status)
+                        .set(SysTenant::getDisableReason, "PARENT_CASCADE:" + id)
                         .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                         .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             }
@@ -1479,7 +1509,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 利用path属性进行环状结构检测 新父租户的path包含当前租户的tenantCode则说明新父租户是当前租户的后代
-            if (newParent.getPath() != null && newParent.getPath().contains(subTenant.getTenantCode())) {
+            // 使用精确匹配避免短编码误匹配（如编码"A"匹配到"GRP_A"的路径）
+            if (newParent.getPath() != null && subTenant.getTenantCode() != null
+                    && (newParent.getPath().contains("/" + subTenant.getTenantCode() + "/")
+                    || newParent.getPath().endsWith("/" + subTenant.getTenantCode()))) {
                 throw new BusinessException("不能将租户移动到自身子节点下，会形成环状结构");
             }
 
@@ -1551,6 +1584,214 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             return path.substring(0, path.length() - 1);
         }
         return path;
+    }
+
+    /**
+     * <p>租户自助注册</p>
+     * <p>企业用户自助注册租户，注册后租户状态为PENDING（待审核），
+     * 需要平台管理员审核通过后才能正常使用。</p>
+     *
+     * @param registerParam 注册信息
+     * @return 新增结果行数
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer registerTenant(SysTenantRegisterRTO registerParam) {
+
+        // 自动生成租户编码：REG_ + 联系人电话后4位 + 时间戳后6位
+        String tenantCode = "REG_" + registerParam.getContactPhone().substring(7)
+                + String.valueOf(System.currentTimeMillis()).substring(7);
+
+        // 校验租户编码唯一性
+        if (this.count(new LambdaQueryWrapper<SysTenant>()
+                .eq(SysTenant::getTenantCode, tenantCode)
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())) > 0) {
+            throw new BusinessException("租户编码冲突，请重试");
+        }
+
+        // 查询父租户信息（可选）
+        SysTenant parentTenant = null;
+        if (registerParam.getParentCode() != null && !"0".equals(registerParam.getParentCode())) {
+            parentTenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
+                    .eq(SysTenant::getId, registerParam.getParentCode())
+                    .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+            if (parentTenant == null) {
+                throw new BusinessException("父租户不存在");
+            }
+            // 校验父租户状态
+            if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(parentTenant.getStatus())) {
+                throw new BusinessException("父租户已停用，无法在其下注册子租户");
+            }
+            if (GlobalEnum.TenantStatus.EXPIRED.getCode().equals(parentTenant.getStatus())) {
+                throw new BusinessException("父租户已过期，无法在其下注册子租户");
+            }
+            if (GlobalEnum.TenantStatus.PENDING.getCode().equals(parentTenant.getStatus())) {
+                throw new BusinessException("父租户待审核，无法在其下注册子租户");
+            }
+        }
+
+        // 构建租户实体
+        SysTenant entity = new SysTenant();
+        entity.setTenantCode(tenantCode);
+        entity.setTenantName(registerParam.getTenantName());
+        entity.setTenantType(registerParam.getTenantType());
+        entity.setContactName(registerParam.getContactName());
+        entity.setContactPhone(registerParam.getContactPhone());
+        entity.setExtAttributes(registerParam.getExtAttributes());
+
+        // 注册租户状态为PENDING（待审核）
+        entity.setStatus(GlobalEnum.TenantStatus.PENDING.getCode());
+
+        // 设置父租户信息
+        if (parentTenant != null) {
+            entity.setParentId(String.valueOf(parentTenant.getId()));
+            entity.setParentName(parentTenant.getTenantName());
+            entity.setPath(parentTenant.getPath() + "/" + tenantCode);
+        } else {
+            entity.setParentId("0");
+            entity.setParentName(null);
+            entity.setPath(tenantCode);
+        }
+
+        // 默认值
+        entity.setHasChildren(false);
+        entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+        entity.setCreateBy(registerParam.getContactPhone());
+        entity.setCreateAt(LocalDateTime.now());
+        entity.setUpdateBy(registerParam.getContactPhone());
+        entity.setUpdateAt(LocalDateTime.now());
+
+        this.save(entity);
+
+        // 更新父租户hasChildren标记
+        if (parentTenant != null && !Boolean.TRUE.equals(parentTenant.getHasChildren())) {
+            this.update(new LambdaUpdateWrapper<SysTenant>()
+                    .eq(SysTenant::getId, parentTenant.getId())
+                    .set(SysTenant::getHasChildren, true)
+                    .set(SysTenant::getUpdateAt, LocalDateTime.now()));
+        }
+
+        return 1;
+    }
+
+    /**
+     * <p>审核租户注册</p>
+     * <p>平台管理员审核租户注册申请，审核通过则状态变为ENABLED， 审核拒绝则状态变为DISABLED。</p>
+     *
+     * @param reviewParam 审核信息
+     * @return 审核结果行数
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer reviewTenant(SysTenantReviewRTO reviewParam) {
+
+        // 查询待审核的租户
+        SysTenant tenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
+                .eq(SysTenant::getId, reviewParam.getTenantId())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (tenant == null) {
+            throw new BusinessException("租户不存在");
+        }
+
+        // 校验租户当前状态必须为PENDING
+        if (!GlobalEnum.TenantStatus.PENDING.getCode().equals(tenant.getStatus())) {
+            throw new BusinessException("仅待审核状态的租户可进行审核操作");
+        }
+
+        // 审核通过：PENDING → ENABLED
+        if (Boolean.TRUE.equals(reviewParam.getApproved())) {
+            this.update(new LambdaUpdateWrapper<SysTenant>()
+                    .eq(SysTenant::getId, reviewParam.getTenantId())
+                    .set(SysTenant::getStatus, GlobalEnum.TenantStatus.ENABLED.getCode())
+                    .set(SysTenant::getDisableReason, null)
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateAt, LocalDateTime.now()));
+        } else {
+            // 审核拒绝：PENDING → DISABLED
+            String reason = reviewParam.getReviewRemark();
+            if (reason == null || reason.trim().isEmpty()) {
+                reason = "REVIEW_REJECTED";
+            }
+            this.update(new LambdaUpdateWrapper<SysTenant>()
+                    .eq(SysTenant::getId, reviewParam.getTenantId())
+                    .set(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
+                    .set(SysTenant::getDisableReason, "REVIEW_REJECTED:" + reason)
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateAt, LocalDateTime.now()));
+        }
+
+        return 1;
+    }
+
+    /**
+     * <p>切换租户</p>
+     * <p>切换当前用户的工作租户上下文，基于Session中缓存的validTenants/invalidTenants
+     * 校验用户是否属于目标租户，验证目标租户状态，更新Session中的租户上下文信息。</p>
+     *
+     * @param switchParam 切换参数
+     * @return 切换后的租户信息
+     */
+    @Override
+    public SysTenantCommonVO switchTenant(SysTenantSwitchRTO switchParam) {
+
+        // 获取当前用户上下文
+        UserContextDTO userContext = UserContext.getUserContext();
+        if (userContext == null) {
+            throw new BusinessException("无法获取当前用户上下文");
+        }
+
+        // 从缓存的有效租户列表中查找目标租户
+        UserContextDTO.TenantItemInfo targetTenantItem = null;
+        if (userContext.getValidTenants() != null) {
+            for (UserContextDTO.TenantItemInfo item : userContext.getValidTenants()) {
+                if (switchParam.getTargetTenantCode().equals(item.getTenantCode())) {
+                    targetTenantItem = item;
+                    break;
+                }
+            }
+        }
+
+        // 目标租户不在有效租户列表中，检查是否在无效租户列表中
+        if (targetTenantItem == null) {
+            if (userContext.getInvalidTenants() != null) {
+                for (UserContextDTO.TenantItemInfo item : userContext.getInvalidTenants()) {
+                    if (switchParam.getTargetTenantCode().equals(item.getTenantCode())) {
+                        // 目标租户在无效租户列表中，根据状态给出具体提示
+                        String status = item.getTenantStatus();
+                        if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(status)) {
+                            throw new BusinessException("目标租户已停用，无法切换");
+                        }
+                        if (GlobalEnum.TenantStatus.EXPIRED.getCode().equals(status)) {
+                            throw new BusinessException("目标租户已过期，无法切换");
+                        }
+                        if (GlobalEnum.TenantStatus.PENDING.getCode().equals(status)) {
+                            throw new BusinessException("目标租户待审核，无法切换");
+                        }
+                        throw new BusinessException("目标租户状态异常，无法切换");
+                    }
+                }
+            }
+            // 目标租户不在用户的任何租户列表中
+            throw new BusinessException("当前用户不属于目标租户，无法切换");
+        }
+
+        // 更新Session中的租户上下文信息
+        UserContextDTO.TenantInfo tenantInfo = new UserContextDTO.TenantInfo();
+        tenantInfo.setTenantId(targetTenantItem.getTenantId());
+        tenantInfo.setTenantCode(targetTenantItem.getTenantCode());
+        tenantInfo.setTenantName(targetTenantItem.getTenantName());
+        tenantInfo.setTenantStatus(targetTenantItem.getTenantStatus());
+        userContext.setTenantInfo(tenantInfo);
+
+        // 将更新后的上下文写回Session
+        StpUtil.getSession().set(GlobalConstant.Session.USER_CONTEXT, userContext);
+
+        // 查询目标租户完整信息用于返回
+        SysTenant targetTenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
+                .eq(SysTenant::getTenantCode, switchParam.getTargetTenantCode())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        return sysTenantConverter.toCommonVO(targetTenant);
+
     }
 
 }
