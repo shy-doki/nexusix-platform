@@ -134,7 +134,7 @@ INSERT INTO sys_role (id, role_name, role_desc, role_code, role_level, tenant_id
 (3030, '普通员工', '医疗健康普通员工', 'STAFF', 'USER', 420, 'HN_MEDICAL', '海纳百川-医疗健康', 'SELF', 1, 1, '2026-04-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL);
 
 -- ============================================================
--- 4. sys_user_policy (30条) - 用户↔租户绑定
+-- 4. sys_user_policy (32条) - 用户↔租户绑定
 -- target_id = 系统租户ID (sys_tenant.id)
 -- ============================================================
 INSERT INTO sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_admin, is_default, join_time, status, disable_reason, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
@@ -172,10 +172,13 @@ INSERT INTO sys_user_policy (id, policy_code, policy_name, target_id, target_typ
 -- 多租户用户 multi_user (user_id=30) 绑定到3个不同租户
 (1028, 'UP_028', 'multi_user-万象集团-默认策略', 100, 'USER', 30, false, true, '2026-01-01 08:00:00', 'ENABLED', NULL, 1, '2026-01-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
 (1029, 'UP_029', 'multi_user-鼎新集团-附加策略', 200, 'USER', 30, false, false, '2026-02-01 08:00:00', 'ENABLED', NULL, 1, '2026-02-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
-(1030, 'UP_030', 'multi_user-星辰科技-附加策略', 300, 'USER', 30, false, false, '2026-03-01 08:00:00', 'ENABLED', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL);
+(1030, 'UP_030', 'multi_user-星辰科技-附加策略', 300, 'USER', 30, false, false, '2026-03-01 08:00:00', 'ENABLED', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+-- multi_user 失效租户绑定（用于测试 invalidTenants 分类）
+(1031, 'UP_031', 'multi_user-天翔物流-失效策略', 500, 'USER', 30, false, false, '2026-05-01 08:00:00', 'DISABLED', '租户已停用，级联禁用', 1, '2026-05-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(1032, 'UP_032', 'multi_user-鼎新东北-待激活策略', 230, 'USER', 30, false, false, '2026-06-01 08:00:00', 'PENDING', '租户待激活，权限暂不可用', 1, '2026-06-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL);
 
 -- ============================================================
--- 5. sys_role_policy (30条) - 角色策略: 用户策略↔角色绑定
+-- 5. sys_role_policy (33条) - 角色策略: 用户策略↔角色绑定
 -- target_id = 用户策略ID (sys_user_policy.id)
 -- ============================================================
 INSERT INTO sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
@@ -213,7 +216,11 @@ INSERT INTO sys_role_policy (id, policy_code, policy_name, target_id, target_typ
 -- 多租户用户 multi_user 在不同租户下拥有不同角色
 (2028, 'RP_028', 'multi_user→普通员工(万象)', 1028, 'USER', 3004, 'ACTIVE', NULL, 1, '2026-01-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
 (2029, 'RP_029', 'multi_user→普通员工(鼎新)', 1029, 'USER', 3017, 'ACTIVE', NULL, 1, '2026-02-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
-(2030, 'RP_030', 'multi_user→研发工程师(星辰)', 1030, 'USER', 3022, 'ACTIVE', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL);
+(2030, 'RP_030', 'multi_user→研发工程师(星辰)', 1030, 'USER', 3022, 'ACTIVE', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+-- multi_user 扩展角色策略（覆盖失效角色 + 同租户多角色场景）
+(2031, 'RP_031', 'multi_user→审计员(鼎新-失效)', 1029, 'USER', 3018, 'DISABLED', '项目结束，角色权限回收', 1, '2026-02-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(2032, 'RP_032', 'multi_user→营销总监(星辰)', 1030, 'USER', 3023, 'ACTIVE', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(2033, 'RP_033', 'multi_user→普通员工(天翔-失效策略级联)', 1031, 'USER', 3004, 'DISABLED', '所属用户策略已禁用，级联失效', 1, '2026-05-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL);
 
 -- ============================================================
 -- 6. sys_perm (30条) - 权限定义
@@ -256,7 +263,7 @@ INSERT INTO sys_perm (id, perm_name, perm_desc, perm_code, perm_key, perm_type, 
 (9030, '订阅管理', '套餐订阅管理', 'subscription:manage', 'subscription_manage', 'MENU', 0, '根节点', '/9030', 1, '2026-01-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL);
 
 -- ============================================================
--- 7. sys_perm_policy (30条) - 权限策略: ROLE角色权限 + USER个人权限 + TENANT能力边界/禁用示例
+-- 7. sys_perm_policy (45条) - 权限策略: ROLE角色权限 + USER个人权限 + TENANT能力边界/禁用示例
 -- target_type: TENANT→租户ID / ROLE→角色策略ID / USER→用户策略ID
 -- 体现: 租户能力边界 + 角色权限 + 用户个人权限 + 级联禁用
 -- ============================================================
@@ -314,4 +321,47 @@ INSERT INTO sys_perm_policy (id, policy_code, policy_name, target_id, target_typ
 -- 西南分公司(140)已停用，用户级查看权限被禁用
 (5029, 'PP_DISABLED_002', '万象集团-西南分公司-用户查看(已禁用)', 140, 'TENANT', 9008, 'sys_user', '用户表', 'QUERY', '["user_code","user_name"]'::jsonb, 'DISABLED', '西南分公司战略调整暂停运营，级联禁用', 1, '2026-01-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
 -- 天津办事处(132)已过期，权限同时过期
-(5030, 'PP_EXPIRED_001', '万象集团-天津办-报表查看(已过期)', 132, 'TENANT', 9018, 'sys_report', '报表表', 'QUERY', '["report_name","report_type","create_at"]'::jsonb, 'DISABLED', '租约已过期，权限自动失效', 1, '2026-01-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL);
+(5030, 'PP_EXPIRED_001', '万象集团-天津办-报表查看(已过期)', 132, 'TENANT', 9018, 'sys_report', '报表表', 'QUERY', '["report_name","report_type","create_at"]'::jsonb, 'DISABLED', '租约已过期，权限自动失效', 1, '2026-01-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+
+-- ============================================================
+-- multi_user 权限策略扩展（覆盖三租户差异权限 + 禁用 + 字段级控制）
+-- 场景说明:
+--   万象集团(100): ROLE=普通员工(data:query+user:view) + USER=report:export(ACTIVE) + data:modify(DISABLED)
+--   鼎新集团(200): ROLE=普通员工(data:query+report:view) + ROLE=审计员(DISABLED→audit:view+audit:approve无效)
+--                  + USER=data:modify(ACTIVE) + finance:view(ACTIVE)
+--   星辰科技(300): ROLE=研发工程师(data:modify+report:view) + ROLE=营销总监(report:export+user:view)
+--                  + USER=report:export(DISABLED) + system:monitor(ACTIVE)
+-- ============================================================
+
+-- ----- 万象集团(100): multi_user ROLE权限 (角色策略ID=2028, 普通员工3004) -----
+(5031, 'PP_MULTI_R_001', 'multi_user-万象-数据查询(角色)', 2028, 'ROLE', 9020, 'sys_data', '数据表', 'QUERY', '["data_name","data_type","status","create_at"]'::jsonb, 'ACTIVE', NULL, 1, '2026-01-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(5032, 'PP_MULTI_R_002', 'multi_user-万象-用户查看(角色)', 2028, 'ROLE', 9008, 'sys_user', '用户表', 'QUERY', '["user_code","user_name","nick_name","email"]'::jsonb, 'ACTIVE', NULL, 1, '2026-01-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+
+-- ----- 万象集团(100): multi_user USER个人权限 (用户策略ID=1028) -----
+-- 已有: 5027 report:export(ACTIVE) — 保留不变
+(5033, 'PP_MULTI_U_001', 'multi_user-万象-数据修改(用户-禁用)', 1028, 'USER', 9021, 'sys_data', '数据表', 'UPDATE', '["data_name","data_type","status"]'::jsonb, 'DISABLED', '个人数据修改权限已回收', 1, '2026-01-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+
+-- ----- 鼎新集团(200): multi_user ROLE权限 (角色策略ID=2029, 普通员工3017) -----
+(5034, 'PP_MULTI_R_003', 'multi_user-鼎新-数据查询(角色)', 2029, 'ROLE', 9020, 'sys_data', '数据表', 'QUERY', '["data_name","data_type","status","create_at","update_at"]'::jsonb, 'ACTIVE', NULL, 1, '2026-02-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(5035, 'PP_MULTI_R_004', 'multi_user-鼎新-报表查看(角色)', 2029, 'ROLE', 9018, 'sys_report', '报表表', 'QUERY', '["report_name","report_type","create_at"]'::jsonb, 'ACTIVE', NULL, 1, '2026-02-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+
+-- ----- 鼎新集团(200): multi_user ROLE权限-失效角色 (角色策略ID=2031, 审计员3018, DISABLED) -----
+-- 以下两条因角色策略 DISABLED，属于 invalidPermissions
+(5036, 'PP_MULTI_R_DISABLED_001', 'multi_user-鼎新-审计查看(角色-失效)', 2031, 'ROLE', 9028, 'sys_audit_log', '审计日志表', 'QUERY', '["operator","operation","target","result","create_at"]'::jsonb, 'DISABLED', '角色已失效，级联禁用', 1, '2026-02-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(5037, 'PP_MULTI_R_DISABLED_002', 'multi_user-鼎新-审计审批(角色-失效)', 2031, 'ROLE', 9029, 'sys_audit_log', '审计日志表', 'UPDATE', '["approve_status","approve_comment"]'::jsonb, 'DISABLED', '角色已失效，级联禁用', 1, '2026-02-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+
+-- ----- 鼎新集团(200): multi_user USER个人权限 (用户策略ID=1029) -----
+(5038, 'PP_MULTI_U_002', 'multi_user-鼎新-数据修改(用户)', 1029, 'USER', 9021, 'sys_data', '数据表', 'UPDATE', '["data_name","data_type","status","remark"]'::jsonb, 'ACTIVE', NULL, 1, '2026-02-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(5039, 'PP_MULTI_U_003', 'multi_user-鼎新-财务查看(用户)', 1029, 'USER', 9025, 'sys_finance', '财务表', 'QUERY', '["amount","date","type","department","status"]'::jsonb, 'ACTIVE', NULL, 1, '2026-02-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+
+-- ----- 星辰科技(300): multi_user ROLE权限 (角色策略ID=2030, 研发工程师3022) -----
+(5040, 'PP_MULTI_R_005', 'multi_user-星辰-数据修改(角色-研发)', 2030, 'ROLE', 9021, 'sys_data', '数据表', 'UPDATE', '["data_name","data_type","status","version"]'::jsonb, 'ACTIVE', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(5041, 'PP_MULTI_R_006', 'multi_user-星辰-报表查看(角色-研发)', 2030, 'ROLE', 9018, 'sys_report', '报表表', 'QUERY', '["report_name","report_type","report_data","create_at"]'::jsonb, 'ACTIVE', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+
+-- ----- 星辰科技(300): multi_user ROLE权限 (角色策略ID=2032, 营销总监3023) -----
+(5042, 'PP_MULTI_R_007', 'multi_user-星辰-报表导出(角色-营销)', 2032, 'ROLE', 9019, 'sys_report', '报表表', 'EXPORT', '["report_name","report_type","report_data","create_at","update_at"]'::jsonb, 'ACTIVE', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(5043, 'PP_MULTI_R_008', 'multi_user-星辰-用户查看(角色-营销)', 2032, 'ROLE', 9008, 'sys_user', '用户表', 'QUERY', '["user_code","user_name","nick_name","email","phone"]'::jsonb, 'ACTIVE', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+
+-- ----- 星辰科技(300): multi_user USER个人权限 (用户策略ID=1030) -----
+(5044, 'PP_MULTI_U_DISABLED_001', 'multi_user-星辰-报表导出(用户-禁用)', 1030, 'USER', 9019, 'sys_report', '报表表', 'EXPORT', '["report_name","report_type"]'::jsonb, 'DISABLED', '个人导出权限被管理员收回', 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL),
+(5045, 'PP_MULTI_U_004', 'multi_user-星辰-系统监控(用户)', 1030, 'USER', 9022, 'sys_monitor', '系统监控表', 'QUERY', '["cpu_usage","mem_usage","disk_usage","online_users"]'::jsonb, 'ACTIVE', NULL, 1, '2026-03-01 08:00:00', 1, '2026-06-01 10:00:00', 'NOT_DELETED', NULL);

@@ -2,21 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shy.nexusix.iam.mapper.SysRolePolicyMapper">
 
-    <!-- 用户角色信息结果映射 -->
-    <resultMap id="UserRoleResultMap" type="com.shy.nexusix.iam.dto.UserRoleDTO">
-        <result column="roleCode" property="roleCode"/>
-        <result column="dataScope" property="dataScope"/>
-        <result column="tenantId" property="tenantId"/>
-        <result column="tenantCode" property="tenantCode"/>
-        <result column="tenantName" property="tenantName"/>
-        <result column="rolePolicyId" property="rolePolicyId"/>
-        <result column="rolePolicyStatus" property="rolePolicyStatus"/>
-    </resultMap>
-
     <!-- 查询用户在当前租户下的角色信息 -->
     <!-- 从 sys_role_policy(target_type='USER') 联查 sys_role 和 sys_tenant，获取用户的角色编码和数据权限范围 -->
     <!-- sys_role_policy.target_id 为用户策略ID（sys_user_policy.id），通过 sys_role.tenant_id 过滤租户 -->
-    <select id="queryUserRoleInfo" resultMap="UserRoleResultMap">
+    <select id="queryUserRoleInfo" resultType="com.shy.nexusix.iam.dto.UserRoleDTO">
         SELECT
             r.role_code   AS roleCode,
             r.data_scope  AS dataScope,
@@ -37,7 +26,7 @@
     <!-- 查询用户在所有租户下的全部角色信息（含有效和无效的角色策略） -->
     <!-- 从 sys_user_policy → sys_role_policy → sys_role → sys_tenant 联查 -->
     <!-- 不限制 rp.status，以便在 Service 层按 rolePolicyStatus 分类有效/无效角色 -->
-    <select id="queryUserAllRoleInfo" resultMap="UserRoleResultMap">
+    <select id="queryUserAllRoleInfo" resultType="com.shy.nexusix.iam.dto.UserRoleDTO">
         SELECT
             r.role_code   AS roleCode,
             r.data_scope  AS dataScope,

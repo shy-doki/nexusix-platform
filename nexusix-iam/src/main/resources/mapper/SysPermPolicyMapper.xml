@@ -2,17 +2,6 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shy.nexusix.iam.mapper.SysPermPolicyMapper">
 
-    <!-- 用户权限策略关联数据结果映射 -->
-    <resultMap id="UserPermJoinResultMap" type="com.shy.nexusix.iam.dto.UserPermJoinDTO">
-        <result column="policyId" property="policyId"/>
-        <result column="permId" property="permId"/>
-        <result column="policyStatus" property="policyStatus"/>
-        <result column="accessType" property="accessType"/>
-        <result column="fieldOperates" property="fieldOperates"/>
-        <result column="tableName" property="tableName"/>
-        <result column="permCode" property="permCode"/>
-    </resultMap>
-
     <!-- 查询用户在当前租户下的全部权限策略数据（两路径汇聚：ROLE / USER） -->
     <!-- 用户权限 = 用户当前登录租户中所属角色具有的权限 + 用户当前登录租户中该用户本身具有的权限 -->
     <!--
@@ -21,7 +10,7 @@
         - ROLE路径：target_type='ROLE'，target_id 为 sys_role_policy.id（角色策略ID）
         - USER路径：target_type='USER'，target_id 为 sys_user_policy.id（用户策略ID）
     -->
-    <select id="queryUserPermJoin" resultMap="UserPermJoinResultMap">
+    <select id="queryUserPermJoin" resultType="com.shy.nexusix.iam.dto.UserPermJoinDTO">
         SELECT
             pp.id             AS policyId,
             pp.perm_id        AS permId,
