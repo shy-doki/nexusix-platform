@@ -33,38 +33,38 @@ public class UserContext {
         if (dto == null) {
             return;
         }
-        UserContextDTO.PermInfo permInfo = dto.getPermInfo();
-        if (permInfo == null) {
-            return;
-        }
-        permInfo.setPerms(nullToEmpty(permInfo.getPerms()));
-        permInfo.setValidPerms(nullToEmpty(permInfo.getValidPerms()));
-        permInfo.setInvalidPerms(nullToEmpty(permInfo.getInvalidPerms()));
+        // 权限信息
+        UserContextDTO.PermissionInfo permissionInfo = dto.getPermissions();
+        if (permissionInfo != null) {
+            permissionInfo.setAll(nullToEmpty(permissionInfo.getAll()));
+            permissionInfo.setValid(nullToEmpty(permissionInfo.getValid()));
+            permissionInfo.setInvalid(nullToEmpty(permissionInfo.getInvalid()));
 
-        UserContextDTO.CascadeDisabled cascadeDisabled = permInfo.getCascadeDisabled();
-        if (cascadeDisabled != null) {
-            cascadeDisabled.setSystemDisabled(nullToEmpty(cascadeDisabled.getSystemDisabled()));
-            cascadeDisabled.setTenantDisabled(nullToEmpty(cascadeDisabled.getTenantDisabled()));
-            cascadeDisabled.setRoleDisabled(nullToEmpty(cascadeDisabled.getRoleDisabled()));
-            cascadeDisabled.setUserDisabled(nullToEmpty(cascadeDisabled.getUserDisabled()));
-        }
+            UserContextDTO.DisabledDetail disabledDetail = permissionInfo.getDisabledDetail();
+            if (disabledDetail != null) {
+                disabledDetail.setSystem(nullToEmpty(disabledDetail.getSystem()));
+                disabledDetail.setTenant(nullToEmpty(disabledDetail.getTenant()));
+                disabledDetail.setRole(nullToEmpty(disabledDetail.getRole()));
+                disabledDetail.setUser(nullToEmpty(disabledDetail.getUser()));
+            }
 
-        UserContextDTO.FieldPerm fieldPerm = permInfo.getFieldPerm();
-        if (fieldPerm != null) {
-            ensureFieldPermMapNonNull(fieldPerm.getQuery());
-            ensureFieldPermMapNonNull(fieldPerm.getCreate());
-            ensureFieldPermMapNonNull(fieldPerm.getUpdate());
+            UserContextDTO.FieldPermission fieldPermission = permissionInfo.getFieldPermission();
+            if (fieldPermission != null) {
+                ensureFieldPermMapNonNull(fieldPermission.getQuery());
+                ensureFieldPermMapNonNull(fieldPermission.getCreate());
+                ensureFieldPermMapNonNull(fieldPermission.getUpdate());
+            }
         }
     }
 
-    private static void ensureFieldPermMapNonNull(Map<String, UserContextDTO.EntityFieldPerm> map) {
+    private static void ensureFieldPermMapNonNull(Map<String, UserContextDTO.TableFieldPermission> map) {
         if (map == null) {
             return;
         }
-        for (UserContextDTO.EntityFieldPerm perm : map.values()) {
+        for (UserContextDTO.TableFieldPermission perm : map.values()) {
             if (perm != null) {
-                perm.setVisibleFields(nullToEmpty(perm.getVisibleFields()));
-                perm.setInvisibleFields(nullToEmpty(perm.getInvisibleFields()));
+                perm.setOperable(nullToEmpty(perm.getOperable()));
+                perm.setInoperable(nullToEmpty(perm.getInoperable()));
             }
         }
     }

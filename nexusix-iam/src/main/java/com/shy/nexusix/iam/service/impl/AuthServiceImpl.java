@@ -40,6 +40,13 @@ public class AuthServiceImpl implements IAuthService {
 
     /**
      * <p>用户登录认证</p>
+     * <p>登录成功后构建 UserContextDTO 存入 Sa-Token Session，结构如下：</p>
+     * <pre>
+     * currentTenant  — 当前登录租户（编码/名称/状态）
+     * tenants        — 租户分组（全部/有效/无效）
+     * permissions    — 权限汇总（全部/有效/无效 + 四级禁用详情 + 字段级操作权限）
+     * roles          — 角色分组（当前租户/全部/有效/无效 + 每条角色标注所属租户）
+     * </pre>
      *
      * @param param 登录入参对象 封装用户名、明文密码等登录参数
      * @return ApiResponse 统一返回成功结果 用户信息存放于Sa-Token Session中
@@ -79,268 +86,221 @@ public class AuthServiceImpl implements IAuthService {
         // 所有前置校验通过后 执行登录操作
         StpUtil.login(param.getUsername());
 
+        // ==================== 权限计算 ====================
         // 查询当前用户在当前租户下的全部权限策略数据（两路径汇聚：ROLE / USER）
         // 用户权限 = 用户当前登录租户中所属角色具有的权限 + 用户当前登录租户中该用户本身具有的权限
         // TENANT路径（target_type='TENANT'）是租户能力边界约束，不作为用户直接权限参与计算
-        // userPolicyId（sys_user_policy.id）是关联链枢纽：
-        //   USER路径：sys_perm_policy.target_id = userPolicyId（用户策略ID）
-        //   ROLE路径：sys_role_policy.target_id = userPolicyId → 找到角色策略ID → sys_perm_policy.target_id = 角色策略ID
-        List<UserPermJoinDTO> permJoinList = sysPermPolicyMapper.queryUserPermJoin(loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId());
+        List<UserPermJoinDTO> permJoinList = sysPermPolicyMapper.queryUserPermJoin(
+                loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId());
 
-        // 所有权限编码[有效+失效]
-        List<String> allPermCodeList = new ArrayList<>();
-        // 所有有效权限编码
-        List<String> validPermCodeList = new ArrayList<>();
-        // 所有无效权限编码
-        List<String> invalidPermCodeList = new ArrayList<>();
-        // 无效权限编码[系统级]
-        List<String> systemDisabledList = new ArrayList<>();
-        // 无效权限编码[租户级]
-        List<String> tenantDisabledList = new ArrayList<>();
-        // 无效权限编码[角色级]
-        List<String> roleDisabledList = new ArrayList<>();
-        // 无效权限编码[用户级]
-        List<String> userDisabledList = new ArrayList<>();
-
-        // 用于去重 同一个权限ID只需记录一次编码
+        // 权限编码集合（有效/无效）
+        Set<String> allPermCodeSet = new LinkedHashSet<>();
+        // 权限ID去重
         Set<Long> seenPermIdSet = new HashSet<>();
-
-        // 权限ID是否存在[系统级]失效
+        // 权限ID到编码映射
+        Map<Long, String> permIdToCodeMap = new HashMap<>();
+        // 各层级禁用标记
         Map<Long, Boolean> hasSystemDisabledMap = new HashMap<>();
-        // 权限ID是否存在[租户级]失效
         Map<Long, Boolean> hasTenantDisabledMap = new HashMap<>();
-        // 权限ID是否存在[角色级]失效
         Map<Long, Boolean> hasRoleDisabledMap = new HashMap<>();
-        // 权限ID是否存在[用户级]失效
         Map<Long, Boolean> hasUserDisabledMap = new HashMap<>();
-        // 权限ID是否为有效状态
+        // 有效标记
         Map<Long, Boolean> hasActiveMap = new HashMap<>();
 
-        // 权限ID到权限编码的映射 方便后续按ID查找
-        Map<Long, String> permIdToCodeMap = new HashMap<>();
+        // 字段权限Map：query / create / update
+        Map<String, UserContextDTO.TableFieldPermission> queryFieldMap = new HashMap<>();
+        Map<String, UserContextDTO.TableFieldPermission> createFieldMap = new HashMap<>();
+        Map<String, UserContextDTO.TableFieldPermission> updateFieldMap = new HashMap<>();
 
-        // 按操作类型分类的字段权限  Map：key为表名 value为该表的字段权限配置
-        Map<String, UserContextDTO.EntityFieldPerm> queryPermMap = new HashMap<>();
-        Map<String, UserContextDTO.EntityFieldPerm> createPermMap = new HashMap<>();
-        Map<String, UserContextDTO.EntityFieldPerm> updatePermMap = new HashMap<>();
-
-        // 第一轮遍历 收集所有权限编码 记录各权限在不同层级的禁用状态 解析字段级权限
+        // 第一轮遍历 收集权限编码 标记各层级状态 解析字段权限
         for (UserPermJoinDTO row : permJoinList) {
-            // 获取当前权限行的权限ID
             Long permId = row.getPermId();
-            // 获取当前权限行的权限编码
             String permCode = row.getPermCode();
-            // 获取当前权限行的策略状态
             String status = row.getPolicyStatus();
 
-            // 对同一权限ID进行去重 确保每个权限编码只在全量列表中出现一次
-            if (permId != null && permCode != null && !seenPermIdSet.contains(permId)) {
-                // 将权限ID加入已处理集合
-                seenPermIdSet.add(permId);
-                // 权限ID与编码的映射
+            if (permId != null && permCode != null && seenPermIdSet.add(permId)) {
                 permIdToCodeMap.put(permId, permCode);
-                // 加入全量权限编码列表
-                allPermCodeList.add(permCode);
+                allPermCodeSet.add(permCode);
             }
 
-            // 根据策略状态 标记该权限在各层级的失效情况
             if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(status)) {
-                // 有效状态
                 hasActiveMap.put(permId, true);
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_SYSTEM_LEVEL.getCode().equals(status)) {
-                // 系统级禁用
                 hasSystemDisabledMap.put(permId, true);
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_TENANT_LEVEL.getCode().equals(status)) {
-                // 租户级禁用
                 hasTenantDisabledMap.put(permId, true);
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_ROLE_LEVEL.getCode().equals(status)) {
-                // 角色级禁用
                 hasRoleDisabledMap.put(permId, true);
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_USER_LEVEL.getCode().equals(status)) {
-                // 用户级禁用
                 hasUserDisabledMap.put(permId, true);
             }
 
-            // 允许操作的字段
+            // 解析字段权限
             String fieldOperates = row.getFieldOperates();
-            // 访问类型
             String accessType = row.getAccessType();
-            // 表名
             String tableName = row.getTableName();
 
-            // 若字段操作 操作类型或表名为空 则跳过该行不处理字段权限
             if (fieldOperates == null || fieldOperates.isEmpty()
                     || accessType == null || tableName == null) {
                 continue;
             }
 
-            // 根据操作类型 选择对应的字段权限Map
-            Map<String, UserContextDTO.EntityFieldPerm> targetMap;
+            Map<String, UserContextDTO.TableFieldPermission> targetMap;
             if (GlobalEnum.PermPolicyAccessType.QUERY.getCode().equals(accessType)) {
-                // 查询操作
-                targetMap = queryPermMap;
+                targetMap = queryFieldMap;
             } else if (GlobalEnum.PermPolicyAccessType.CREATE.getCode().equals(accessType)) {
-                // 新增操作
-                targetMap = createPermMap;
+                targetMap = createFieldMap;
             } else if (GlobalEnum.PermPolicyAccessType.UPDATE.getCode().equals(accessType)) {
-                // 更新操作
-                targetMap = updatePermMap;
+                targetMap = updateFieldMap;
             } else {
-                // 未知操作类型 跳过
                 continue;
             }
 
-            // 解析JSON数组格式的字段名称列表
             List<String> fields = JSON.parseArray(fieldOperates, String.class);
-            // 解析结果为空 跳过
             if (fields == null || fields.isEmpty()) {
                 continue;
             }
 
-            // 获取或创建该表对应的字段权限对象
-            UserContextDTO.EntityFieldPerm fieldPerm = targetMap.computeIfAbsent(tableName,
-                    k -> new UserContextDTO.EntityFieldPerm());
+            UserContextDTO.TableFieldPermission tfp = targetMap.computeIfAbsent(tableName,
+                    k -> new UserContextDTO.TableFieldPermission());
 
-            // 根据策略状态 分配字段到可操作/不可操作列表
             if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(status)) {
-                // 有效字段加入可见列表
-                if (fieldPerm.getVisibleFields() == null) {
-                    fieldPerm.setVisibleFields(new ArrayList<>(fields));
-                } else {
-                    fieldPerm.getVisibleFields().addAll(fields);
-                }
+                tfp.getOperable().addAll(fields);
             } else {
-                // 失效字段加入不可见列表
-                if (fieldPerm.getInvisibleFields() == null) {
-                    fieldPerm.setInvisibleFields(new ArrayList<>(fields));
-                } else {
-                    fieldPerm.getInvisibleFields().addAll(fields);
-                }
+                tfp.getInoperable().addAll(fields);
             }
         }
 
-        // 第二轮遍历 对每个去重后的权限ID 汇总其禁用状态并分类到对应列表
+        // 第二轮遍历 分类有效/无效权限
+        List<String> validPermCodeList = new ArrayList<>();
+        List<String> invalidPermCodeList = new ArrayList<>();
+        List<String> systemDisabledList = new ArrayList<>();
+        List<String> tenantDisabledList = new ArrayList<>();
+        List<String> roleDisabledList = new ArrayList<>();
+        List<String> userDisabledList = new ArrayList<>();
+
         for (Long permId : seenPermIdSet) {
-            // 通过权限ID获取编码
             String permCode = permIdToCodeMap.get(permId);
+            boolean isSys = hasSystemDisabledMap.getOrDefault(permId, false);
+            boolean isTenant = hasTenantDisabledMap.getOrDefault(permId, false);
+            boolean isRole = hasRoleDisabledMap.getOrDefault(permId, false);
+            boolean isUser = hasUserDisabledMap.getOrDefault(permId, false);
 
-            // 获取当前权限ID 失效标记[系统级] 默认false
-            boolean isSystemDisabled = hasSystemDisabledMap.getOrDefault(permId, false);
-            // 获取当前权限ID 失效标记[租户级] 默认false
-            boolean isTenantDisabled = hasTenantDisabledMap.getOrDefault(permId, false);
-            // 获取当前权限ID 失效标记[角色级] 默认false
-            boolean isRoleDisabled = hasRoleDisabledMap.getOrDefault(permId, false);
-            // 获取当前权限ID 失效标记[用户级] 默认false
-            boolean isUserDisabled = hasUserDisabledMap.getOrDefault(permId, false);
+            if (isSys) systemDisabledList.add(permCode);
+            if (isTenant) tenantDisabledList.add(permCode);
+            if (isRole) roleDisabledList.add(permCode);
+            if (isUser) userDisabledList.add(permCode);
 
-            // 如果是系统级禁用 将权限编码加入系统级禁用列表
-            if (isSystemDisabled) systemDisabledList.add(permCode);
-            // 如果是租户级禁用 将权限编码加入租户级禁用列表
-            if (isTenantDisabled) tenantDisabledList.add(permCode);
-            // 如果是角色级禁用 将权限编码加入角色级禁用列表
-            if (isRoleDisabled) roleDisabledList.add(permCode);
-            // 如果是用户级禁用 将权限编码加入用户级禁用列表
-            if (isUserDisabled) userDisabledList.add(permCode);
-
-            // 判断权限是否无效 任意一个层级禁用 即为无效权限
-            if (isSystemDisabled || isTenantDisabled || isRoleDisabled || isUserDisabled) {
+            if (isSys || isTenant || isRole || isUser) {
                 invalidPermCodeList.add(permCode);
             } else if (hasActiveMap.getOrDefault(permId, false)) {
                 validPermCodeList.add(permCode);
             }
         }
 
-        // 查询当前用户在当前登录租户下的角色信息（角色编码 + 数据权限范围）
-        // userPolicyId 为 sys_user_policy.id，sys_role_policy.target_id 匹配用户策略ID，sys_role.tenant_id 过滤租户
-        List<UserRoleDTO> userRoleList = sysRolePolicyMapper.queryUserRoleInfo(loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId());
-        List<UserContextDTO.RoleInfo> roleInfoList = new ArrayList<>();
-        if (userRoleList != null) {
-            for (UserRoleDTO role : userRoleList) {
-                UserContextDTO.RoleInfo roleInfo = new UserContextDTO.RoleInfo();
-                roleInfo.setRoleCode(role.getRoleCode());
-                roleInfo.setDataScope(role.getDataScope());
-                roleInfoList.add(roleInfo);
+        // 构建 PermissionInfo
+        UserContextDTO.DisabledDetail disabledDetail = new UserContextDTO.DisabledDetail();
+        disabledDetail.setSystem(systemDisabledList);
+        disabledDetail.setTenant(tenantDisabledList);
+        disabledDetail.setRole(roleDisabledList);
+        disabledDetail.setUser(userDisabledList);
+
+        UserContextDTO.FieldPermission fieldPermission = new UserContextDTO.FieldPermission();
+        fieldPermission.setQuery(queryFieldMap);
+        fieldPermission.setCreate(createFieldMap);
+        fieldPermission.setUpdate(updateFieldMap);
+
+        UserContextDTO.PermissionInfo permissionInfo = new UserContextDTO.PermissionInfo();
+        permissionInfo.setAll(new ArrayList<>(allPermCodeSet));
+        permissionInfo.setValid(validPermCodeList);
+        permissionInfo.setInvalid(invalidPermCodeList);
+        permissionInfo.setDisabledDetail(disabledDetail);
+        permissionInfo.setFieldPermission(fieldPermission);
+
+        // ==================== 角色计算 ====================
+        // 当前登录租户下的角色
+        List<UserRoleDTO> currentTenantRoleList = sysRolePolicyMapper.queryUserRoleInfo(
+                loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId());
+        List<UserContextDTO.RoleItem> currentRoles = new ArrayList<>();
+        if (currentTenantRoleList != null) {
+            for (UserRoleDTO dto : currentTenantRoleList) {
+                UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
+                item.setRoleCode(dto.getRoleCode());
+                item.setDataScope(dto.getDataScope());
+                item.setTenantCode(dto.getTenantCode());
+                item.setTenantName(dto.getTenantName());
+                currentRoles.add(item);
             }
         }
 
-        // 实例化[级联禁用]信息对象 用于封装各层级失效的权限数据
-        UserContextDTO.CascadeDisabled cascadeDisabled = new UserContextDTO.CascadeDisabled();
-        // 为级联禁用对象设置[系统级]失效权限列表
-        cascadeDisabled.setSystemDisabled(systemDisabledList);
-        // 为级联禁用对象设置[租户级]失效权限列表
-        cascadeDisabled.setTenantDisabled(tenantDisabledList);
-        // 为级联禁用对象设置[角色级]失效权限列表
-        cascadeDisabled.setRoleDisabled(roleDisabledList);
-        // 为级联禁用对象设置[用户级]失效权限列表
-        cascadeDisabled.setUserDisabled(userDisabledList);
+        // 全部租户下的角色（含有效/无效）
+        List<UserRoleDTO> allRoleList = sysRolePolicyMapper.queryUserAllRoleInfo(loginJoinInfo.getUserId());
+        List<UserContextDTO.RoleItem> allRoleItems = new ArrayList<>();
+        List<UserContextDTO.RoleItem> validRoleItems = new ArrayList<>();
+        List<UserContextDTO.RoleItem> invalidRoleItems = new ArrayList<>();
+        if (allRoleList != null) {
+            for (UserRoleDTO dto : allRoleList) {
+                UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
+                item.setRoleCode(dto.getRoleCode());
+                item.setDataScope(dto.getDataScope());
+                item.setTenantCode(dto.getTenantCode());
+                item.setTenantName(dto.getTenantName());
+                allRoleItems.add(item);
+                if (GlobalEnum.PermPolicyStatus.ACTIVE.getCode().equals(dto.getRolePolicyStatus())) {
+                    validRoleItems.add(item);
+                } else {
+                    invalidRoleItems.add(item);
+                }
+            }
+        }
 
-        // 实例化[字段权限]信息对象 用于封装查询/新增/更新的字段权限
-        UserContextDTO.FieldPerm fieldPerm = new UserContextDTO.FieldPerm();
-        // 为字段权限对象设置[查询操作]的字段权限映射
-        fieldPerm.setQuery(queryPermMap);
-        // 为字段权限对象设置[新增操作]的字段权限映射
-        fieldPerm.setCreate(createPermMap);
-        // 为字段权限对象设置[更新操作]的字段权限映射
-        fieldPerm.setUpdate(updatePermMap);
+        UserContextDTO.RoleGroup roleGroup = new UserContextDTO.RoleGroup();
+        roleGroup.setCurrent(currentRoles);
+        roleGroup.setAll(allRoleItems);
+        roleGroup.setValid(validRoleItems);
+        roleGroup.setInvalid(invalidRoleItems);
 
-        // 实例化[权限信息]对象 用于封装用户所有权限相关数据
-        UserContextDTO.PermInfo permInfo = new UserContextDTO.PermInfo();
-        // 设置全量权限编码列表[有效+无效]
-        permInfo.setPerms(allPermCodeList);
-        // 设置有效权限编码列表
-        permInfo.setValidPerms(validPermCodeList);
-        // 设置无效权限编码列表
-        permInfo.setInvalidPerms(invalidPermCodeList);
-        // 设置级联禁用信息
-        permInfo.setCascadeDisabled(cascadeDisabled);
-        // 设置字段权限信息
-        permInfo.setFieldPerm(fieldPerm);
+        // ==================== 租户计算 ====================
+        // 当前租户
+        UserContextDTO.TenantInfo currentTenant = new UserContextDTO.TenantInfo();
+        currentTenant.setTenantCode(loginJoinInfo.getTenantCode());
+        currentTenant.setTenantName(loginJoinInfo.getTenantName());
+        currentTenant.setStatus(loginJoinInfo.getTenantStatus());
 
-        // 实例化[租户上下文信息]对象 用于封装用户所属租户数据
-        UserContextDTO.TenantInfo tenantInfoCache = new UserContextDTO.TenantInfo();
-        // 设置租户ID
-        tenantInfoCache.setTenantId(loginJoinInfo.getTenantId());
-        // 设置租户名称
-        tenantInfoCache.setTenantName(loginJoinInfo.getTenantName());
-        // 设置租户编码
-        tenantInfoCache.setTenantCode(loginJoinInfo.getTenantCode());
-        // 设置租户状态
-        tenantInfoCache.setTenantStatus(loginJoinInfo.getTenantStatus());
-
-        // 查询当前用户关联的所有租户，按状态分类为有效租户和无效租户
+        // 所有租户（按 userPolicyStatus + tenantStatus 分类）
         List<UserTenantItemDTO> allTenantList = sysUserPolicyMapper.queryUserAllTenants(loginJoinInfo.getUserId());
-        List<UserContextDTO.TenantItemInfo> validTenants = new ArrayList<>();
-        List<UserContextDTO.TenantItemInfo> invalidTenants = new ArrayList<>();
+        List<UserContextDTO.TenantItem> allTenants = new ArrayList<>();
+        List<UserContextDTO.TenantItem> validTenants = new ArrayList<>();
+        List<UserContextDTO.TenantItem> invalidTenants = new ArrayList<>();
         for (UserTenantItemDTO item : allTenantList) {
-            UserContextDTO.TenantItemInfo tenantItem = new UserContextDTO.TenantItemInfo();
-            tenantItem.setTenantId(item.getTenantId());
+            UserContextDTO.TenantItem tenantItem = new UserContextDTO.TenantItem();
             tenantItem.setTenantCode(item.getTenantCode());
             tenantItem.setTenantName(item.getTenantName());
-            tenantItem.setTenantStatus(item.getTenantStatus());
-            if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(item.getTenantStatus())) {
+            tenantItem.setStatus(item.getTenantStatus());
+            allTenants.add(tenantItem);
+            if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(item.getUserPolicyStatus())
+                    && GlobalEnum.TenantStatus.ENABLED.getCode().equals(item.getTenantStatus())) {
                 validTenants.add(tenantItem);
             } else {
                 invalidTenants.add(tenantItem);
             }
         }
 
-        // 实例化[用户上下文信息]对象 整合所有用户登录后的核心信息
-        UserContextDTO userContext = new UserContextDTO();
-        // 为用户上下文设置租户信息
-        userContext.setTenantInfo(tenantInfoCache);
-        // 为用户上下文设置有效租户列表
-        userContext.setValidTenants(validTenants);
-        // 为用户上下文设置无效租户列表
-        userContext.setInvalidTenants(invalidTenants);
-        // 为用户上下文设置权限信息
-        userContext.setPermInfo(permInfo);
-        // 为用户上下文设置角色信息
-        userContext.setRoles(roleInfoList);
+        UserContextDTO.TenantGroup tenantGroup = new UserContextDTO.TenantGroup();
+        tenantGroup.setAll(allTenants);
+        tenantGroup.setValid(validTenants);
+        tenantGroup.setInvalid(invalidTenants);
 
-        // 将用户上下文存入Session 供后续请求使用
+        // ==================== 组装 UserContext ====================
+        UserContextDTO userContext = new UserContextDTO();
+        userContext.setCurrentTenant(currentTenant);
+        userContext.setTenants(tenantGroup);
+        userContext.setPermissions(permissionInfo);
+        userContext.setRoles(roleGroup);
+
+        // 存入Session
         StpUtil.getSession().set("userContext", userContext);
         return ApiResponse.success();
-
     }
 
 }

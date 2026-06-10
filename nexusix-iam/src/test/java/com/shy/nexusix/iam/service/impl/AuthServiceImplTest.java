@@ -221,12 +221,12 @@ class AuthServiceImplTest {
 
             UserContextDTO userContext = captor.getValue();
             // 全量权限编码应包含两路径的所有权限
-            assertEquals(2, userContext.getPermInfo().getPerms().size());
-            assertTrue(userContext.getPermInfo().getPerms().contains("ROLE_PERM_B"));
-            assertTrue(userContext.getPermInfo().getPerms().contains("USER_PERM_C"));
+            assertEquals(2, userContext.getPermissions().getAll().size());
+            assertTrue(userContext.getPermissions().getAll().contains("ROLE_PERM_B"));
+            assertTrue(userContext.getPermissions().getAll().contains("USER_PERM_C"));
             // 两路径权限均为ACTIVE 全部归入有效权限
-            assertEquals(2, userContext.getPermInfo().getValidPerms().size());
-            assertTrue(userContext.getPermInfo().getInvalidPerms().isEmpty());
+            assertEquals(2, userContext.getPermissions().getValid().size());
+            assertTrue(userContext.getPermissions().getInvalid().isEmpty());
         }
 
         @Test
@@ -252,11 +252,11 @@ class AuthServiceImplTest {
 
             UserContextDTO userContext = captor.getValue();
             // 全量权限编码去重后只有一条
-            assertEquals(1, userContext.getPermInfo().getPerms().size());
-            assertEquals("SYS_USER", userContext.getPermInfo().getPerms().get(0));
+            assertEquals(1, userContext.getPermissions().getAll().size());
+            assertEquals("SYS_USER", userContext.getPermissions().getAll().get(0));
             // 由于存在租户级禁用 该权限归入无效列表
-            assertEquals(1, userContext.getPermInfo().getInvalidPerms().size());
-            assertTrue(userContext.getPermInfo().getValidPerms().isEmpty());
+            assertEquals(1, userContext.getPermissions().getInvalid().size());
+            assertTrue(userContext.getPermissions().getValid().isEmpty());
         }
 
         @Test
@@ -284,12 +284,12 @@ class AuthServiceImplTest {
 
             UserContextDTO userContext = captor.getValue();
             // 两个权限均为无效
-            assertEquals(2, userContext.getPermInfo().getInvalidPerms().size());
-            assertTrue(userContext.getPermInfo().getValidPerms().isEmpty());
+            assertEquals(2, userContext.getPermissions().getInvalid().size());
+            assertTrue(userContext.getPermissions().getValid().isEmpty());
             // 系统级禁用列表包含两个权限
-            assertEquals(2, userContext.getPermInfo().getCascadeDisabled().getSystemDisabled().size());
-            assertTrue(userContext.getPermInfo().getCascadeDisabled().getSystemDisabled().contains("PERM_X"));
-            assertTrue(userContext.getPermInfo().getCascadeDisabled().getSystemDisabled().contains("PERM_Y"));
+            assertEquals(2, userContext.getPermissions().getDisabledDetail().getSystem().size());
+            assertTrue(userContext.getPermissions().getDisabledDetail().getSystem().contains("PERM_X"));
+            assertTrue(userContext.getPermissions().getDisabledDetail().getSystem().contains("PERM_Y"));
         }
 
         @Test
@@ -317,19 +317,19 @@ class AuthServiceImplTest {
 
             UserContextDTO userContext = captor.getValue();
             // 全量5个权限
-            assertEquals(5, userContext.getPermInfo().getPerms().size());
+            assertEquals(5, userContext.getPermissions().getAll().size());
             // 有效1个 无效4个
-            assertEquals(1, userContext.getPermInfo().getValidPerms().size());
-            assertEquals(4, userContext.getPermInfo().getInvalidPerms().size());
+            assertEquals(1, userContext.getPermissions().getValid().size());
+            assertEquals(4, userContext.getPermissions().getInvalid().size());
             // 四级禁用各1条
-            assertEquals(1, userContext.getPermInfo().getCascadeDisabled().getSystemDisabled().size());
-            assertEquals("PERM_SYS", userContext.getPermInfo().getCascadeDisabled().getSystemDisabled().get(0));
-            assertEquals(1, userContext.getPermInfo().getCascadeDisabled().getTenantDisabled().size());
-            assertEquals("PERM_TENANT", userContext.getPermInfo().getCascadeDisabled().getTenantDisabled().get(0));
-            assertEquals(1, userContext.getPermInfo().getCascadeDisabled().getRoleDisabled().size());
-            assertEquals("PERM_ROLE", userContext.getPermInfo().getCascadeDisabled().getRoleDisabled().get(0));
-            assertEquals(1, userContext.getPermInfo().getCascadeDisabled().getUserDisabled().size());
-            assertEquals("PERM_USER", userContext.getPermInfo().getCascadeDisabled().getUserDisabled().get(0));
+            assertEquals(1, userContext.getPermissions().getDisabledDetail().getSystem().size());
+            assertEquals("PERM_SYS", userContext.getPermissions().getDisabledDetail().getSystem().get(0));
+            assertEquals(1, userContext.getPermissions().getDisabledDetail().getTenant().size());
+            assertEquals("PERM_TENANT", userContext.getPermissions().getDisabledDetail().getTenant().get(0));
+            assertEquals(1, userContext.getPermissions().getDisabledDetail().getRole().size());
+            assertEquals("PERM_ROLE", userContext.getPermissions().getDisabledDetail().getRole().get(0));
+            assertEquals(1, userContext.getPermissions().getDisabledDetail().getUser().size());
+            assertEquals("PERM_USER", userContext.getPermissions().getDisabledDetail().getUser().get(0));
         }
 
         @Test
@@ -355,12 +355,12 @@ class AuthServiceImplTest {
 
             UserContextDTO userContext = captor.getValue();
             // 权限编码只出现一次
-            assertEquals(1, userContext.getPermInfo().getPerms().size());
+            assertEquals(1, userContext.getPermissions().getAll().size());
             // 归入无效
-            assertEquals(1, userContext.getPermInfo().getInvalidPerms().size());
+            assertEquals(1, userContext.getPermissions().getInvalid().size());
             // 同时出现在系统级和租户级禁用列表
-            assertTrue(userContext.getPermInfo().getCascadeDisabled().getSystemDisabled().contains("PERM_MULTI"));
-            assertTrue(userContext.getPermInfo().getCascadeDisabled().getTenantDisabled().contains("PERM_MULTI"));
+            assertTrue(userContext.getPermissions().getDisabledDetail().getSystem().contains("PERM_MULTI"));
+            assertTrue(userContext.getPermissions().getDisabledDetail().getTenant().contains("PERM_MULTI"));
         }
     }
 
@@ -391,11 +391,11 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            UserContextDTO.EntityFieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm().getQuery().get("sys_tenant");
+            UserContextDTO.TableFieldPermission fieldPerm = userContext.getPermissions().getFieldPermission().getQuery().get("sys_tenant");
             assertNotNull(fieldPerm);
-            assertEquals(2, fieldPerm.getVisibleFields().size());
-            assertTrue(fieldPerm.getVisibleFields().contains("tenantCode"));
-            assertTrue(fieldPerm.getVisibleFields().contains("tenantName"));
+            assertEquals(2, fieldPerm.getOperable().size());
+            assertTrue(fieldPerm.getOperable().contains("tenantCode"));
+            assertTrue(fieldPerm.getOperable().contains("tenantName"));
         }
 
         @Test
@@ -419,10 +419,10 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            UserContextDTO.EntityFieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm().getCreate().get("sys_tenant");
+            UserContextDTO.TableFieldPermission fieldPerm = userContext.getPermissions().getFieldPermission().getCreate().get("sys_tenant");
             assertNotNull(fieldPerm);
-            assertEquals(1, fieldPerm.getVisibleFields().size());
-            assertEquals("tenantCode", fieldPerm.getVisibleFields().get(0));
+            assertEquals(1, fieldPerm.getOperable().size());
+            assertEquals("tenantCode", fieldPerm.getOperable().get(0));
         }
 
         @Test
@@ -446,10 +446,10 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            UserContextDTO.EntityFieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm().getUpdate().get("sys_tenant");
+            UserContextDTO.TableFieldPermission fieldPerm = userContext.getPermissions().getFieldPermission().getUpdate().get("sys_tenant");
             assertNotNull(fieldPerm);
-            assertEquals(1, fieldPerm.getVisibleFields().size());
-            assertEquals("tenantName", fieldPerm.getVisibleFields().get(0));
+            assertEquals(1, fieldPerm.getOperable().size());
+            assertEquals("tenantName", fieldPerm.getOperable().get(0));
         }
 
         @Test
@@ -473,13 +473,13 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            UserContextDTO.EntityFieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm().getQuery().get("sys_tenant");
+            UserContextDTO.TableFieldPermission fieldPerm = userContext.getPermissions().getFieldPermission().getQuery().get("sys_tenant");
             assertNotNull(fieldPerm);
             // 禁用字段归入不可见列表
-            assertEquals(1, fieldPerm.getInvisibleFields().size());
-            assertEquals("contactPhone", fieldPerm.getInvisibleFields().get(0));
+            assertEquals(1, fieldPerm.getInoperable().size());
+            assertEquals("contactPhone", fieldPerm.getInoperable().get(0));
             // 可见列表为空（初始化的空ArrayList）
-            assertTrue(fieldPerm.getVisibleFields().isEmpty());
+            assertTrue(fieldPerm.getOperable().isEmpty());
         }
 
         @Test
@@ -506,13 +506,13 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            UserContextDTO.EntityFieldPerm fieldPerm = userContext.getPermInfo().getFieldPerm().getQuery().get("sys_user");
+            UserContextDTO.TableFieldPermission fieldPerm = userContext.getPermissions().getFieldPermission().getQuery().get("sys_user");
             assertNotNull(fieldPerm);
             // 两条策略的字段合并到可见列表
-            assertEquals(3, fieldPerm.getVisibleFields().size());
-            assertTrue(fieldPerm.getVisibleFields().contains("field1"));
-            assertTrue(fieldPerm.getVisibleFields().contains("field2"));
-            assertTrue(fieldPerm.getVisibleFields().contains("field3"));
+            assertEquals(3, fieldPerm.getOperable().size());
+            assertTrue(fieldPerm.getOperable().contains("field1"));
+            assertTrue(fieldPerm.getOperable().contains("field2"));
+            assertTrue(fieldPerm.getOperable().contains("field3"));
         }
 
         @Test
@@ -543,11 +543,11 @@ class AuthServiceImplTest {
 
             UserContextDTO userContext = captor.getValue();
             // 所有字段权限Map均为空（无有效字段权限数据）
-            assertTrue(userContext.getPermInfo().getFieldPerm().getQuery().isEmpty());
-            assertTrue(userContext.getPermInfo().getFieldPerm().getCreate().isEmpty());
-            assertTrue(userContext.getPermInfo().getFieldPerm().getUpdate().isEmpty());
+            assertTrue(userContext.getPermissions().getFieldPermission().getQuery().isEmpty());
+            assertTrue(userContext.getPermissions().getFieldPermission().getCreate().isEmpty());
+            assertTrue(userContext.getPermissions().getFieldPermission().getUpdate().isEmpty());
             // 但权限编码仍然被收集
-            assertEquals(4, userContext.getPermInfo().getPerms().size());
+            assertEquals(4, userContext.getPermissions().getAll().size());
         }
 
         @Test
@@ -572,9 +572,9 @@ class AuthServiceImplTest {
 
             UserContextDTO userContext = captor.getValue();
             // 未知操作类型不产生字段权限
-            assertTrue(userContext.getPermInfo().getFieldPerm().getQuery().isEmpty());
-            assertTrue(userContext.getPermInfo().getFieldPerm().getCreate().isEmpty());
-            assertTrue(userContext.getPermInfo().getFieldPerm().getUpdate().isEmpty());
+            assertTrue(userContext.getPermissions().getFieldPermission().getQuery().isEmpty());
+            assertTrue(userContext.getPermissions().getFieldPermission().getCreate().isEmpty());
+            assertTrue(userContext.getPermissions().getFieldPermission().getUpdate().isEmpty());
         }
     }
 
@@ -585,16 +585,14 @@ class AuthServiceImplTest {
     class RoleInfoTests {
 
         @Test
-        @DisplayName("用户角色信息正确缓存到Session")
+        @DisplayName("用户角色信息正确缓存到Session（含租户标识）")
         void testRoleInfoCached() {
             // 准备
             LoginRTO param = buildLoginParam("zhang_san", "password123");
             UserLoginJoinDTO loginJoinInfo = buildLoginJoinInfo(5L, 100L, GlobalEnum.TenantStatus.ENABLED.getCode());
 
             List<UserRoleDTO> roleList = new ArrayList<>();
-            UserRoleDTO role1 = new UserRoleDTO();
-            role1.setRoleCode("EMPLOYEE");
-            role1.setDataScope("SELF");
+            UserRoleDTO role1 = buildUserRoleDTO("EMPLOYEE", "SELF", 100L, "WANXIANG", "万象集团", "ACTIVE");
             roleList.add(role1);
 
             mockLoginFlow(param, loginJoinInfo, Collections.emptyList(), roleList, Collections.emptyList());
@@ -607,26 +605,24 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            assertEquals(1, userContext.getRoles().size());
-            assertEquals("EMPLOYEE", userContext.getRoles().get(0).getRoleCode());
-            assertEquals("SELF", userContext.getRoles().get(0).getDataScope());
+            assertEquals(1, userContext.getRoles().getCurrent().size());
+            assertEquals("EMPLOYEE", userContext.getRoles().getCurrent().get(0).getRoleCode());
+            assertEquals("SELF", userContext.getRoles().getCurrent().get(0).getDataScope());
+            assertEquals("WANXIANG", userContext.getRoles().getCurrent().get(0).getTenantCode());
+            assertEquals("万象集团", userContext.getRoles().getCurrent().get(0).getTenantName());
         }
 
         @Test
-        @DisplayName("多角色用户角色信息正确缓存")
+        @DisplayName("多角色用户在当前租户下角色信息正确缓存")
         void testMultiRoleInfoCached() {
             // 准备
             LoginRTO param = buildLoginParam("wang_wu", "password123");
             UserLoginJoinDTO loginJoinInfo = buildLoginJoinInfo(8L, 100L, GlobalEnum.TenantStatus.ENABLED.getCode());
 
             List<UserRoleDTO> roleList = new ArrayList<>();
-            UserRoleDTO role1 = new UserRoleDTO();
-            role1.setRoleCode("BRANCH_EMPLOYEE");
-            role1.setDataScope("DEPT");
+            UserRoleDTO role1 = buildUserRoleDTO("BRANCH_EMPLOYEE", "DEPT", 100L, "WANXIANG", "万象集团", "ACTIVE");
             roleList.add(role1);
-            UserRoleDTO role2 = new UserRoleDTO();
-            role2.setRoleCode("EMPLOYEE");
-            role2.setDataScope("SELF");
+            UserRoleDTO role2 = buildUserRoleDTO("EMPLOYEE", "SELF", 100L, "WANXIANG", "万象集团", "ACTIVE");
             roleList.add(role2);
 
             mockLoginFlow(param, loginJoinInfo, Collections.emptyList(), roleList, Collections.emptyList());
@@ -639,7 +635,7 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            assertEquals(2, userContext.getRoles().size());
+            assertEquals(2, userContext.getRoles().getCurrent().size());
         }
 
         @Test
@@ -659,8 +655,69 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            assertNotNull(userContext.getRoles());
-            assertTrue(userContext.getRoles().isEmpty());
+            assertNotNull(userContext.getRoles().getCurrent());
+            assertTrue(userContext.getRoles().getCurrent().isEmpty());
+            assertNotNull(userContext.getRoles().getAll());
+            assertTrue(userContext.getRoles().getAll().isEmpty());
+            assertNotNull(userContext.getRoles().getValid());
+            assertTrue(userContext.getRoles().getValid().isEmpty());
+            assertNotNull(userContext.getRoles().getInvalid());
+            assertTrue(userContext.getRoles().getInvalid().isEmpty());
+        }
+
+        @Test
+        @DisplayName("跨租户角色分类：有效/无效角色正确归类")
+        void testAllRolesClassification() {
+            // 准备 - 使用全力覆盖，queryUserAllRoleInfo 返回跨租户混合状态角色
+            LoginRTO param = buildLoginParam("multi_user", "password123");
+            UserLoginJoinDTO loginJoinInfo = buildLoginJoinInfo(30L, 100L, GlobalEnum.TenantStatus.ENABLED.getCode());
+
+            List<UserRoleDTO> currentTenantRoles = new ArrayList<>();
+            UserRoleDTO currentRole = buildUserRoleDTO("EMPLOYEE", "SELF", 100L, "WANXIANG", "万象集团", "ACTIVE");
+            currentTenantRoles.add(currentRole);
+
+            // allRoles 包含跨三个租户的角色：2个ACTIVE + 1个DISABLED
+            List<UserRoleDTO> allRoles = new ArrayList<>();
+            allRoles.add(buildUserRoleDTO("EMPLOYEE", "SELF", 100L, "WANXIANG", "万象集团", "ACTIVE"));
+            allRoles.add(buildUserRoleDTO("EMPLOYEE", "SELF", 200L, "DINGXIN", "鼎新集团", "ACTIVE"));
+            allRoles.add(buildUserRoleDTO("ENGINEER", "DEPT", 300L, "XINGCHEN", "星辰科技", "DISABLED"));
+
+            // 需要分开mock: queryUserRoleInfo 返回当前租户角色, queryUserAllRoleInfo 返回全部角色
+            stpUtilMockedStatic.when(() -> StpUtil.isLogin(param.getUsername())).thenReturn(false);
+            when(sysUserPolicyMapper.queryUserLoginJoin(param.getUsername())).thenReturn(loginJoinInfo);
+            stpUtilMockedStatic.when(() -> StpUtil.login(param.getUsername())).thenAnswer(invocation -> null);
+            stpUtilMockedStatic.when(StpUtil::getSession).thenReturn(saSession);
+            when(sysPermPolicyMapper.queryUserPermJoin(loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId()))
+                    .thenReturn(Collections.emptyList());
+            when(sysRolePolicyMapper.queryUserRoleInfo(loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId()))
+                    .thenReturn(currentTenantRoles);
+            when(sysRolePolicyMapper.queryUserAllRoleInfo(loginJoinInfo.getUserId()))
+                    .thenReturn(allRoles);
+            when(sysUserPolicyMapper.queryUserAllTenants(loginJoinInfo.getUserId()))
+                    .thenReturn(Collections.emptyList());
+
+            // 执行
+            authService.login(param);
+
+            // 验证
+            ArgumentCaptor<UserContextDTO> captor = ArgumentCaptor.forClass(UserContextDTO.class);
+            verify(saSession).set(eq("userContext"), captor.capture());
+
+            UserContextDTO userContext = captor.getValue();
+
+            // allRoles = 3
+            assertEquals(3, userContext.getRoles().getAll().size());
+            // validRoles = 2 (ACTIVE)
+            assertEquals(2, userContext.getRoles().getValid().size());
+            assertTrue(userContext.getRoles().getValid().stream()
+                    .allMatch(r -> r.getTenantCode() != null));
+            // invalidRoles = 1 (DISABLED)
+            assertEquals(1, userContext.getRoles().getInvalid().size());
+            assertEquals("星辰科技", userContext.getRoles().getInvalid().get(0).getTenantName());
+            assertEquals("DISABLED", allRoles.get(2).getRolePolicyStatus());
+            // roles = 当前租户(万象集团)角色 = 1
+            assertEquals(1, userContext.getRoles().getCurrent().size());
+            assertEquals("万象集团", userContext.getRoles().getCurrent().get(0).getTenantName());
         }
     }
 
@@ -694,13 +751,13 @@ class AuthServiceImplTest {
 
             UserContextDTO userContext = captor.getValue();
             // 有效租户2个
-            assertEquals(2, userContext.getValidTenants().size());
-            assertTrue(userContext.getValidTenants().stream()
-                    .allMatch(t -> GlobalEnum.TenantStatus.ENABLED.getCode().equals(t.getTenantStatus())));
+            assertEquals(2, userContext.getTenants().getValid().size());
+            assertTrue(userContext.getTenants().getValid().stream()
+                    .allMatch(t -> GlobalEnum.TenantStatus.ENABLED.getCode().equals(t.getStatus())));
             // 无效租户2个
-            assertEquals(2, userContext.getInvalidTenants().size());
-            assertTrue(userContext.getInvalidTenants().stream()
-                    .allMatch(t -> !GlobalEnum.TenantStatus.ENABLED.getCode().equals(t.getTenantStatus())));
+            assertEquals(2, userContext.getTenants().getInvalid().size());
+            assertTrue(userContext.getTenants().getInvalid().stream()
+                    .allMatch(t -> !GlobalEnum.TenantStatus.ENABLED.getCode().equals(t.getStatus())));
         }
 
         @Test
@@ -724,8 +781,8 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            assertEquals(2, userContext.getValidTenants().size());
-            assertTrue(userContext.getInvalidTenants().isEmpty());
+            assertEquals(2, userContext.getTenants().getValid().size());
+            assertTrue(userContext.getTenants().getInvalid().isEmpty());
         }
     }
 
@@ -749,9 +806,7 @@ class AuthServiceImplTest {
                     "[\"contactPhone\"]", "sys_tenant", "TENANT_UPDATE"));
 
             List<UserRoleDTO> roleList = new ArrayList<>();
-            UserRoleDTO role = new UserRoleDTO();
-            role.setRoleCode("TENANT_ADMIN");
-            role.setDataScope("ALL");
+            UserRoleDTO role = buildUserRoleDTO("TENANT_ADMIN", "ALL", 100L, "T001", "集团A", "ACTIVE");
             roleList.add(role);
 
             List<UserTenantItemDTO> allTenants = new ArrayList<>();
@@ -769,39 +824,44 @@ class AuthServiceImplTest {
             UserContextDTO userContext = captor.getValue();
 
             // 租户信息
-            assertNotNull(userContext.getTenantInfo());
-            assertEquals(100L, userContext.getTenantInfo().getTenantId());
-            assertEquals("T001", userContext.getTenantInfo().getTenantCode());
-            assertEquals("集团A", userContext.getTenantInfo().getTenantName());
-            assertEquals(GlobalEnum.TenantStatus.ENABLED.getCode(), userContext.getTenantInfo().getTenantStatus());
+            assertNotNull(userContext.getCurrentTenant());
+            assertEquals("T001", userContext.getCurrentTenant().getTenantCode());
+            assertEquals("集团A", userContext.getCurrentTenant().getTenantName());
+            assertEquals(GlobalEnum.TenantStatus.ENABLED.getCode(), userContext.getCurrentTenant().getStatus());
 
             // 租户列表
-            assertEquals(1, userContext.getValidTenants().size());
-            assertTrue(userContext.getInvalidTenants().isEmpty());
+            assertEquals(1, userContext.getTenants().getValid().size());
+            assertTrue(userContext.getTenants().getInvalid().isEmpty());
 
             // 权限信息
-            assertNotNull(userContext.getPermInfo());
-            assertEquals(2, userContext.getPermInfo().getPerms().size());
-            assertEquals(1, userContext.getPermInfo().getValidPerms().size());
-            assertEquals(1, userContext.getPermInfo().getInvalidPerms().size());
+            assertNotNull(userContext.getPermissions());
+            assertEquals(2, userContext.getPermissions().getAll().size());
+            assertEquals(1, userContext.getPermissions().getValid().size());
+            assertEquals(1, userContext.getPermissions().getInvalid().size());
 
             // 级联禁用
-            assertNotNull(userContext.getPermInfo().getCascadeDisabled());
-            assertTrue(userContext.getPermInfo().getCascadeDisabled().getSystemDisabled().isEmpty());
-            assertEquals(1, userContext.getPermInfo().getCascadeDisabled().getTenantDisabled().size());
-            assertTrue(userContext.getPermInfo().getCascadeDisabled().getRoleDisabled().isEmpty());
-            assertTrue(userContext.getPermInfo().getCascadeDisabled().getUserDisabled().isEmpty());
+            assertNotNull(userContext.getPermissions().getDisabledDetail());
+            assertTrue(userContext.getPermissions().getDisabledDetail().getSystem().isEmpty());
+            assertEquals(1, userContext.getPermissions().getDisabledDetail().getTenant().size());
+            assertTrue(userContext.getPermissions().getDisabledDetail().getRole().isEmpty());
+            assertTrue(userContext.getPermissions().getDisabledDetail().getUser().isEmpty());
 
             // 字段权限
-            assertNotNull(userContext.getPermInfo().getFieldPerm());
-            assertNotNull(userContext.getPermInfo().getFieldPerm().getQuery().get("sys_tenant"));
-            assertNotNull(userContext.getPermInfo().getFieldPerm().getUpdate().get("sys_tenant"));
-            assertTrue(userContext.getPermInfo().getFieldPerm().getCreate().isEmpty());
+            assertNotNull(userContext.getPermissions().getFieldPermission());
+            assertNotNull(userContext.getPermissions().getFieldPermission().getQuery().get("sys_tenant"));
+            assertNotNull(userContext.getPermissions().getFieldPermission().getUpdate().get("sys_tenant"));
+            assertTrue(userContext.getPermissions().getFieldPermission().getCreate().isEmpty());
 
             // 角色信息
-            assertEquals(1, userContext.getRoles().size());
-            assertEquals("TENANT_ADMIN", userContext.getRoles().get(0).getRoleCode());
-            assertEquals("ALL", userContext.getRoles().get(0).getDataScope());
+            assertEquals(1, userContext.getRoles().getCurrent().size());
+            assertEquals("TENANT_ADMIN", userContext.getRoles().getCurrent().get(0).getRoleCode());
+            assertEquals("ALL", userContext.getRoles().getCurrent().get(0).getDataScope());
+            assertEquals("T001", userContext.getRoles().getCurrent().get(0).getTenantCode());
+            assertEquals("集团A", userContext.getRoles().getCurrent().get(0).getTenantName());
+            // allRoles / validRoles / invalidRoles 均存在
+            assertEquals(1, userContext.getRoles().getAll().size());
+            assertEquals(1, userContext.getRoles().getValid().size());
+            assertTrue(userContext.getRoles().getInvalid().isEmpty());
         }
     }
 
@@ -828,9 +888,9 @@ class AuthServiceImplTest {
             verify(saSession).set(eq("userContext"), captor.capture());
 
             UserContextDTO userContext = captor.getValue();
-            assertTrue(userContext.getPermInfo().getPerms().isEmpty());
-            assertTrue(userContext.getPermInfo().getValidPerms().isEmpty());
-            assertTrue(userContext.getPermInfo().getInvalidPerms().isEmpty());
+            assertTrue(userContext.getPermissions().getAll().isEmpty());
+            assertTrue(userContext.getPermissions().getValid().isEmpty());
+            assertTrue(userContext.getPermissions().getInvalid().isEmpty());
         }
 
         @Test
@@ -858,7 +918,7 @@ class AuthServiceImplTest {
             UserContextDTO userContext = captor.getValue();
             // permId为null的行不收集编码 permCode为null的行也不收集编码
             // 第二行permId=102但permCode=null 所以也不收集
-            assertTrue(userContext.getPermInfo().getPerms().isEmpty());
+            assertTrue(userContext.getPermissions().getAll().isEmpty());
         }
 
         @Test
@@ -882,9 +942,9 @@ class AuthServiceImplTest {
 
             UserContextDTO userContext = captor.getValue();
             // 空数组不产生字段权限
-            assertTrue(userContext.getPermInfo().getFieldPerm().getQuery().isEmpty());
+            assertTrue(userContext.getPermissions().getFieldPermission().getQuery().isEmpty());
             // 但权限编码仍被收集
-            assertEquals(1, userContext.getPermInfo().getPerms().size());
+            assertEquals(1, userContext.getPermissions().getAll().size());
         }
     }
 
@@ -937,11 +997,38 @@ class AuthServiceImplTest {
      */
     private UserTenantItemDTO buildTenantItemDTO(Long tenantId, String tenantCode,
                                                   String tenantName, String tenantStatus) {
+        return buildTenantItemDTO(tenantId, tenantCode, tenantName, tenantStatus, "ENABLED");
+    }
+
+    /**
+     * 构建租户列表项DTO（含用户策略状态）
+     */
+    private UserTenantItemDTO buildTenantItemDTO(Long tenantId, String tenantCode,
+                                                  String tenantName, String tenantStatus,
+                                                  String userPolicyStatus) {
         UserTenantItemDTO dto = new UserTenantItemDTO();
         dto.setTenantId(tenantId);
         dto.setTenantCode(tenantCode);
         dto.setTenantName(tenantName);
         dto.setTenantStatus(tenantStatus);
+        dto.setUserPolicyStatus(userPolicyStatus);
+        return dto;
+    }
+
+    /**
+     * 构建用户角色DTO（含租户标识和策略状态）
+     */
+    private UserRoleDTO buildUserRoleDTO(String roleCode, String dataScope,
+                                          Long tenantId, String tenantCode,
+                                          String tenantName, String rolePolicyStatus) {
+        UserRoleDTO dto = new UserRoleDTO();
+        dto.setRoleCode(roleCode);
+        dto.setDataScope(dataScope);
+        dto.setTenantId(tenantId);
+        dto.setTenantCode(tenantCode);
+        dto.setTenantName(tenantName);
+        dto.setRolePolicyId(2000L + tenantId);
+        dto.setRolePolicyStatus(rolePolicyStatus);
         return dto;
     }
 
@@ -959,6 +1046,8 @@ class AuthServiceImplTest {
         when(sysPermPolicyMapper.queryUserPermJoin(loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId()))
                 .thenReturn(permJoinList);
         when(sysRolePolicyMapper.queryUserRoleInfo(loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId()))
+                .thenReturn(roleList);
+        when(sysRolePolicyMapper.queryUserAllRoleInfo(loginJoinInfo.getUserId()))
                 .thenReturn(roleList);
         when(sysUserPolicyMapper.queryUserAllTenants(loginJoinInfo.getUserId()))
                 .thenReturn(tenantList != null ? tenantList : Collections.emptyList());

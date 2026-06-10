@@ -43,23 +43,25 @@
         <result column="tenantCode" property="tenantCode"/>
         <result column="tenantName" property="tenantName"/>
         <result column="tenantStatus" property="tenantStatus"/>
+        <result column="userPolicyStatus" property="userPolicyStatus"/>
     </resultMap>
 
-    <!-- 查询用户关联的所有租户信息 -->
+    <!-- 查询用户关联的所有租户信息（包含有效和无效的用户策略） -->
     <!-- 从 sys_user_policy 联查 sys_tenant，通过 up.target_id 关联租户 -->
+    <!-- 不再过滤 up.status，以便在 Service 层按 userPolicyStatus + tenantStatus 共同判定有效/无效 -->
     <select id="queryUserAllTenants" resultMap="UserTenantItemResultMap">
         SELECT
             t.id          AS tenantId,
             t.tenant_code AS tenantCode,
             t.tenant_name AS tenantName,
-            t.status      AS tenantStatus
+            t.status      AS tenantStatus,
+            up.status     AS userPolicyStatus
         FROM sys_user_policy up
         INNER JOIN sys_tenant t ON t.id = up.target_id
             AND t.is_deleted = 'NOT_DELETED'
         WHERE up.user_id = #{userId}
           AND up.target_type = 'USER'
           AND up.is_deleted = 'NOT_DELETED'
-          AND up.status = 'ENABLED'
     </select>
 
 </mapper>

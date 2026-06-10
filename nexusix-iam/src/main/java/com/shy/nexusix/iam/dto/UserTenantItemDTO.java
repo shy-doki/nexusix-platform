@@ -33,4 +33,9 @@ public class UserTenantItemDTO {
      */
     private String tenantStatus;
 
+    /**
+     * 用户策略状态（ENABLED/DISABLED），用于判定该租户关联是否有效
+     */
+    private String userPolicyStatus;
+
 }

@@ -28,4 +28,14 @@ public interface SysRolePolicyMapper extends BaseMapper<SysRolePolicy> {
      */
     List<UserRoleDTO> queryUserRoleInfo(@Param("userPolicyId") Long userPolicyId, @Param("tenantId") Long tenantId);
 
+    /**
+     * <p>查询用户在所有租户下的全部角色信息（含有效/无效）</p>
+     * <p>从 sys_user_policy 联查 sys_role_policy → sys_role → sys_tenant，获取用户跨租户的完整角色数据</p>
+     * <p>不限制 sys_role_policy.status，以便在 Service 层按 rolePolicyStatus 分类有效/无效角色</p>
+     *
+     * @param userId 用户ID
+     * @return 用户全部角色信息列表（含租户标识和角色策略状态）
+     */
+    List<UserRoleDTO> queryUserAllRoleInfo(@Param("userId") Long userId);
+
 }
