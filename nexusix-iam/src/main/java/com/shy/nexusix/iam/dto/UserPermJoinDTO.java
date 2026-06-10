@@ -40,4 +40,9 @@ public class UserPermJoinDTO {
      */
     private String permCode;
 
+    /**
+     * sys_perm_policy.target_type 策略目标类型（TENANT/ROLE/USER），用于判断禁用策略所属层级
+     */
+    private String targetType;
+
 }

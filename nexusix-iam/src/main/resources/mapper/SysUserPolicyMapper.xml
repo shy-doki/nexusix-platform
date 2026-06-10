@@ -16,7 +16,7 @@
             t.status      AS tenantStatus
         FROM sys_user u
         INNER JOIN sys_user_policy up ON up.user_id = u.id
-            AND up.target_type = 'USER'
+            AND up.target_type = 'TENANT'
             AND up.is_default = true
             AND up.status = 'ENABLED'
             AND up.is_deleted = 'NOT_DELETED'
@@ -40,7 +40,7 @@
         INNER JOIN sys_tenant t ON t.id = up.target_id
             AND t.is_deleted = 'NOT_DELETED'
         WHERE up.user_id = #{userId}
-          AND up.target_type = 'USER'
+          AND up.target_type = 'TENANT'
           AND up.is_deleted = 'NOT_DELETED'
     </select>
 

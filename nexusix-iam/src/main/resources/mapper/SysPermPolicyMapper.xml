@@ -18,6 +18,7 @@
             pp.access_type    AS accessType,
             pp.field_operates AS fieldOperates,
             pp.table_name     AS tableName,
+            pp.target_type    AS targetType,
             p.perm_code       AS permCode
         FROM sys_perm_policy pp
         INNER JOIN sys_perm p ON pp.perm_id = p.id AND p.is_deleted = 'NOT_DELETED'

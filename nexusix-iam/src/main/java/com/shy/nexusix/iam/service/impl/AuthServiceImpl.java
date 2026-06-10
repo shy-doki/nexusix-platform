@@ -117,6 +117,7 @@ public class AuthServiceImpl implements IAuthService {
             Long permId = row.getPermId();
             String permCode = row.getPermCode();
             String status = row.getPolicyStatus();
+            String targetType = row.getTargetType();
 
             if (permId != null && permCode != null && seenPermIdSet.add(permId)) {
                 permIdToCodeMap.put(permId, permCode);
@@ -133,6 +134,15 @@ public class AuthServiceImpl implements IAuthService {
                 hasRoleDisabledMap.put(permId, true);
             } else if (GlobalEnum.PermPolicyStatus.DISABLED_USER_LEVEL.getCode().equals(status)) {
                 hasUserDisabledMap.put(permId, true);
+            } else if (GlobalEnum.PermPolicyStatus.DISABLED.getCode().equals(status)) {
+                // 纯DISABLED状态 根据target_type回退判断所属禁用层级
+                if (GlobalEnum.PermPolicyTargetType.TENANT.getCode().equals(targetType)) {
+                    hasTenantDisabledMap.put(permId, true);
+                } else if (GlobalEnum.PermPolicyTargetType.ROLE.getCode().equals(targetType)) {
+                    hasRoleDisabledMap.put(permId, true);
+                } else if (GlobalEnum.PermPolicyTargetType.USER.getCode().equals(targetType)) {
+                    hasUserDisabledMap.put(permId, true);
+                }
             }
 
             // 解析字段权限
@@ -169,6 +179,17 @@ public class AuthServiceImpl implements IAuthService {
             } else {
                 tfp.getInoperable().addAll(fields);
             }
+        }
+
+        // 字段权限去重：inoperable字段从operable中移除（禁用优先于启用）
+        for (UserContextDTO.TableFieldPermission tfp : queryFieldMap.values()) {
+            tfp.getOperable().removeAll(tfp.getInoperable());
+        }
+        for (UserContextDTO.TableFieldPermission tfp : createFieldMap.values()) {
+            tfp.getOperable().removeAll(tfp.getInoperable());
+        }
+        for (UserContextDTO.TableFieldPermission tfp : updateFieldMap.values()) {
+            tfp.getOperable().removeAll(tfp.getInoperable());
         }
 
         // 第二轮遍历 分类有效/无效权限
