@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
  * </p>
  *
  * @author shy
- * @since 2026-05-19
+ * @since 2026-06-10
  */
 @Service
 public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, SysPermPolicy> implements ISysPermPolicyService {
