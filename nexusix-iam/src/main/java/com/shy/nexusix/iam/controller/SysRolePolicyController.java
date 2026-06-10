@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * <p>
- * 权限策略表 前端控制器
+ * 角色策略表 前端控制器
  * </p>
  *
  * @author shy
  * @since 2026-06-10
  */
 @RestController
-@RequestMapping("/sys-perm-policy")
-public class SysPermPolicyController {
+@RequestMapping("/sys-role-policy")
+public class SysRolePolicyController {
 
 }

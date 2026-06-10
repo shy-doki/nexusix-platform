@@ -16,10 +16,10 @@ public class UserLoginJoinDTO {
     private String password;
 
     /**
-     * sys_user_tenant_rel.id 用户-租户关联关系ID
-     * 该ID将被用作第二次查询中 sys_user_perm_rel.user_id 的查询条件
+     * sys_user_policy.id 用户-租户策略主键ID
+     * 该ID将被用作第二次查询中 sys_role_policy.target_id 的查询条件
      */
-    private Long userTenantRelId;
+    private Long userPolicyId;
 
     /**
      * sys_tenant.id 租户ID

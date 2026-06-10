@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 /**
  * <p>
- * 用户表
+ * 角色表 - 存储租户下的角色定义
  * </p>
  *
  * @author shy
@@ -21,9 +21,9 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("sys_user")
-@Schema(name = "SysUser对象", description = "用户表 - 存储系统用户基础信息")
-public class SysUser implements Serializable {
+@TableName("sys_role")
+@Schema(name = "SysRole对象", description = "角色表 - 存储租户下的角色定义")
+public class SysRole implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -31,42 +31,41 @@ public class SysUser implements Serializable {
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Schema(description = "用户编码", example = "USR_001")
-    @TableField(value = "user_code")
-    private String userCode;
+    @Schema(description = "角色名称", example = "租户管理员")
+    @TableField(value = "role_name")
+    private String roleName;
 
-    @Schema(description = "登录用户名", example = "admin")
-    @TableField(value = "user_name")
-    private String userName;
+    @Schema(description = "角色描述", example = "租户最高权限管理员")
+    @TableField(value = "role_desc")
+    private String roleDesc;
 
-    @Schema(description = "加密密码", example = "$2a$10$xxxxx")
-    @TableField(value = "password")
-    private String password;
+    @Schema(description = "角色编码", example = "TENANT_ADMIN")
+    @TableField(value = "role_code")
+    private String roleCode;
 
-    @Schema(description = "用户昵称", example = "管理员")
-    @TableField(value = "nick_name")
-    private String nickName;
+    @Schema(description = "角色层级", example = "TENANT")
+    @TableField(value = "role_level")
+    private String roleLevel;
 
-    @Schema(description = "邮箱地址", example = "admin@example.com")
-    @TableField(value = "email")
-    private String email;
+    @Schema(description = "所属租户ID", example = "100")
+    @TableField(value = "tenant_id")
+    private Long tenantId;
 
-    @Schema(description = "手机号码", example = "13800138000")
-    @TableField(value = "phone")
-    private String phone;
+    @Schema(description = "租户编码", example = "TENANT_001")
+    @TableField(value = "tenant_code")
+    private String tenantCode;
 
-    @Schema(description = "头像地址", example = "/avatar/admin.png")
-    @TableField(value = "avatar")
-    private String avatar;
+    @Schema(description = "租户名称", example = "某某科技有限公司")
+    @TableField(value = "tenant_name")
+    private String tenantName;
 
-    @Schema(description = "最后登录IP地址", example = "192.168.1.1")
-    @TableField(value = "login_ip")
-    private String loginIp;
+    @Schema(description = "数据权限范围 (ALL/DEPT/DEPT_AND_SUB/SELF)", example = "ALL")
+    @TableField(value = "data_scope")
+    private String dataScope;
 
-    @Schema(description = "最后登录时间", example = "2026-06-10 15:30:00")
-    @TableField(value = "login_date")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-    private LocalDateTime loginDate;
+    @Schema(description = "排序序号", example = "1")
+    @TableField(value = "sort_order")
+    private Integer sortOrder;
 
     @Schema(description = "创建人ID", example = "100")
     @TableField(value = "create_by")

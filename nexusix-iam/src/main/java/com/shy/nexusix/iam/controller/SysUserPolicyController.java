@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * <p>
- * 用户与租户的关联关系 前端控制器
+ * 租户策略表  前端控制器
  * </p>
  *
  * @author shy
- * @since 2026-05-19
+ * @since 2026-06-10
  */
 @RestController
-@RequestMapping("/sys-user-tenant-rel")
-public class SysUserTenantRelController {
+@RequestMapping("/sys-user-policy")
+public class SysUserPolicyController {
 
 }

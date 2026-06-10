@@ -5,11 +5,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * <p>
- * 系统权限资源表 服务类
+ * 权限表 服务类
  * </p>
  *
  * @author shy
- * @since 2026-05-19
+ * @since 2026-06-10
  */
 public interface ISysPermService extends IService<SysPerm> {
 

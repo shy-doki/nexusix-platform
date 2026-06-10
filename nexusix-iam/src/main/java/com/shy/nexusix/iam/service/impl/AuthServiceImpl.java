@@ -8,11 +8,13 @@ import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.core.entity.dto.UserContextDTO;
 import com.shy.nexusix.iam.dto.UserLoginJoinDTO;
 import com.shy.nexusix.iam.dto.UserPermJoinDTO;
+import com.shy.nexusix.iam.dto.UserRoleDTO;
 import com.shy.nexusix.iam.dto.UserTenantItemDTO;
-import com.shy.nexusix.iam.mapper.SysUserPermRelMapper;
-import com.shy.nexusix.iam.mapper.SysUserTenantRelMapper;
+import com.shy.nexusix.iam.mapper.SysPermPolicyMapper;
+import com.shy.nexusix.iam.mapper.SysRolePolicyMapper;
+import com.shy.nexusix.iam.mapper.SysUserPolicyMapper;
 import com.shy.nexusix.iam.rto.LoginRTO;
-import com.shy.nexusix.iam.service.*;
+import com.shy.nexusix.iam.service.IAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,10 +30,13 @@ import java.util.*;
 public class AuthServiceImpl implements IAuthService {
 
     @Autowired
-    private SysUserTenantRelMapper iSysUserTenantRelService;
+    private SysUserPolicyMapper sysUserPolicyMapper;
 
     @Autowired
-    private SysUserPermRelMapper iSysUserPermRelMapper;
+    private SysPermPolicyMapper sysPermPolicyMapper;
+
+    @Autowired
+    private SysRolePolicyMapper sysRolePolicyMapper;
 
     /**
      * <p>用户登录认证</p>
@@ -48,8 +53,8 @@ public class AuthServiceImpl implements IAuthService {
             return ApiResponse.success();
         }
 
-        // 根据用户名查询用户与租户的关联登录信息
-        UserLoginJoinDTO loginJoinInfo = iSysUserTenantRelService.queryUserLoginJoin(param.getUsername());
+        // 根据用户名查询用户与默认租户的关联登录信息
+        UserLoginJoinDTO loginJoinInfo = sysUserPolicyMapper.queryUserLoginJoin(param.getUsername());
 
         // 校验用户名是否存在以及密码是否匹配 TODO 后续使用加密对比
         if (loginJoinInfo == null || !loginJoinInfo.getPassword().equals(param.getPassword())) {
@@ -57,7 +62,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 校验用户是否已关联默认租户 无租户关联则不允许登录
-        if (loginJoinInfo.getUserTenantRelId() == null) {
+        if (loginJoinInfo.getUserPolicyId() == null) {
             throw new BusinessException("用户未设置任何默认租户，请联系相关租户管理员进行设置");
         }
 
@@ -74,8 +79,13 @@ public class AuthServiceImpl implements IAuthService {
         // 所有前置校验通过后 执行登录操作
         StpUtil.login(param.getUsername());
 
-        // 查询当前用户租户关系下的所有权限策略关联数据
-        List<UserPermJoinDTO> permJoinList = iSysUserPermRelMapper.queryUserPermJoin(loginJoinInfo.getUserTenantRelId());
+        // 查询当前用户在当前租户下的全部权限策略数据（两路径汇聚：ROLE / USER）
+        // 用户权限 = 用户当前登录租户中所属角色具有的权限 + 用户当前登录租户中该用户本身具有的权限
+        // TENANT路径（target_type='TENANT'）是租户能力边界约束，不作为用户直接权限参与计算
+        // userPolicyId（sys_user_policy.id）是关联链枢纽：
+        //   USER路径：sys_perm_policy.target_id = userPolicyId（用户策略ID）
+        //   ROLE路径：sys_role_policy.target_id = userPolicyId → 找到角色策略ID → sys_perm_policy.target_id = 角色策略ID
+        List<UserPermJoinDTO> permJoinList = sysPermPolicyMapper.queryUserPermJoin(loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId());
 
         // 所有权限编码[有效+失效]
         List<String> allPermCodeList = new ArrayList<>();
@@ -240,7 +250,18 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
 
-        // TODO 查询角色信息
+        // 查询当前用户在当前登录租户下的角色信息（角色编码 + 数据权限范围）
+        // userPolicyId 为 sys_user_policy.id，sys_role_policy.target_id 匹配用户策略ID，sys_role.tenant_id 过滤租户
+        List<UserRoleDTO> userRoleList = sysRolePolicyMapper.queryUserRoleInfo(loginJoinInfo.getUserPolicyId(), loginJoinInfo.getTenantId());
+        List<UserContextDTO.RoleInfo> roleInfoList = new ArrayList<>();
+        if (userRoleList != null) {
+            for (UserRoleDTO role : userRoleList) {
+                UserContextDTO.RoleInfo roleInfo = new UserContextDTO.RoleInfo();
+                roleInfo.setRoleCode(role.getRoleCode());
+                roleInfo.setDataScope(role.getDataScope());
+                roleInfoList.add(roleInfo);
+            }
+        }
 
         // 实例化[级联禁用]信息对象 用于封装各层级失效的权限数据
         UserContextDTO.CascadeDisabled cascadeDisabled = new UserContextDTO.CascadeDisabled();
@@ -287,7 +308,7 @@ public class AuthServiceImpl implements IAuthService {
         tenantInfoCache.setTenantStatus(loginJoinInfo.getTenantStatus());
 
         // 查询当前用户关联的所有租户，按状态分类为有效租户和无效租户
-        List<UserTenantItemDTO> allTenantList = iSysUserTenantRelService.queryUserAllTenants(loginJoinInfo.getUserId());
+        List<UserTenantItemDTO> allTenantList = sysUserPolicyMapper.queryUserAllTenants(loginJoinInfo.getUserId());
         List<UserContextDTO.TenantItemInfo> validTenants = new ArrayList<>();
         List<UserContextDTO.TenantItemInfo> invalidTenants = new ArrayList<>();
         for (UserTenantItemDTO item : allTenantList) {
@@ -313,6 +334,8 @@ public class AuthServiceImpl implements IAuthService {
         userContext.setInvalidTenants(invalidTenants);
         // 为用户上下文设置权限信息
         userContext.setPermInfo(permInfo);
+        // 为用户上下文设置角色信息
+        userContext.setRoles(roleInfoList);
 
         // 将用户上下文存入Session 供后续请求使用
         StpUtil.getSession().set("userContext", userContext);

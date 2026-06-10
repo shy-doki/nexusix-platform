@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shy.nexusix.iam.mapper.SysRolePolicyMapper">
+
+    <!-- 用户角色信息结果映射 -->
+    <resultMap id="UserRoleResultMap" type="com.shy.nexusix.iam.dto.UserRoleDTO">
+        <result column="roleCode" property="roleCode"/>
+        <result column="dataScope" property="dataScope"/>
+    </resultMap>
+
+    <!-- 查询用户在当前租户下的角色信息 -->
+    <!-- 从 sys_role_policy(target_type='USER') 联查 sys_role，获取用户的角色编码和数据权限范围 -->
+    <!-- sys_role_policy.target_id 为用户策略ID（sys_user_policy.id），通过 sys_role.tenant_id 过滤租户 -->
+    <select id="queryUserRoleInfo" resultMap="UserRoleResultMap">
+        SELECT
+            r.role_code   AS roleCode,
+            r.data_scope  AS dataScope
+        FROM sys_role_policy rp
+        INNER JOIN sys_role r ON r.id = rp.role_id AND r.tenant_id = #{tenantId} AND r.is_deleted = 'NOT_DELETED'
+        WHERE rp.target_type = 'USER'
+          AND rp.target_id = #{userPolicyId}
+          AND rp.is_deleted = 'NOT_DELETED'
+          AND rp.status = 'ACTIVE'
+    </select>
+
+</mapper>

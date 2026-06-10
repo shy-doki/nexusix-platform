@@ -1,16 +1,16 @@
 package com.shy.nexusix.iam.mapper;
 
-import com.shy.nexusix.iam.entity.SysUser;
+import com.shy.nexusix.iam.entity.SysRole;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * <p>
- * 用户表 Mapper 接口
+ * 角色表 Mapper 接口
  * </p>
  *
  * @author shy
  * @since 2026-06-10
  */
-public interface SysUserMapper extends BaseMapper<SysUser> {
+public interface SysRoleMapper extends BaseMapper<SysRole> {
 
 }

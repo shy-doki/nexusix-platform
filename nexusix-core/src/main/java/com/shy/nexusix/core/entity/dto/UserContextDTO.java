@@ -30,6 +30,11 @@ public class UserContextDTO {
     private PermInfo permInfo;
 
     /**
+     * 角色信息列表，包含用户在当前登录租户下的角色编码及数据权限范围
+     */
+    private List<RoleInfo> roles;
+
+    /**
      * <p>
      * 租户基础信息，缓存当前用户默认租户的标识与名称。
      * </p>
@@ -209,6 +214,26 @@ public class UserContextDTO {
          * 不可见字段列表，策略状态为非 ACTIVE（各级别禁用）时配置，表示用户无权访问的字段名
          */
         private List<String> invisibleFields = new ArrayList<>();
+    }
+
+    /**
+     * <p>
+     * 角色信息，缓存用户在当前登录租户下的角色编码及数据权限范围。
+     * </p>
+     *
+     * <p><b>用途：</b>前端可据此判断用户角色类型，后端可用于数据权限过滤。</p>
+     * <p><b>数据来源：</b>登录时从 sys_user_role_rel 和 sys_role 联合查询，筛选角色所属租户与当前登录租户一致。</p>
+     */
+    @Data
+    public static class RoleInfo {
+        /**
+         * 角色编码，如 TENANT_ADMIN、EMPLOYEE、AUDITOR
+         */
+        private String roleCode;
+        /**
+         * 数据权限范围：ALL / DEPT / DEPT_AND_SUB / SELF
+         */
+        private String dataScope;
     }
 
 }

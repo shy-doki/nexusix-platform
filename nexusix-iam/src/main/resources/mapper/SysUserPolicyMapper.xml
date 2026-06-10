@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shy.nexusix.iam.mapper.SysUserPolicyMapper">
+
+    <!-- 用户登录关联信息结果映射 -->
+    <resultMap id="UserLoginJoinResultMap" type="com.shy.nexusix.iam.dto.UserLoginJoinDTO">
+        <result column="userId" property="userId"/>
+        <result column="password" property="password"/>
+        <result column="userPolicyId" property="userPolicyId"/>
+        <result column="tenantId" property="tenantId"/>
+        <result column="tenantName" property="tenantName"/>
+        <result column="tenantCode" property="tenantCode"/>
+        <result column="tenantStatus" property="tenantStatus"/>
+    </resultMap>
+
+    <!-- 根据用户名查询用户登录关联信息 -->
+    <!-- 联查 sys_user + sys_user_policy(默认租户绑定) + sys_tenant -->
+    <!-- sys_user_policy.target_id 为系统租户ID，通过它关联 sys_tenant -->
+    <select id="queryUserLoginJoin" resultMap="UserLoginJoinResultMap">
+        SELECT
+            u.id          AS userId,
+            u.password    AS password,
+            up.id         AS userPolicyId,
+            t.id          AS tenantId,
+            t.tenant_name AS tenantName,
+            t.tenant_code AS tenantCode,
+            t.status      AS tenantStatus
+        FROM sys_user u
+        INNER JOIN sys_user_policy up ON up.user_id = u.id
+            AND up.target_type = 'USER'
+            AND up.is_default = true
+            AND up.status = 'ENABLED'
+            AND up.is_deleted = 'NOT_DELETED'
+        INNER JOIN sys_tenant t ON t.id = up.target_id
+            AND t.is_deleted = 'NOT_DELETED'
+        WHERE u.user_name = #{username}
+          AND u.is_deleted = 'NOT_DELETED'
+    </select>
+
+    <!-- 用户关联租户信息结果映射 -->
+    <resultMap id="UserTenantItemResultMap" type="com.shy.nexusix.iam.dto.UserTenantItemDTO">
+        <result column="tenantId" property="tenantId"/>
+        <result column="tenantCode" property="tenantCode"/>
+        <result column="tenantName" property="tenantName"/>
+        <result column="tenantStatus" property="tenantStatus"/>
+    </resultMap>
+
+    <!-- 查询用户关联的所有租户信息 -->
+    <!-- 从 sys_user_policy 联查 sys_tenant，通过 up.target_id 关联租户 -->
+    <select id="queryUserAllTenants" resultMap="UserTenantItemResultMap">
+        SELECT
+            t.id          AS tenantId,
+            t.tenant_code AS tenantCode,
+            t.tenant_name AS tenantName,
+            t.status      AS tenantStatus
+        FROM sys_user_policy up
+        INNER JOIN sys_tenant t ON t.id = up.target_id
+            AND t.is_deleted = 'NOT_DELETED'
+        WHERE up.user_id = #{userId}
+          AND up.target_type = 'USER'
+          AND up.is_deleted = 'NOT_DELETED'
+          AND up.status = 'ENABLED'
+    </select>
+
+</mapper>
