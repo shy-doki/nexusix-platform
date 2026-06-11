@@ -1,1014 +1,678 @@
-create table sys_dept
-(
-    id             bigint       not null primary key,
-    dept_code      varchar(50)  not null,
-    dept_name      varchar(100) not null,
-    dept_desc      varchar(200) not null,
-    parent_id      bigint       not null,
-    parent_code    varchar(50)  not null,
-    parent_name    varchar(100) not null,
-    path           varchar(1000) not null,
-    tenant_id      bigint       not null,
-    tenant_code    varchar(50)  not null,
-    tenant_name    varchar(100) not null,
-    leader_id      bigint       not null,
-    leader_name    varchar(50)  not null,
-    sort_order     integer      not null,
-    status         varchar(20)  not null,
-    disable_reason varchar(200) default NULL::character varying,
-    create_tenant  bigint       not null,
-    create_dept    bigint       not null,
-    create_role    bigint       not null,
-    create_by      bigint       not null,
-    create_at      timestamp(6) default CURRENT_TIMESTAMP,
-    update_by      bigint       not null,
-    update_at      timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted     varchar(20)  not null,
-    deleted_at     timestamp(6)
+-- =============================================
+-- 1. 租户表
+-- =============================================
+CREATE TABLE sys_tenant (
+                            id              BIGINT        NOT NULL PRIMARY KEY,
+                            tenant_code     VARCHAR(50)   NOT NULL,
+                            tenant_name     VARCHAR(100)  NOT NULL,
+                            tenant_type     VARCHAR(50)   NOT NULL,
+                            tenant_desc     VARCHAR(500)  DEFAULT NULL,
+                            tenant_logo_url VARCHAR(500)  DEFAULT NULL,
+                            parent_id       BIGINT        NOT NULL,
+                            path            VARCHAR(1000) NOT NULL,
+                            contact_name    VARCHAR(50)   NOT NULL,
+                            contact_phone   VARCHAR(20)   NOT NULL,
+                            expire_time     TIMESTAMP(6)  NOT NULL,
+                            package_id      BIGINT        NOT NULL,
+                            ext_attributes  JSONB         DEFAULT '{}',
+                            has_children    BOOLEAN       NOT NULL,
+                            status          VARCHAR(20)   NOT NULL,
+                            disable_reason  VARCHAR(200)  DEFAULT NULL,
+                            create_tenant   BIGINT        NOT NULL,
+                            create_dept     BIGINT        NOT NULL,
+                            create_role     BIGINT        NOT NULL,
+                            create_by       BIGINT        NOT NULL,
+                            create_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            update_by       BIGINT        NOT NULL,
+                            update_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            is_deleted      VARCHAR(20)   NOT NULL,
+                            deleted_at      TIMESTAMP(6)
 );
 
-comment on table sys_dept is '部门表';
+COMMENT ON TABLE sys_tenant IS '租户表';
+COMMENT ON COLUMN sys_tenant.id IS '主键ID';
+COMMENT ON COLUMN sys_tenant.tenant_code IS '租户编码';
+COMMENT ON COLUMN sys_tenant.tenant_name IS '租户名称';
+COMMENT ON COLUMN sys_tenant.tenant_type IS '租户类型';
+COMMENT ON COLUMN sys_tenant.tenant_desc IS '租户描述';
+COMMENT ON COLUMN sys_tenant.tenant_logo_url IS '租户LOGO';
+COMMENT ON COLUMN sys_tenant.parent_id IS '父租户ID';
+COMMENT ON COLUMN sys_tenant.path IS '租户层级路径';
+COMMENT ON COLUMN sys_tenant.contact_name IS '联系人姓名';
+COMMENT ON COLUMN sys_tenant.contact_phone IS '联系人电话';
+COMMENT ON COLUMN sys_tenant.expire_time IS '服务过期时间';
+COMMENT ON COLUMN sys_tenant.package_id IS '主套餐ID';
+COMMENT ON COLUMN sys_tenant.ext_attributes IS '扩展属性';
+COMMENT ON COLUMN sys_tenant.has_children IS '是否存在子租户';
+COMMENT ON COLUMN sys_tenant.status IS '实体状态';
+COMMENT ON COLUMN sys_tenant.disable_reason IS '实体禁用原因';
+COMMENT ON COLUMN sys_tenant.create_tenant IS '创建时所属租户ID';
+COMMENT ON COLUMN sys_tenant.create_dept IS '创建时所属部门ID';
+COMMENT ON COLUMN sys_tenant.create_role IS '创建时使用角色ID';
+COMMENT ON COLUMN sys_tenant.create_by IS '创建人用户ID';
+COMMENT ON COLUMN sys_tenant.create_at IS '创建时间';
+COMMENT ON COLUMN sys_tenant.update_by IS '最后更新人用户ID';
+COMMENT ON COLUMN sys_tenant.update_at IS '最后更新时间';
+COMMENT ON COLUMN sys_tenant.is_deleted IS '逻辑删除标记';
+COMMENT ON COLUMN sys_tenant.deleted_at IS '删除时间';
 
-comment on column sys_dept.id is '主键ID';
-
-comment on column sys_dept.dept_code is '部门编码';
-
-comment on column sys_dept.dept_name is '部门名称';
-
-comment on column sys_dept.dept_desc is '部门描述';
-
-comment on column sys_dept.parent_id is '父部门ID';
-
-comment on column sys_dept.parent_code is '父部门编码';
-
-comment on column sys_dept.parent_name is '父部门名称';
-
-comment on column sys_dept.path is '部门层级路径';
-
-comment on column sys_dept.tenant_id is '所属租户ID';
-
-comment on column sys_dept.tenant_code is '租户编码';
-
-comment on column sys_dept.tenant_name is '租户名称';
-
-comment on column sys_dept.leader_id is '部门负责人ID';
-
-comment on column sys_dept.leader_name is '部门负责人姓名';
-
-comment on column sys_dept.sort_order is '排序序号';
-
-comment on column sys_dept.status is '部门状态';
-
-comment on column sys_dept.disable_reason is '禁用原因';
-
-comment on column sys_dept.create_tenant is '创建时所属租户ID';
-
-comment on column sys_dept.create_dept is '创建时所属部门ID';
-
-comment on column sys_dept.create_role is '创建时使用角色ID';
-
-comment on column sys_dept.create_by is '创建人ID';
-
-comment on column sys_dept.create_at is '创建时间';
-
-comment on column sys_dept.update_by is '更新人ID';
-
-comment on column sys_dept.update_at is '更新时间';
-
-comment on column sys_dept.is_deleted is '逻辑删除标记';
-
-comment on column sys_dept.deleted_at is '删除时间';
-
-alter table sys_dept owner to postgres;
-
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6001, 'DEPT_ZJB', '总经办', '万象集团总经理办公室', 0, 'ROOT', '根节点', '/6001', 100, 'WANXIANG', '万象集团', 1, 'admin', 1, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6002, 'DEPT_CW', '财务部', '万象集团财务管理中心', 0, 'ROOT', '根节点', '/6002', 100, 'WANXIANG', '万象集团', 10, 'zhou_ba', 2, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6003, 'DEPT_HR', '人力资源部', '万象集团人力资源管理', 0, 'ROOT', '根节点', '/6003', 100, 'WANXIANG', '万象集团', 13, 'qian_yi', 3, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6004, 'DEPT_IT', '信息技术部', '万象集团信息技术与系统支持', 0, 'ROOT', '根节点', '/6004', 100, 'WANXIANG', '万象集团', 18, 'xu_readonly', 4, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6005, 'DEPT_SJ', '审计部', '万象集团内部审计监督', 0, 'ROOT', '根节点', '/6005', 100, 'WANXIANG', '万象集团', 17, 'huang_audit', 5, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6006, 'DEPT_ZHGL', '综合管理部', '华东分公司综合行政管理', 6001, 'DEPT_ZJB', '总经办', '/6001/6006', 110, 'WX_EAST', '万象集团-华东分公司', 3, 'li_jingli', 1, 'ENABLED', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6007, 'DEPT_YW1', '业务一部', '华东分公司核心业务部门', 6001, 'DEPT_ZJB', '总经办', '/6001/6007', 110, 'WX_EAST', '万象集团-华东分公司', 4, 'wang_zhuguan', 2, 'ENABLED', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6008, 'DEPT_XS', '销售部', '华南分公司销售业务管理', 6001, 'DEPT_ZJB', '总经办', '/6001/6008', 120, 'WX_SOUTH', '万象集团-华南分公司', 7, 'wang_wu', 1, 'ENABLED', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6009, 'DEPT_KF', '客服部', '华南分公司客户服务支持', 6001, 'DEPT_ZJB', '总经办', '/6001/6009', 120, 'WX_SOUTH', '万象集团-华南分公司', 8, 'zhao_liu', 2, 'ENABLED', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6010, 'DEPT_YY', '运营部', '华北分公司运营管理', 6001, 'DEPT_ZJB', '总经办', '/6001/6010', 130, 'WX_NORTH', '万象集团-华北分公司', 11, 'wu_jiu', 1, 'ENABLED', null, 130, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6011, 'DEPT_SC', '生产管理部', '鼎新集团生产调度与管理', 0, 'ROOT', '根节点', '/6011', 200, 'DINGXIN', '鼎新集团', 19, 'dingxin_ceo', 1, 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6012, 'DEPT_ZL', '质量部', '鼎新集团质量检验与控制', 0, 'ROOT', '根节点', '/6012', 200, 'DINGXIN', '鼎新集团', 20, 'dong_manager', 2, 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6013, 'DEPT_CG', '采购部', '鼎新集团物资采购管理', 0, 'ROOT', '根节点', '/6013', 200, 'DINGXIN', '鼎新集团', 21, 'guo_staff', 3, 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6014, 'DEPT_YF1', '研发一部', '星辰科技核心产品研发', 0, 'ROOT', '根节点', '/6014', 300, 'XINGCHEN', '星辰科技有限公司', 22, 'xingchen_cto', 1, 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6015, 'DEPT_YF2', '研发二部', '星辰科技前沿技术研究', 0, 'ROOT', '根节点', '/6015', 300, 'XINGCHEN', '星辰科技有限公司', 23, 'yan_dev', 2, 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6016, 'DEPT_SC2', '市场部', '星辰科技市场推广与品牌', 0, 'ROOT', '根节点', '/6016', 300, 'XINGCHEN', '星辰科技有限公司', 24, 'cai_market', 3, 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6017, 'DEPT_HW', '海外业务部', '星辰科技海外市场拓展', 0, 'ROOT', '根节点', '/6017', 300, 'XINGCHEN', '星辰科技有限公司', 25, 'han_overseas', 4, 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6018, 'DEPT_TZ', '投资部', '海纳百川投资管理与决策', 0, 'ROOT', '根节点', '/6018', 400, 'HAINA', '海纳百川集团', 26, 'hai_manager', 1, 'ENABLED', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6019, 'DEPT_FK', '风控部', '海纳百川风险控制与合规', 0, 'ROOT', '根节点', '/6019', 400, 'HAINA', '海纳百川集团', 26, 'hai_manager', 2, 'ENABLED', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6020, 'DEPT_KC', '课程研发部', '教育科技课程内容研发', 0, 'ROOT', '根节点', '/6020', 410, 'HN_EDU', '海纳百川-教育科技', 16, 'chu_si', 1, 'ENABLED', null, 410, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6021, 'DEPT_JX', '教学运营部', '教育科技教学运营管理', 0, 'ROOT', '根节点', '/6021', 410, 'HN_EDU', '海纳百川-教育科技', 27, 'lu_edu', 2, 'ENABLED', null, 410, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6022, 'DEPT_YL', '医疗技术部', '医疗健康技术研发与支持', 0, 'ROOT', '根节点', '/6022', 420, 'HN_MEDICAL', '海纳百川-医疗健康', 28, 'qiao_med', 1, 'ENABLED', null, 420, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6023, 'DEPT_JK', '健康管理部', '医疗健康运营与健康管理', 0, 'ROOT', '根节点', '/6023', 420, 'HN_MEDICAL', '海纳百川-医疗健康', 28, 'qiao_med', 2, 'ENABLED', null, 420, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6024, 'DEPT_CC', '仓储管理部', '天翔物流仓储与库存管理', 0, 'ROOT', '根节点', '/6024', 500, 'TIANXIANG', '天翔物流', 29, 'tian_logistics', 1, 'ENABLED', null, 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6025, 'DEPT_YS', '运输调度部', '天翔物流运输调度与配送', 0, 'ROOT', '根节点', '/6025', 500, 'TIANXIANG', '天翔物流', 29, 'tian_logistics', 2, 'ENABLED', null, 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6026, 'DEPT_ZH', '综合部', '西南分公司综合事务管理', 0, 'ROOT', '根节点', '/6026', 140, 'WX_SOUTHWEST', '万象集团-西南分公司', 1, 'admin', 1, 'DISABLED', '西南分公司已停用', 140, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6027, 'DEPT_CB', '筹备组', '东北分公司筹备工作组', 0, 'ROOT', '根节点', '/6027', 230, 'DX_NORTHEAST', '鼎新集团-东北分公司', 1, 'admin', 1, 'PENDING', '新设立，尚未正式运营', 230, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6028, 'DEPT_NJ', '南京业务部', '南京办事处业务部门', 0, 'ROOT', '根节点', '/6028', 113, 'WX_EAST_NJ', '万象集团-华东-南京办事处', 1, 'admin', 1, 'DISABLED', '南京办事处已停用', 113, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6029, 'DEPT_TJ', '天津业务部', '天津办事处业务部门', 0, 'ROOT', '根节点', '/6029', 132, 'WX_NORTH_TJ', '万象集团-华北-天津办事处', 1, 'admin', 1, 'EXPIRED', '租约已过期', 132, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept (id, dept_code, dept_name, dept_desc, parent_id, parent_code, parent_name, path, tenant_id, tenant_code, tenant_name, leader_id, leader_name, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6030, 'DEPT_GJ', '国际合作部', '海外事业部国际合作管理', 0, 'ROOT', '根节点', '/6030', 330, 'XC_OVERSEAS', '星辰科技-海外事业部', 25, 'han_overseas', 1, 'ENABLED', null, 330, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-
-create table sys_dept_policy
-(
-    id             bigint       not null primary key,
-    policy_code    varchar(100) not null,
-    policy_name    varchar(100) not null,
-    target_id      bigint       not null,
-    target_type    varchar(20)  not null,
-    user_id        bigint       not null,
-    is_primary     boolean      not null default false,
-    join_time      timestamp(6) default CURRENT_TIMESTAMP,
-    status         varchar(20)  not null,
-    disable_reason varchar(200) default NULL::character varying,
-    create_tenant  bigint       not null,
-    create_dept    bigint       not null,
-    create_role    bigint       not null,
-    create_by      bigint       not null,
-    create_at      timestamp(6) default CURRENT_TIMESTAMP,
-    update_by      bigint       not null,
-    update_at      timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted     varchar(20)  not null,
-    deleted_at     timestamp(6)
+-- =============================================
+-- 2. 部门表（实体，可选层级，数据权限控制）
+-- =============================================
+CREATE TABLE sys_dept (
+                          id              BIGINT       NOT NULL PRIMARY KEY,
+                          dept_code       VARCHAR(50)  NOT NULL,
+                          dept_name       VARCHAR(100) NOT NULL,
+                          dept_desc       VARCHAR(200) NOT NULL,
+                          parent_id       BIGINT       NOT NULL,
+                          path            VARCHAR(1000) NOT NULL,
+                          tenant_id       BIGINT       NOT NULL,
+                          leader_id       BIGINT       NOT NULL,
+                          status          VARCHAR(20)  NOT NULL,
+                          disable_reason  VARCHAR(200)  DEFAULT NULL,
+                          create_tenant   BIGINT       NOT NULL,
+                          create_dept     BIGINT       NOT NULL,
+                          create_role     BIGINT       NOT NULL,
+                          create_by       BIGINT       NOT NULL,
+                          create_at       TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          update_by       BIGINT       NOT NULL,
+                          update_at       TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted      VARCHAR(20)  NOT NULL,
+                          deleted_at      TIMESTAMP(6)
 );
 
-comment on table sys_dept_policy is '部门策略表';
+COMMENT ON TABLE sys_dept IS '部门表';
+COMMENT ON COLUMN sys_dept.id IS '主键ID';
+COMMENT ON COLUMN sys_dept.dept_code IS '部门编码';
+COMMENT ON COLUMN sys_dept.dept_name IS '部门名称';
+COMMENT ON COLUMN sys_dept.dept_desc IS '部门描述';
+COMMENT ON COLUMN sys_dept.parent_id IS '父部门ID';
+COMMENT ON COLUMN sys_dept.path IS '部门层级路径';
+COMMENT ON COLUMN sys_dept.tenant_id IS '所属租户ID';
+COMMENT ON COLUMN sys_dept.leader_id IS '部门负责人用户ID';
+COMMENT ON COLUMN sys_dept.status IS '实体状态';
+COMMENT ON COLUMN sys_dept.disable_reason IS '实体禁用原因';
+COMMENT ON COLUMN sys_dept.create_tenant IS '创建时所属租户ID';
+COMMENT ON COLUMN sys_dept.create_dept IS '创建时所属部门ID';
+COMMENT ON COLUMN sys_dept.create_role IS '创建时使用角色ID';
+COMMENT ON COLUMN sys_dept.create_by IS '创建人用户ID';
+COMMENT ON COLUMN sys_dept.create_at IS '创建时间';
+COMMENT ON COLUMN sys_dept.update_by IS '最后更新人用户ID';
+COMMENT ON COLUMN sys_dept.update_at IS '最后更新时间';
+COMMENT ON COLUMN sys_dept.is_deleted IS '逻辑删除标记';
+COMMENT ON COLUMN sys_dept.deleted_at IS '删除时间';
 
-comment on column sys_dept_policy.id is '主键ID';
-
-comment on column sys_dept_policy.policy_code is '策略编码';
-
-comment on column sys_dept_policy.policy_name is '策略名称';
-
-comment on column sys_dept_policy.target_id is '授权目标ID（部门ID）';
-
-comment on column sys_dept_policy.target_type is '授权目标类型';
-
-comment on column sys_dept_policy.user_id is '用户ID';
-
-comment on column sys_dept_policy.is_primary is '是否主部门';
-
-comment on column sys_dept_policy.join_time is '加入部门时间';
-
-comment on column sys_dept_policy.status is '策略状态';
-
-comment on column sys_dept_policy.disable_reason is '禁用原因';
-
-comment on column sys_dept_policy.create_tenant is '创建时所属租户ID';
-
-comment on column sys_dept_policy.create_dept is '创建时所属部门ID';
-
-comment on column sys_dept_policy.create_role is '创建时使用角色ID';
-
-comment on column sys_dept_policy.create_by is '创建人ID';
-
-comment on column sys_dept_policy.create_at is '创建时间';
-
-comment on column sys_dept_policy.update_by is '更新人ID';
-
-comment on column sys_dept_policy.update_at is '更新时间';
-
-comment on column sys_dept_policy.is_deleted is '逻辑删除标记';
-
-comment on column sys_dept_policy.deleted_at is '删除时间';
-
-alter table sys_dept_policy owner to postgres;
-
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7001, 'DP_001', 'admin→总经办(主)', 6001, 'DEPT', 1, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7002, 'DP_002', 'zhang_zong→总经办(主)', 6001, 'DEPT', 2, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7003, 'DP_003', 'li_jingli→综合管理部(主)', 6006, 'DEPT', 3, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7004, 'DP_004', 'wang_zhuguan→业务一部(主)', 6007, 'DEPT', 4, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7005, 'DP_005', 'zhang_san→业务一部(主)', 6007, 'DEPT', 5, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7006, 'DP_006', 'li_si→销售部(主)', 6008, 'DEPT', 6, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7007, 'DP_007', 'wang_wu→销售部(主)', 6008, 'DEPT', 7, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7008, 'DP_008', 'wang_wu→客服部(兼)', 6009, 'DEPT', 7, false, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 120, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7009, 'DP_009', 'zhao_liu→客服部(主)', 6009, 'DEPT', 8, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7010, 'DP_010', 'sun_qi→业务一部(主)', 6007, 'DEPT', 9, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7011, 'DP_011', 'zhou_ba→财务部(主)', 6002, 'DEPT', 10, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7012, 'DP_012', 'wu_jiu→运营部(主)', 6010, 'DEPT', 11, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 130, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7013, 'DP_013', 'zheng_shi→研发一部(主)', 6014, 'DEPT', 12, true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7014, 'DP_014', 'qian_yi→人力资源部(主)', 6003, 'DEPT', 13, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7015, 'DP_015', 'chen_er→客服部(主)', 6009, 'DEPT', 14, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7016, 'DP_016', 'feng_san→总经办(主)', 6001, 'DEPT', 15, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7017, 'DP_017', 'chu_si→课程研发部(主)', 6020, 'DEPT', 16, true, '2026-04-01 08:00:00.000000', 'ACTIVE', null, 410, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7018, 'DP_018', 'huang_audit→审计部(主)', 6005, 'DEPT', 17, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7019, 'DP_019', 'xu_readonly→信息技术部(主)', 6004, 'DEPT', 18, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7020, 'DP_020', 'dingxin_ceo→生产管理部(主)', 6011, 'DEPT', 19, true, '2026-02-01 08:00:00.000000', 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7021, 'DP_021', 'dong_manager→质量部(主)', 6012, 'DEPT', 20, true, '2026-02-01 08:00:00.000000', 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7022, 'DP_022', 'guo_staff→采购部(主)', 6013, 'DEPT', 21, true, '2026-02-01 08:00:00.000000', 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7023, 'DP_023', 'xingchen_cto→研发一部(主)', 6014, 'DEPT', 22, true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7024, 'DP_024', 'yan_dev→研发二部(主)', 6015, 'DEPT', 23, true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7025, 'DP_025', 'cai_market→市场部(主)', 6016, 'DEPT', 24, true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7026, 'DP_026', 'han_overseas→海外业务部(主)', 6017, 'DEPT', 25, true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7027, 'DP_027', 'hai_manager→投资部(主)', 6018, 'DEPT', 26, true, '2026-04-01 08:00:00.000000', 'ACTIVE', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7028, 'DP_028', 'lu_edu→教学运营部(主)', 6021, 'DEPT', 27, true, '2026-04-01 08:00:00.000000', 'ACTIVE', null, 410, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7029, 'DP_029', 'qiao_med→医疗技术部(主)', 6022, 'DEPT', 28, true, '2026-04-01 08:00:00.000000', 'ACTIVE', null, 420, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7030, 'DP_030', 'tian_logistics→仓储管理部(主)', 6024, 'DEPT', 29, true, '2026-05-01 08:00:00.000000', 'ACTIVE', null, 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7031, 'DP_031', 'multi_user→信息技术部(主)', 6004, 'DEPT', 30, true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7032, 'DP_032', 'multi_user→采购部(兼)', 6013, 'DEPT', 30, false, '2026-02-01 08:00:00.000000', 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_dept_policy (id, policy_code, policy_name, target_id, target_type, user_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7033, 'DP_033', 'multi_user→研发一部(兼)', 6014, 'DEPT', 30, false, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-
-create table sys_tenant_subscription
-(
-    id                bigint       not null
-        primary key,
-    subscription_code varchar(50)  not null,
-    tenant_id         bigint       not null,
-    tenant_code       varchar(50)  not null,
-    tenant_name       varchar(100) not null,
-    package_id        bigint       not null,
-    subscription_type varchar(20)  not null,
-    start_time        timestamp(6) not null,
-    end_time          timestamp(6) not null,
-    status            varchar(20)  not null,
-    disable_reason    varchar(200) default NULL::character varying,
-    is_auto_renew     boolean      not null,
-    source_type       varchar(20)  not null,
-    parent_id         bigint       not null,
-    create_tenant     bigint       not null,
-    create_dept       bigint       not null,
-    create_role       bigint       not null,
-    create_by         bigint       not null,
-    create_at         timestamp(6) default CURRENT_TIMESTAMP,
-    update_by         bigint       not null,
-    update_at         timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted        varchar(20)  not null,
-    deleted_at        timestamp(6)
+-- =============================================
+-- 3. 角色表（实体，权限的集合）
+-- =============================================
+CREATE TABLE sys_role (
+                          id              BIGINT       NOT NULL PRIMARY KEY,
+                          role_code       VARCHAR(100) NOT NULL,
+                          role_name       VARCHAR(100) NOT NULL,
+                          role_desc       VARCHAR(200) NOT NULL,
+                          role_level      VARCHAR(20)  NOT NULL,
+                          tenant_id       BIGINT       NOT NULL,
+                          data_scope      VARCHAR(20)  NOT NULL,
+                          status          VARCHAR(20)  NOT NULL,
+                          disable_reason  VARCHAR(200)  DEFAULT NULL,
+                          create_tenant   BIGINT       NOT NULL,
+                          create_dept     BIGINT       NOT NULL,
+                          create_role     BIGINT       NOT NULL,
+                          create_by       BIGINT       NOT NULL,
+                          create_at       TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          update_by       BIGINT       NOT NULL,
+                          update_at       TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted      VARCHAR(20)  NOT NULL,
+                          deleted_at      TIMESTAMP(6)
 );
 
-comment on table sys_tenant_subscription is '租户订阅记录表';
+COMMENT ON TABLE sys_role IS '角色表';
+COMMENT ON COLUMN sys_role.id IS '主键ID';
+COMMENT ON COLUMN sys_role.role_code IS '角色编码';
+COMMENT ON COLUMN sys_role.role_name IS '角色名称';
+COMMENT ON COLUMN sys_role.role_desc IS '角色描述';
+COMMENT ON COLUMN sys_role.role_level IS '角色层级';
+COMMENT ON COLUMN sys_role.tenant_id IS '所属租户ID';
+COMMENT ON COLUMN sys_role.data_scope IS '数据权限范围';
+COMMENT ON COLUMN sys_role.status IS '实体状态';
+COMMENT ON COLUMN sys_role.disable_reason IS '实体禁用原因';
+COMMENT ON COLUMN sys_role.create_tenant IS '创建时所属租户ID';
+COMMENT ON COLUMN sys_role.create_dept IS '创建时所属部门ID';
+COMMENT ON COLUMN sys_role.create_role IS '创建时使用角色ID';
+COMMENT ON COLUMN sys_role.create_by IS '创建人用户ID';
+COMMENT ON COLUMN sys_role.create_at IS '创建时间';
+COMMENT ON COLUMN sys_role.update_by IS '最后更新人用户ID';
+COMMENT ON COLUMN sys_role.update_at IS '最后更新时间';
+COMMENT ON COLUMN sys_role.is_deleted IS '逻辑删除标记';
+COMMENT ON COLUMN sys_role.deleted_at IS '删除时间';
 
-comment on column sys_tenant_subscription.id is '主键ID';
-
-comment on column sys_tenant_subscription.subscription_code is '订阅单编码';
-
-comment on column sys_tenant_subscription.tenant_id is '租户ID';
-
-comment on column sys_tenant_subscription.tenant_code is '租户编码';
-
-comment on column sys_tenant_subscription.tenant_name is '租户名称';
-
-comment on column sys_tenant_subscription.package_id is '套餐产品ID';
-
-comment on column sys_tenant_subscription.subscription_type is '订阅类型';
-
-comment on column sys_tenant_subscription.start_time is '订阅开始时间';
-
-comment on column sys_tenant_subscription.end_time is '订阅结束时间';
-
-comment on column sys_tenant_subscription.status is '订阅状态';
-
-comment on column sys_tenant_subscription.disable_reason is '禁用原因';
-
-comment on column sys_tenant_subscription.is_auto_renew is '是否自动续费';
-
-comment on column sys_tenant_subscription.source_type is '来源类型';
-
-comment on column sys_tenant_subscription.parent_id is '父订阅ID';
-
-comment on column sys_tenant_subscription.create_tenant is '创建时所属租户ID';
-
-comment on column sys_tenant_subscription.create_dept is '创建时所属部门ID';
-
-comment on column sys_tenant_subscription.create_role is '创建时使用角色ID';
-
-comment on column sys_tenant_subscription.create_by is '创建人ID';
-
-comment on column sys_tenant_subscription.create_at is '创建时间';
-
-comment on column sys_tenant_subscription.update_by is '更新人ID';
-
-comment on column sys_tenant_subscription.update_at is '更新时间';
-
-comment on column sys_tenant_subscription.is_deleted is '逻辑删除标记';
-
-comment on column sys_tenant_subscription.deleted_at is '删除时间';
-
-create table sys_tenant
-(
-    id              bigint        not null
-        primary key,
-    tenant_code     varchar(50)   not null,
-    tenant_name     varchar(100)  not null,
-    tenant_type     varchar(50)   not null,
-    tenant_desc     varchar(500)  not null,
-    tenant_logo_url varchar(500)  not null,
-    parent_id       bigint        not null,
-    parent_code     varchar(50)   not null,
-    parent_name     varchar(100)  not null,
-    path            varchar(1000) not null,
-    contact_name    varchar(50)   not null,
-    contact_phone   varchar(20)   not null,
-    expire_time     timestamp(6)  not null,
-    package_id      bigint        not null,
-    package_name    varchar(100)  not null,
-    ext_attributes  jsonb        default '{}'::jsonb,
-    has_children    boolean       not null,
-    status          varchar(20)   not null,
-    disable_reason  varchar(200) default NULL::character varying,
-    create_tenant   bigint        not null,
-    create_dept     bigint        not null,
-    create_role     bigint        not null,
-    create_by       bigint        not null,
-    create_at       timestamp(6) default CURRENT_TIMESTAMP,
-    update_by       bigint        not null,
-    update_at       timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted      varchar(20)   not null,
-    deleted_at      timestamp(6)
+-- =============================================
+-- 4. 用户表（实体）
+-- =============================================
+CREATE TABLE sys_user (
+                          id              BIGINT        NOT NULL PRIMARY KEY,
+                          user_code       VARCHAR(50)   NOT NULL,
+                          user_name       VARCHAR(50)   NOT NULL,
+                          nick_name       VARCHAR(50)   NOT NULL,
+                          email           VARCHAR(100)  NOT NULL,
+                          phone           VARCHAR(20)   NOT NULL,
+                          password        VARCHAR(200)  NOT NULL,
+                          avatar_url      VARCHAR(500)  NOT NULL,
+                          gender          VARCHAR(10)   NOT NULL DEFAULT 'UNKNOWN',
+                          birthday        DATE          NOT NULL,
+                          status          VARCHAR(20)   NOT NULL,
+                          disable_reason  VARCHAR(200)  DEFAULT NULL,
+                          create_tenant   BIGINT        NOT NULL,
+                          create_dept     BIGINT        NOT NULL,
+                          create_role     BIGINT        NOT NULL,
+                          create_by       BIGINT        NOT NULL,
+                          create_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          update_by       BIGINT        NOT NULL,
+                          update_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted      VARCHAR(20)   NOT NULL,
+                          deleted_at      TIMESTAMP(6)
 );
 
-comment on table sys_tenant is '租户表';
+COMMENT ON TABLE sys_user IS '用户表';
+COMMENT ON COLUMN sys_user.id IS '主键ID';
+COMMENT ON COLUMN sys_user.user_code IS '用户编码';
+COMMENT ON COLUMN sys_user.user_name IS '用户名';
+COMMENT ON COLUMN sys_user.nick_name IS '昵称';
+COMMENT ON COLUMN sys_user.email IS '电子邮箱';
+COMMENT ON COLUMN sys_user.phone IS '手机号码';
+COMMENT ON COLUMN sys_user.password IS '密码哈希值';
+COMMENT ON COLUMN sys_user.avatar_url IS '头像URL';
+COMMENT ON COLUMN sys_user.gender IS '性别';
+COMMENT ON COLUMN sys_user.birthday IS '出生日期';
+COMMENT ON COLUMN sys_user.status IS '实体状态';
+COMMENT ON COLUMN sys_user.disable_reason IS '实体禁用原因';
+COMMENT ON COLUMN sys_user.create_tenant IS '创建时所属租户ID';
+COMMENT ON COLUMN sys_user.create_dept IS '创建时所属部门ID';
+COMMENT ON COLUMN sys_user.create_role IS '创建时使用角色ID';
+COMMENT ON COLUMN sys_user.create_by IS '创建人用户ID';
+COMMENT ON COLUMN sys_user.create_at IS '创建时间';
+COMMENT ON COLUMN sys_user.update_by IS '最后更新人用户ID';
+COMMENT ON COLUMN sys_user.update_at IS '最后更新时间';
+COMMENT ON COLUMN sys_user.is_deleted IS '逻辑删除标记：';
+COMMENT ON COLUMN sys_user.deleted_at IS '删除时间';
 
-comment on column sys_tenant.id is '主键ID';
-
-comment on column sys_tenant.tenant_code is '租户编码';
-
-comment on column sys_tenant.tenant_name is '租户名称';
-
-comment on column sys_tenant.tenant_type is '租户类型';
-
-comment on column sys_tenant.tenant_desc is '租户描述';
-
-comment on column sys_tenant.tenant_logo_url is '租户LOGO';
-
-comment on column sys_tenant.parent_id is '父租户ID';
-
-comment on column sys_tenant.parent_code is '父租户编码';
-
-comment on column sys_tenant.parent_name is '父租户名称';
-
-comment on column sys_tenant.path is '租户层级路径';
-
-comment on column sys_tenant.contact_name is '联系人姓名';
-
-comment on column sys_tenant.contact_phone is '联系人电话';
-
-comment on column sys_tenant.expire_time is '服务过期时间';
-
-comment on column sys_tenant.package_id is '主套餐ID';
-
-comment on column sys_tenant.package_name is '主套餐名称';
-
-comment on column sys_tenant.ext_attributes is '扩展属性';
-
-comment on column sys_tenant.has_children is '是否存在子租户';
-
-comment on column sys_tenant.status is '策略状态';
-
-comment on column sys_tenant.disable_reason is '禁用原因';
-
-comment on column sys_tenant.create_tenant is '创建时所属租户ID';
-
-comment on column sys_tenant.create_dept is '创建时所属部门ID';
-
-comment on column sys_tenant.create_role is '创建时使用角色ID';
-
-comment on column sys_tenant.create_by is '创建人ID';
-
-comment on column sys_tenant.create_at is '创建时间';
-
-comment on column sys_tenant.update_by is '更新人ID';
-
-comment on column sys_tenant.update_at is '更新时间';
-
-comment on column sys_tenant.is_deleted is '逻辑删除标记';
-
-comment on column sys_tenant.deleted_at is '删除时间';
-
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (100, 'WANXIANG', '万象集团', 'ENTERPRISE', '综合性企业集团，覆盖华东、华南、华北、西南四大区域', 'https://logo.example.com/wx.png', 0, 'ROOT', '根节点', '/100', '张总', '13800001001', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 5000, "region": "全国", "industry": "综合"}', true, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (110, 'WX_EAST', '万象集团-华东分公司', 'BRANCH', '负责华东区域业务运营', 'https://logo.example.com/wx_east.png', 100, 'WANXIANG', '万象集团', '/100/110', '李经理', '13800001002', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 1200, "region": "华东", "industry": "综合"}', true, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (111, 'WX_EAST_SH', '万象集团-华东-上海办事处', 'OFFICE', '上海地区业务运营中心', 'https://logo.example.com/wx_sh.png', 110, 'WX_EAST', '万象集团-华东分公司', '/100/110/111', '王主管', '13800001003', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 300, "region": "上海", "industry": "综合"}', false, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (112, 'WX_EAST_HZ', '万象集团-华东-杭州办事处', 'OFFICE', '杭州地区业务运营中心', 'https://logo.example.com/wx_hz.png', 110, 'WX_EAST', '万象集团-华东分公司', '/100/110/112', '孙主管', '13800001004', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 200, "region": "杭州", "industry": "综合"}', false, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (113, 'WX_EAST_NJ', '万象集团-华东-南京办事处', 'OFFICE', '南京地区业务运营中心（已停用）', 'https://logo.example.com/wx_nj.png', 110, 'WX_EAST', '万象集团-华东分公司', '/100/110/113', '赵主管', '13800001005', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 50, "region": "南京", "industry": "综合"}', false, 'DISABLED', '业务调整，合并至上海办事处', 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (120, 'WX_SOUTH', '万象集团-华南分公司', 'BRANCH', '负责华南区域业务运营', 'https://logo.example.com/wx_south.png', 100, 'WANXIANG', '万象集团', '/100/120', '陈经理', '13800001006', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 1000, "region": "华南", "industry": "综合"}', true, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (121, 'WX_SOUTH_SZ', '万象集团-华南-深圳办事处', 'OFFICE', '深圳地区业务运营中心', 'https://logo.example.com/wx_sz.png', 120, 'WX_SOUTH', '万象集团-华南分公司', '/100/120/121', '周主管', '13800001007', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 350, "region": "深圳", "industry": "综合"}', false, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (122, 'WX_SOUTH_GZ', '万象集团-华南-广州办事处', 'OFFICE', '广州地区业务运营中心', 'https://logo.example.com/wx_gz.png', 120, 'WX_SOUTH', '万象集团-华南分公司', '/100/120/122', '林主管', '13800001008', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 280, "region": "广州", "industry": "综合"}', false, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (123, 'WX_SOUTH_XM', '万象集团-华南-厦门办事处', 'OFFICE', '厦门地区业务运营中心', 'https://logo.example.com/wx_xm.png', 120, 'WX_SOUTH', '万象集团-华南分公司', '/100/120/123', '吴主管', '13800001009', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 150, "region": "厦门", "industry": "综合"}', false, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (130, 'WX_NORTH', '万象集团-华北分公司', 'BRANCH', '负责华北区域业务运营', 'https://logo.example.com/wx_north.png', 100, 'WANXIANG', '万象集团', '/100/130', '武经理', '13800001010', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 800, "region": "华北", "industry": "综合"}', true, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (131, 'WX_NORTH_BJ', '万象集团-华北-北京办事处', 'OFFICE', '北京地区业务运营中心', 'https://logo.example.com/wx_bj.png', 130, 'WX_NORTH', '万象集团-华北分公司', '/100/130/131', '郑主管', '13800001011', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 400, "region": "北京", "industry": "综合"}', false, 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (132, 'WX_NORTH_TJ', '万象集团-华北-天津办事处', 'OFFICE', '天津地区业务运营中心（已过期）', 'https://logo.example.com/wx_tj.png', 130, 'WX_NORTH', '万象集团-华北分公司', '/100/130/132', '冯主管', '13800001012', '2025-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 100, "region": "天津", "industry": "综合"}', false, 'EXPIRED', '租约未续费已过期', 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (140, 'WX_SOUTHWEST', '万象集团-西南分公司', 'BRANCH', '负责西南区域业务运营（已停用）', 'https://logo.example.com/wx_sw.png', 100, 'WANXIANG', '万象集团', '/100/140', '何经理', '13800001013', '2030-12-31 23:59:59.000000', 1, '企业旗舰版', '{"scale": 300, "region": "西南", "industry": "综合"}', false, 'DISABLED', '战略调整暂停运营', 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (200, 'DINGXIN', '鼎新集团', 'ENTERPRISE', '专注制造业的集团企业', 'https://logo.example.com/dx.png', 0, 'ROOT', '根节点', '/200', '丁总', '13800002001', '2032-06-30 23:59:59.000000', 2, '制造业专版', '{"scale": 3000, "region": "全国", "industry": "制造业"}', true, 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (210, 'DX_CENTRAL', '鼎新集团-华中分公司', 'BRANCH', '负责华中区域业务运营', 'https://logo.example.com/dx_central.png', 200, 'DINGXIN', '鼎新集团', '/200/210', '马经理', '13800002002', '2032-06-30 23:59:59.000000', 2, '制造业专版', '{"scale": 800, "region": "华中", "industry": "制造业"}', true, 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (211, 'DX_CENTRAL_WH', '鼎新集团-华中-武汉办事处', 'OFFICE', '武汉地区业务运营中心', 'https://logo.example.com/dx_wh.png', 210, 'DX_CENTRAL', '鼎新集团-华中分公司', '/200/210/211', '董主管', '13800002003', '2032-06-30 23:59:59.000000', 2, '制造业专版', '{"scale": 300, "region": "武汉", "industry": "制造业"}', false, 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (212, 'DX_CENTRAL_CS', '鼎新集团-华中-长沙办事处', 'OFFICE', '长沙地区业务运营中心', 'https://logo.example.com/dx_cs.png', 210, 'DX_CENTRAL', '鼎新集团-华中分公司', '/200/210/212', '谢主管', '13800002004', '2032-06-30 23:59:59.000000', 2, '制造业专版', '{"scale": 200, "region": "长沙", "industry": "制造业"}', false, 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (220, 'DX_NORTH', '鼎新集团-华北分公司', 'BRANCH', '负责华北区域业务运营', 'https://logo.example.com/dx_north.png', 200, 'DINGXIN', '鼎新集团', '/200/220', '韩经理', '13800002005', '2032-06-30 23:59:59.000000', 2, '制造业专版', '{"scale": 600, "region": "华北", "industry": "制造业"}', true, 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (221, 'DX_NORTH_SJZ', '鼎新集团-华北-石家庄办事处', 'OFFICE', '石家庄地区业务运营中心', 'https://logo.example.com/dx_sjz.png', 220, 'DX_NORTH', '鼎新集团-华北分公司', '/200/220/221', '郭员工', '13800002006', '2032-06-30 23:59:59.000000', 2, '制造业专版', '{"scale": 150, "region": "石家庄", "industry": "制造业"}', false, 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (230, 'DX_NORTHEAST', '鼎新集团-东北分公司', 'BRANCH', '负责东北区域业务运营（待激活）', 'https://logo.example.com/dx_ne.png', 200, 'DINGXIN', '鼎新集团', '/200/230', '曹经理', '13800002007', '2032-06-30 23:59:59.000000', 2, '制造业专版', '{"scale": 0, "region": "东北", "industry": "制造业"}', false, 'PENDING', '新设立，尚未正式运营', 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (300, 'XINGCHEN', '星辰科技有限公司', 'COMPANY', '专注互联网科技研发的创新企业', 'https://logo.example.com/xc.png', 0, 'ROOT', '根节点', '/300', '程总', '13800003001', '2031-09-30 23:59:59.000000', 3, '科技初创版', '{"scale": 500, "region": "全国", "industry": "互联网"}', true, 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (310, 'XC_RD', '星辰科技-研发中心', 'DEPARTMENT', '核心产品研发与技术攻关', 'https://logo.example.com/xc_rd.png', 300, 'XINGCHEN', '星辰科技有限公司', '/300/310', '严经理', '13800003002', '2031-09-30 23:59:59.000000', 3, '科技初创版', '{"scale": 200, "region": "杭州", "industry": "互联网"}', false, 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (320, 'XC_MARKET', '星辰科技-营销中心', 'DEPARTMENT', '市场推广与销售管理', 'https://logo.example.com/xc_market.png', 300, 'XINGCHEN', '星辰科技有限公司', '/300/320', '蔡总监', '13800003003', '2031-09-30 23:59:59.000000', 3, '科技初创版', '{"scale": 100, "region": "上海", "industry": "互联网"}', false, 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (330, 'XC_OVERSEAS', '星辰科技-海外事业部', 'DEPARTMENT', '海外市场拓展与国际合作', 'https://logo.example.com/xc_overseas.png', 300, 'XINGCHEN', '星辰科技有限公司', '/300/330', '韩经理', '13800003004', '2031-09-30 23:59:59.000000', 3, '科技初创版', '{"scale": 80, "region": "海外", "industry": "互联网"}', false, 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (400, 'HAINA', '海纳百川集团', 'ENTERPRISE', '多元化投资控股集团', 'https://logo.example.com/hn.png', 0, 'ROOT', '根节点', '/400', '海总', '13800004001', '2033-03-31 23:59:59.000000', 4, '集团定制版', '{"scale": 2000, "region": "全国", "industry": "投资控股"}', true, 'ENABLED', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (410, 'HN_EDU', '海纳百川-教育科技', 'SUBSIDIARY', '在线教育平台与教育科技产品', 'https://logo.example.com/hn_edu.png', 400, 'HAINA', '海纳百川集团', '/400/410', '楚总', '13800005001', '2033-03-31 23:59:59.000000', 5, '教育行业版', '{"scale": 400, "region": "全国", "industry": "教育"}', false, 'ENABLED', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (420, 'HN_MEDICAL', '海纳百川-医疗健康', 'SUBSIDIARY', '智慧医疗与大健康服务', 'https://logo.example.com/hn_med.png', 400, 'HAINA', '海纳百川集团', '/400/420', '乔总', '13800006001', '2033-03-31 23:59:59.000000', 5, '医疗行业版', '{"scale": 350, "region": "全国", "industry": "医疗健康"}', false, 'ENABLED', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (500, 'TIANXIANG', '天翔物流', 'COMPANY', '全国性物流配送企业（已停用）', 'https://logo.example.com/tx.png', 0, 'ROOT', '根节点', '/500', '田总', '13800007001', '2026-03-31 23:59:59.000000', 6, '物流基础版', '{"scale": 600, "region": "全国", "industry": "物流"}', true, 'DISABLED', '经营异常，暂停服务', 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (510, 'TX_WAREHOUSE', '天翔物流-仓储部', 'DEPARTMENT', '全国仓储管理中心', 'https://logo.example.com/tx_wh.png', 500, 'TIANXIANG', '天翔物流', '/500/510', '田主管', '13800007002', '2026-03-31 23:59:59.000000', 6, '物流基础版', '{"scale": 200, "region": "全国", "industry": "物流"}', false, 'DISABLED', '随母公司停用', 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, parent_code, parent_name, path, contact_name, contact_phone, expire_time, package_id, package_name, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (520, 'TX_TRANSPORT', '天翔物流-运输部', 'DEPARTMENT', '全国干线运输调度中心（待激活）', 'https://logo.example.com/tx_tp.png', 500, 'TIANXIANG', '天翔物流', '/500/520', '田调度', '13800007003', '2026-03-31 23:59:59.000000', 6, '物流基础版', '{"scale": 150, "region": "全国", "industry": "物流"}', false, 'PENDING', '待母公司恢复运营', 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-
-create table sys_role_policy
-(
-    id             bigint       not null
-        primary key,
-    policy_code    varchar(100) not null,
-    policy_name    varchar(100) not null,
-    target_id      bigint       not null,
-    target_type    varchar(20)  not null,
-    role_id        bigint       not null,
-    status         varchar(20)  not null,
-    disable_reason varchar(200) default NULL::character varying,
-    create_tenant  bigint       not null,
-    create_dept    bigint       not null,
-    create_role    bigint       not null,
-    create_by      bigint       not null,
-    create_at      timestamp(6) default CURRENT_TIMESTAMP,
-    update_by      bigint       not null,
-    update_at      timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted     varchar(20)  not null,
-    deleted_at     timestamp(6)
+-- =============================================
+-- 5. 权限表（实体，系统级全局共享）
+-- =============================================
+CREATE TABLE sys_perm (
+                          id              BIGINT        NOT NULL PRIMARY KEY,
+                          perm_code       VARCHAR(100)  NOT NULL,
+                          perm_name       VARCHAR(100)  NOT NULL,
+                          perm_desc       VARCHAR(200)  NOT NULL,
+                          perm_type       VARCHAR(20)   NOT NULL,
+                          parent_id       BIGINT        NOT NULL,
+                          path            VARCHAR(1000) NOT NULL,
+                          status          VARCHAR(20)   NOT NULL,
+                          disable_reason  VARCHAR(200)  DEFAULT NULL,
+                          create_tenant   BIGINT        NOT NULL,
+                          create_dept     BIGINT        NOT NULL,
+                          create_role     BIGINT        NOT NULL,
+                          create_by       BIGINT        NOT NULL,
+                          create_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          update_by       BIGINT        NOT NULL,
+                          update_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          is_deleted      VARCHAR(20)   NOT NULL,
+                          deleted_at      TIMESTAMP(6)
 );
 
-comment on table sys_role_policy is '角色策略表';
+COMMENT ON TABLE sys_perm IS '权限表';
+COMMENT ON COLUMN sys_perm.id IS '主键ID';
+COMMENT ON COLUMN sys_perm.perm_code IS '权限编码';
+COMMENT ON COLUMN sys_perm.perm_name IS '权限名称';
+COMMENT ON COLUMN sys_perm.perm_desc IS '权限描述';
+COMMENT ON COLUMN sys_perm.perm_type IS '权限类型';
+COMMENT ON COLUMN sys_perm.parent_id IS '父权限ID';
+COMMENT ON COLUMN sys_perm.path IS '权限层级路径';
+COMMENT ON COLUMN sys_perm.status IS '实体状态';
+COMMENT ON COLUMN sys_perm.disable_reason IS '实体禁用原因';
+COMMENT ON COLUMN sys_perm.create_tenant IS '创建时所属租户ID';
+COMMENT ON COLUMN sys_perm.create_dept IS '创建时所属部门ID';
+COMMENT ON COLUMN sys_perm.create_role IS '创建时使用角色ID';
+COMMENT ON COLUMN sys_perm.create_by IS '创建人用户ID';
+COMMENT ON COLUMN sys_perm.create_at IS '创建时间';
+COMMENT ON COLUMN sys_perm.update_by IS '最后更新人用户ID';
+COMMENT ON COLUMN sys_perm.update_at IS '最后更新时间';
+COMMENT ON COLUMN sys_perm.is_deleted IS '逻辑删除标记';
+COMMENT ON COLUMN sys_perm.deleted_at IS '删除时间';
 
-comment on column sys_role_policy.id is '主键ID';
-
-comment on column sys_role_policy.policy_code is '策略编码';
-
-comment on column sys_role_policy.policy_name is '策略名称';
-
-comment on column sys_role_policy.target_id is '授权目标ID（用户策略ID）';
-
-comment on column sys_role_policy.target_type is '授权目标类型';
-
-comment on column sys_role_policy.role_id is '关联角色ID';
-
-comment on column sys_role_policy.status is '策略状态';
-
-comment on column sys_role_policy.disable_reason is '禁用原因';
-
-comment on column sys_role_policy.create_tenant is '创建时所属租户ID';
-
-comment on column sys_role_policy.create_dept is '创建时所属部门ID';
-
-comment on column sys_role_policy.create_role is '创建时使用角色ID';
-
-comment on column sys_role_policy.create_by is '创建人ID';
-
-comment on column sys_role_policy.create_at is '创建时间';
-
-comment on column sys_role_policy.update_by is '更新人ID';
-
-comment on column sys_role_policy.update_at is '更新时间';
-
-comment on column sys_role_policy.is_deleted is '逻辑删除标记';
-
-comment on column sys_role_policy.deleted_at is '删除时间';
-
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2001, 'RP_001', 'admin→超级管理员', 1001, 'USER', 3001, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2002, 'RP_002', 'zhang_zong→租户管理员', 1002, 'USER', 3002, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2003, 'RP_003', 'li_jingli→分公司管理员', 1003, 'USER', 3009, 'ACTIVE', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2004, 'RP_004', 'wang_zhuguan→办事处主管', 1004, 'USER', 3010, 'ACTIVE', null, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2005, 'RP_005', 'zhang_san→普通员工', 1005, 'USER', 3011, 'ACTIVE', null, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2006, 'RP_006', 'li_si→普通员工', 1006, 'USER', 3011, 'ACTIVE', null, 121, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2007, 'RP_007', 'wang_wu→部门管理员(华南)', 1007, 'USER', 3003, 'ACTIVE', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2008, 'RP_008', 'wang_wu→普通员工(深圳)', 1008, 'USER', 3011, 'ACTIVE', null, 121, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2009, 'RP_009', 'zhao_liu→销售专员', 1009, 'USER', 3012, 'ACTIVE', null, 122, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2010, 'RP_010', 'sun_qi→普通员工', 1010, 'USER', 3011, 'ACTIVE', null, 112, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2011, 'RP_011', 'zhou_ba→财务专员', 1011, 'USER', 3007, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2012, 'RP_012', 'wu_jiu→分公司管理员(华北)', 1012, 'USER', 3013, 'ACTIVE', null, 130, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2013, 'RP_013', 'zheng_shi→研发工程师', 1013, 'USER', 3022, 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2014, 'RP_014', 'qian_yi→人事专员', 1014, 'USER', 3008, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2015, 'RP_015', 'chen_er→普通员工', 1015, 'USER', 3011, 'ACTIVE', null, 122, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2016, 'RP_016', 'feng_san→租户管理员', 1016, 'USER', 3002, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2017, 'RP_017', 'chu_si→部门管理员', 1017, 'USER', 3028, 'ACTIVE', null, 410, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2018, 'RP_018', 'huang_audit→审计员', 1018, 'USER', 3005, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2019, 'RP_019', 'xu_readonly→只读用户', 1019, 'USER', 3006, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2020, 'RP_020', 'dingxin_ceo→租户管理员', 1020, 'USER', 3015, 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2021, 'RP_021', 'dong_manager→办事处管理员', 1021, 'USER', 3019, 'ACTIVE', null, 211, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2022, 'RP_022', 'guo_staff→普通员工', 1022, 'USER', 3017, 'ACTIVE', null, 221, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2023, 'RP_023', 'xingchen_cto→租户管理员', 1023, 'USER', 3021, 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2024, 'RP_024', 'yan_dev→研发工程师', 1024, 'USER', 3024, 'ACTIVE', null, 310, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2025, 'RP_025', 'cai_market→营销总监', 1025, 'USER', 3023, 'ACTIVE', null, 320, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2026, 'RP_026', 'han_overseas→海外经理', 1026, 'USER', 3026, 'ACTIVE', null, 330, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2027, 'RP_027', 'hai_manager→租户管理员', 1027, 'USER', 3027, 'ACTIVE', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2028, 'RP_028', 'multi_user→普通员工(万象)', 1028, 'USER', 3004, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2029, 'RP_029', 'multi_user→普通员工(鼎新)', 1029, 'USER', 3017, 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2030, 'RP_030', 'multi_user→研发工程师(星辰)', 1030, 'USER', 3022, 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2031, 'RP_031', 'multi_user→审计员(鼎新-失效)', 1029, 'USER', 3018, 'DISABLED', '角色策略已失效', 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role_policy (id, policy_code, policy_name, target_id, target_type, role_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2032, 'RP_032', 'multi_user→营销专员(星辰)', 1030, 'USER', 3025, 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-
-create table sys_role
-(
-    id            bigint       not null
-        primary key,
-    role_name     varchar(100) not null,
-    role_desc     varchar(200) not null,
-    role_code     varchar(100) not null,
-    role_level    varchar(20)  not null,
-    tenant_id     bigint       not null,
-    tenant_code   varchar(50)  not null,
-    tenant_name   varchar(100) not null,
-    data_scope    varchar(20)  not null,
-    sort_order    integer      not null,
-    create_tenant bigint       not null,
-    create_dept   bigint       not null,
-    create_role   bigint       not null,
-    create_by     bigint       not null,
-    create_at     timestamp(6) default CURRENT_TIMESTAMP,
-    update_by     bigint       not null,
-    update_at     timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted    varchar(20)  not null,
-    deleted_at    timestamp(6)
+-- =============================================
+-- 6. 租户策略表（关系：用户 ↔ 租户）
+-- =============================================
+CREATE TABLE sys_tenant_policy (
+                                   id              BIGINT        NOT NULL PRIMARY KEY,
+                                   policy_code     VARCHAR(100)  NOT NULL,
+                                   policy_name     VARCHAR(100)  NOT NULL,
+                                   user_id         BIGINT        NOT NULL,
+                                   target_type     VARCHAR(20)   NOT NULL DEFAULT 'TENANT',
+                                   target_id       BIGINT        NOT NULL,
+                                   is_primary      BOOLEAN       NOT NULL,
+                                   join_time       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   status          VARCHAR(20)   NOT NULL,
+                                   disable_reason  VARCHAR(200)  DEFAULT NULL,
+                                   create_tenant   BIGINT        NOT NULL,
+                                   create_dept     BIGINT        NOT NULL,
+                                   create_role     BIGINT        NOT NULL,
+                                   create_by       BIGINT        NOT NULL,
+                                   create_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   update_by       BIGINT        NOT NULL,
+                                   update_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   is_deleted      VARCHAR(20)   NOT NULL,
+                                   deleted_at      TIMESTAMP(6)
 );
 
-comment on table sys_role is '角色表';
+COMMENT ON TABLE sys_tenant_policy IS '租户策略表' ;
+COMMENT ON COLUMN sys_tenant_policy.id IS '主键ID';
+COMMENT ON COLUMN sys_tenant_policy.policy_code IS '策略编码';
+COMMENT ON COLUMN sys_tenant_policy.policy_name IS '策略名称';
+COMMENT ON COLUMN sys_tenant_policy.user_id IS '用户ID';
+COMMENT ON COLUMN sys_tenant_policy.target_type IS '目标类型';
+COMMENT ON COLUMN sys_tenant_policy.target_id IS '目标租户ID';
+COMMENT ON COLUMN sys_tenant_policy.is_primary IS '是否为主租户';
+COMMENT ON COLUMN sys_tenant_policy.join_time IS '加入时间';
+COMMENT ON COLUMN sys_tenant_policy.status IS '关系状态';
+COMMENT ON COLUMN sys_tenant_policy.disable_reason IS '关系禁用原因';
+COMMENT ON COLUMN sys_tenant_policy.create_tenant IS '创建时所属租户ID';
+COMMENT ON COLUMN sys_tenant_policy.create_dept IS '创建时所属部门ID';
+COMMENT ON COLUMN sys_tenant_policy.create_role IS '创建时使用角色ID';
+COMMENT ON COLUMN sys_tenant_policy.create_by IS '创建人用户ID';
+COMMENT ON COLUMN sys_tenant_policy.create_at IS '创建时间';
+COMMENT ON COLUMN sys_tenant_policy.update_by IS '最后更新人用户ID';
+COMMENT ON COLUMN sys_tenant_policy.update_at IS '最后更新时间';
+COMMENT ON COLUMN sys_tenant_policy.is_deleted IS '逻辑删除标记';
+COMMENT ON COLUMN sys_tenant_policy.deleted_at IS '删除时间';
 
-comment on column sys_role.id is '主键ID';
-
-comment on column sys_role.role_name is '角色名称';
-
-comment on column sys_role.role_desc is '角色描述';
-
-comment on column sys_role.role_code is '角色编码';
-
-comment on column sys_role.role_level is '角色层级';
-
-comment on column sys_role.tenant_id is '所属租户ID';
-
-comment on column sys_role.tenant_code is '租户编码';
-
-comment on column sys_role.tenant_name is '租户名称';
-
-comment on column sys_role.data_scope is '数据权限范围';
-
-comment on column sys_role.sort_order is '排序序号';
-
-comment on column sys_role.create_tenant is '创建时所属租户ID';
-
-comment on column sys_role.create_dept is '创建时所属部门ID';
-
-comment on column sys_role.create_role is '创建时使用角色ID';
-
-comment on column sys_role.create_by is '创建人ID';
-
-comment on column sys_role.create_at is '创建时间';
-
-comment on column sys_role.update_by is '更新人ID';
-
-comment on column sys_role.update_at is '更新时间';
-
-comment on column sys_role.is_deleted is '逻辑删除标记';
-
-comment on column sys_role.deleted_at is '删除时间';
-
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3001, '超级管理员', '系统最高权限管理员', 'SUPER_ADMIN', 'SYSTEM', 100, 'WANXIANG', '万象集团', 'ALL', 1, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3002, '租户管理员', '万象集团租户级管理员', 'TENANT_ADMIN', 'TENANT', 100, 'WANXIANG', '万象集团', 'ALL', 2, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3003, '部门管理员', '万象集团部门级管理员', 'DEPT_MANAGER', 'DEPT', 100, 'WANXIANG', '万象集团', 'DEPT_AND_SUB', 3, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3004, '普通员工', '万象集团普通员工', 'EMPLOYEE', 'USER', 100, 'WANXIANG', '万象集团', 'SELF', 4, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3005, '审计员', '万象集团审计专员', 'AUDITOR', 'TENANT', 100, 'WANXIANG', '万象集团', 'ALL', 5, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3006, '只读用户', '万象集团只读权限用户', 'READONLY', 'TENANT', 100, 'WANXIANG', '万象集团', 'ALL', 6, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3007, '财务专员', '万象集团财务人员', 'FINANCE', 'TENANT', 100, 'WANXIANG', '万象集团', 'DEPT', 7, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3008, '人事专员', '万象集团人力资源专员', 'HR', 'TENANT', 100, 'WANXIANG', '万象集团', 'DEPT', 8, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3009, '分公司管理员', '华东分公司管理员', 'BRANCH_ADMIN', 'BRANCH', 110, 'WX_EAST', '万象集团-华东分公司', 'DEPT_AND_SUB', 1, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3010, '办事处主管', '上海办事处主管', 'OFFICE_MANAGER', 'OFFICE', 111, 'WX_EAST_SH', '万象集团-华东-上海办事处', 'DEPT', 1, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3011, '普通员工', '上海办事处普通员工', 'STAFF', 'USER', 111, 'WX_EAST_SH', '万象集团-华东-上海办事处', 'SELF', 2, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3012, '销售人员', '华南分公司销售专员', 'SALES', 'USER', 120, 'WX_SOUTH', '万象集团-华南分公司', 'SELF', 1, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3013, '分公司管理员', '华北分公司管理员', 'BRANCH_ADMIN', 'BRANCH', 130, 'WX_NORTH', '万象集团-华北分公司', 'DEPT_AND_SUB', 1, 130, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3014, '普通员工', '华北分公司普通员工', 'STAFF', 'USER', 130, 'WX_NORTH', '万象集团-华北分公司', 'SELF', 2, 130, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3015, '租户管理员', '鼎新集团管理员', 'TENANT_ADMIN', 'TENANT', 200, 'DINGXIN', '鼎新集团', 'ALL', 1, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3016, '部门管理员', '鼎新集团部门管理员', 'DEPT_MANAGER', 'DEPT', 200, 'DINGXIN', '鼎新集团', 'DEPT_AND_SUB', 2, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3017, '普通员工', '鼎新集团普通员工', 'EMPLOYEE', 'USER', 200, 'DINGXIN', '鼎新集团', 'SELF', 3, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3018, '审计员', '鼎新集团审计专员', 'AUDITOR', 'TENANT', 200, 'DINGXIN', '鼎新集团', 'ALL', 4, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3019, '办事处管理员', '武汉办事处管理员', 'OFFICE_MANAGER', 'OFFICE', 211, 'DX_CENTRAL_WH', '鼎新集团-华中-武汉办事处', 'DEPT', 1, 211, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3020, '普通员工', '武汉办事处普通员工', 'STAFF', 'USER', 211, 'DX_CENTRAL_WH', '鼎新集团-华中-武汉办事处', 'SELF', 2, 211, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3021, '租户管理员', '星辰科技管理员', 'TENANT_ADMIN', 'TENANT', 300, 'XINGCHEN', '星辰科技有限公司', 'ALL', 1, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3022, '研发工程师', '星辰科技研发人员', 'DEV_ENGINEER', 'DEPT', 300, 'XINGCHEN', '星辰科技有限公司', 'DEPT', 2, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3023, '营销总监', '星辰科技营销负责人', 'MARKET_DIRECTOR', 'DEPT', 300, 'XINGCHEN', '星辰科技有限公司', 'DEPT', 3, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3024, '研发工程师', '星辰科技研发二部研发人员', 'DEV_ENGINEER_2', 'DEPT', 310, 'XC_RD', '星辰科技-研发中心', 'DEPT', 2, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3025, '营销专员', '星辰科技营销专员', 'MARKET_STAFF', 'USER', 320, 'XC_MARKET', '星辰科技-营销中心', 'SELF', 1, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3026, '海外经理', '星辰科技海外事业部经理', 'OVERSEAS_MANAGER', 'DEPT', 330, 'XC_OVERSEAS', '星辰科技-海外事业部', 'DEPT', 1, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3027, '租户管理员', '海纳百川管理员', 'TENANT_ADMIN', 'TENANT', 400, 'HAINA', '海纳百川集团', 'ALL', 1, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3028, '部门管理员', '海纳百川部门管理员', 'DEPT_MANAGER', 'DEPT', 410, 'HN_EDU', '海纳百川-教育科技', 'DEPT_AND_SUB', 1, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3029, '租户管理员', '天翔物流管理员', 'TENANT_ADMIN', 'TENANT', 500, 'TIANXIANG', '天翔物流', 'ALL', 1, 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_role (id, role_name, role_desc, role_code, role_level, tenant_id, tenant_code, tenant_name, data_scope, sort_order, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3030, '普通员工', '天翔物流普通员工', 'EMPLOYEE', 'USER', 500, 'TIANXIANG', '天翔物流', 'SELF', 2, 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-
-create table sys_perm_policy
-(
-    id             bigint       not null
-        primary key,
-    policy_code    varchar(100) not null,
-    policy_name    varchar(100) not null,
-    target_id      bigint       not null,
-    target_type    varchar(20)  not null,
-    perm_id        bigint       not null,
-    status         varchar(20)  not null,
-    disable_reason varchar(200) default NULL::character varying,
-    create_tenant  bigint       not null,
-    create_dept    bigint       not null,
-    create_role    bigint       not null,
-    create_by      bigint       not null,
-    create_at      timestamp(6) default CURRENT_TIMESTAMP,
-    update_by      bigint       not null,
-    update_at      timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted     varchar(20)  not null,
-    deleted_at     timestamp(6)
+-- =============================================
+-- 7. 部门策略表（关系：用户 ↔ 部门）
+-- =============================================
+CREATE TABLE sys_dept_policy (
+                                 id              BIGINT        NOT NULL PRIMARY KEY,
+                                 policy_code     VARCHAR(100)  NOT NULL,
+                                 policy_name     VARCHAR(100)  NOT NULL,
+                                 user_id         BIGINT        NOT NULL,
+                                 target_type     VARCHAR(20)   NOT NULL,
+                                 target_id       BIGINT        NOT NULL,
+                                 is_primary      BOOLEAN       NOT NULL,
+                                 join_time       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                 status          VARCHAR(20)   NOT NULL,
+                                 disable_reason  VARCHAR(200)  DEFAULT NULL,
+                                 create_tenant   BIGINT        NOT NULL,
+                                 create_dept     BIGINT        NOT NULL,
+                                 create_role     BIGINT        NOT NULL,
+                                 create_by       BIGINT        NOT NULL,
+                                 create_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                 update_by       BIGINT        NOT NULL,
+                                 update_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                 is_deleted      VARCHAR(20)   NOT NULL,
+                                 deleted_at      TIMESTAMP(6)
 );
 
-comment on table sys_perm_policy is '权限策略表';
+COMMENT ON TABLE sys_dept_policy IS '部门策略表';
+COMMENT ON COLUMN sys_dept_policy.id IS '主键ID';
+COMMENT ON COLUMN sys_dept_policy.policy_code IS '策略编码';
+COMMENT ON COLUMN sys_dept_policy.policy_name IS '策略名称';
+COMMENT ON COLUMN sys_dept_policy.user_id IS '用户ID';
+COMMENT ON COLUMN sys_dept_policy.target_type IS '目标类型';
+COMMENT ON COLUMN sys_dept_policy.target_id IS '目标部门ID';
+COMMENT ON COLUMN sys_dept_policy.is_primary IS '是否为主部门';
+COMMENT ON COLUMN sys_dept_policy.join_time IS '加入时间';
+COMMENT ON COLUMN sys_dept_policy.status IS '关系状态';
+COMMENT ON COLUMN sys_dept_policy.disable_reason IS '关系禁用原因';
+COMMENT ON COLUMN sys_dept_policy.create_tenant IS '创建时所属租户ID';
+COMMENT ON COLUMN sys_dept_policy.create_dept IS '创建时所属部门ID';
+COMMENT ON COLUMN sys_dept_policy.create_role IS '创建时使用角色ID';
+COMMENT ON COLUMN sys_dept_policy.create_by IS '创建人用户ID';
+COMMENT ON COLUMN sys_dept_policy.create_at IS '创建时间';
+COMMENT ON COLUMN sys_dept_policy.update_by IS '最后更新人用户ID';
+COMMENT ON COLUMN sys_dept_policy.update_at IS '最后更新时间';
+COMMENT ON COLUMN sys_dept_policy.is_deleted IS '逻辑删除标记';
+COMMENT ON COLUMN sys_dept_policy.deleted_at IS '删除时间';
 
-comment on column sys_perm_policy.id is '主键ID';
-
-comment on column sys_perm_policy.policy_code is '策略编码';
-
-comment on column sys_perm_policy.policy_name is '策略名称';
-
-comment on column sys_perm_policy.target_id is '授权目标ID';
-
-comment on column sys_perm_policy.target_type is '授权目标类型';
-
-comment on column sys_perm_policy.perm_id is '权限ID';
-
-comment on column sys_perm_policy.status is '策略状态';
-
-comment on column sys_perm_policy.disable_reason is '禁用原因';
-
-comment on column sys_perm_policy.create_tenant is '创建时所属租户ID';
-
-comment on column sys_perm_policy.create_dept is '创建时所属部门ID';
-
-comment on column sys_perm_policy.create_role is '创建时使用角色ID';
-
-comment on column sys_perm_policy.create_by is '创建人ID';
-
-comment on column sys_perm_policy.create_at is '创建时间';
-
-comment on column sys_perm_policy.update_by is '更新人ID';
-
-comment on column sys_perm_policy.update_at is '更新时间';
-
-comment on column sys_perm_policy.is_deleted is '逻辑删除标记';
-
-comment on column sys_perm_policy.deleted_at is '删除时间';
-
-alter table sys_perm_policy owner to postgres;
-
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5001, 'PP_001', '万象集团→系统管理', 100, 'TENANT', 4001, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5002, 'PP_002', '万象集团→租户管理', 100, 'TENANT', 4002, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5003, 'PP_003', '万象集团→用户管理', 100, 'TENANT', 4003, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5004, 'PP_004', '鼎新集团→系统管理', 200, 'TENANT', 4001, 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5005, 'PP_005', '鼎新集团→生产管理', 200, 'TENANT', 4017, 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5006, 'PP_006', '星辰科技→系统管理', 300, 'TENANT', 4001, 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5007, 'PP_007', '星辰科技→研发管理', 300, 'TENANT', 4022, 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5008, 'PP_008', '海纳百川→系统管理', 400, 'TENANT', 4001, 'ACTIVE', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5009, 'PP_009', '天翔物流→物流管理', 500, 'TENANT', 4021, 'DISABLED', '租户已停用', 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5010, 'PP_010', '天翔物流→仓储管理', 500, 'TENANT', 4020, 'DISABLED', '租户已停用', 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5011, 'PP_011', '超级管理员→权限管理', 3001, 'ROLE', 4005, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5012, 'PP_012', '超级管理员→系统配置', 3001, 'ROLE', 4030, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5013, 'PP_013', '租户管理员→用户管理', 3002, 'ROLE', 4003, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5014, 'PP_014', '租户管理员→角色管理', 3002, 'ROLE', 4004, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5015, 'PP_015', '部门管理员→部门管理', 3003, 'ROLE', 4006, 'ACTIVE', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5016, 'PP_016', '普通员工→数据查看', 3004, 'ROLE', 4010, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5017, 'PP_017', '审计员→审计管理', 3005, 'ROLE', 4009, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5018, 'PP_018', '只读用户→数据查看', 3006, 'ROLE', 4010, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5019, 'PP_019', '财务专员→财务管理', 3007, 'ROLE', 4007, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5020, 'PP_020', '人事专员→人事管理', 3008, 'ROLE', 4008, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5021, 'PP_021', '分公司管理员→部门管理', 3009, 'ROLE', 4006, 'ACTIVE', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5022, 'PP_022', '办事处主管→数据查看', 3010, 'ROLE', 4010, 'ACTIVE', null, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5023, 'PP_023', '普通员工(上海)→数据查看', 3011, 'ROLE', 4010, 'ACTIVE', null, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5024, 'PP_024', '销售人员→销售管理', 3012, 'ROLE', 4027, 'ACTIVE', null, 122, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5025, 'PP_025', '分公司管理员(华北)→部门管理', 3013, 'ROLE', 4006, 'ACTIVE', null, 130, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5026, 'PP_026', '租户管理员(鼎新)→用户管理', 3015, 'ROLE', 4003, 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5027, 'PP_027', '部门管理员(鼎新)→部门管理', 3016, 'ROLE', 4006, 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5028, 'PP_028', '普通员工(鼎新)→数据查看', 3017, 'ROLE', 4010, 'ACTIVE', null, 221, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5029, 'PP_029', '审计员(鼎新)→审计管理', 3018, 'ROLE', 4009, 'DISABLED', '角色策略已失效', 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5030, 'PP_030', '办事处管理员(武汉)→数据查看', 3019, 'ROLE', 4010, 'ACTIVE', null, 211, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5031, 'PP_031', '租户管理员(星辰)→用户管理', 3021, 'ROLE', 4003, 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5032, 'PP_032', '研发工程师→研发管理', 3022, 'ROLE', 4022, 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5033, 'PP_033', '营销总监→市场营销', 3023, 'ROLE', 4026, 'ACTIVE', null, 320, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5034, 'PP_034', '研发工程师(二部)→代码仓库', 3024, 'ROLE', 4023, 'ACTIVE', null, 310, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5035, 'PP_035', '租户管理员(海纳百川)→用户管理', 3027, 'ROLE', 4003, 'ACTIVE', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5036, 'PP_036', 'admin→系统配置', 1, 'USER', 4030, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5037, 'PP_037', 'zhang_zong→数据导出', 2, 'USER', 4013, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5038, 'PP_038', 'wang_wu→客户管理', 7, 'USER', 4018, 'ACTIVE', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5039, 'PP_039', 'dingxin_ceo→采购管理', 19, 'USER', 4028, 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5040, 'PP_040', 'xingchen_cto→部署管理', 22, 'USER', 4025, 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5041, 'PP_041', 'hai_manager→数据导出', 26, 'USER', 4013, 'ACTIVE', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5042, 'PP_042', 'multi_user→测试管理', 30, 'USER', 4024, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5043, 'PP_043', 'huang_audit→报表查看', 17, 'USER', 4014, 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5044, 'PP_044', 'li_jingli→报表编辑', 3, 'USER', 4015, 'ACTIVE', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm_policy (id, policy_code, policy_name, target_id, target_type, perm_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5045, 'PP_045', 'dong_manager→质量管理', 20, 'USER', 4029, 'ACTIVE', null, 211, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-
-create table sys_perm
-(
-    id            bigint       not null
-        primary key,
-    perm_name     varchar(100) not null,
-    perm_desc     varchar(200) not null,
-    perm_code     varchar(100) not null,
-    perm_type     varchar(20)  not null,
-    parent_id     bigint       not null,
-    parent_code   varchar(50)  not null,
-    parent_name   varchar(100) not null,
-    path          varchar(1000) not null,
-    sort_order    integer      not null,
-    status        varchar(20)  not null,
-    disable_reason varchar(200) default NULL::character varying,
-    create_tenant bigint       not null,
-    create_dept   bigint       not null,
-    create_role   bigint       not null,
-    create_by     bigint       not null,
-    create_at     timestamp(6) default CURRENT_TIMESTAMP,
-    update_by     bigint       not null,
-    update_at     timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted    varchar(20)  not null,
-    deleted_at    timestamp(6)
+-- =============================================
+-- 8. 角色策略表（关系：角色 → 用户/部门）
+-- =============================================
+CREATE TABLE sys_role_policy (
+                                 id              BIGINT        NOT NULL PRIMARY KEY,
+                                 policy_code     VARCHAR(100)  NOT NULL,
+                                 policy_name     VARCHAR(100)  NOT NULL,
+                                 role_id         BIGINT        NOT NULL,
+                                 target_type     VARCHAR(20)   NOT NULL,
+                                 target_id       BIGINT        NOT NULL,
+                                 status          VARCHAR(20)   NOT NULL,
+                                 disable_reason  VARCHAR(200)  DEFAULT NULL,
+                                 create_tenant   BIGINT        NOT NULL,
+                                 create_dept     BIGINT        NOT NULL,
+                                 create_role     BIGINT        NOT NULL,
+                                 create_by       BIGINT        NOT NULL,
+                                 create_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                 update_by       BIGINT        NOT NULL,
+                                 update_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                 is_deleted      VARCHAR(20)   NOT NULL,
+                                 deleted_at      TIMESTAMP(6)
 );
 
-comment on table sys_perm is '权限表';
+COMMENT ON TABLE sys_role_policy IS '角色策略表';
+COMMENT ON COLUMN sys_role_policy.id IS '主键ID';
+COMMENT ON COLUMN sys_role_policy.policy_code IS '策略编码';
+COMMENT ON COLUMN sys_role_policy.policy_name IS '策略名称';
+COMMENT ON COLUMN sys_role_policy.role_id IS '角色ID';
+COMMENT ON COLUMN sys_role_policy.target_type IS '目标类型';
+COMMENT ON COLUMN sys_role_policy.target_id IS '目标实体ID';
+COMMENT ON COLUMN sys_role_policy.status IS '关系状态：ACTIVE';
+COMMENT ON COLUMN sys_role_policy.disable_reason IS '关系禁用原因';
+COMMENT ON COLUMN sys_role_policy.create_tenant IS '创建时所属租户ID';
+COMMENT ON COLUMN sys_role_policy.create_dept IS '创建时所属部门ID';
+COMMENT ON COLUMN sys_role_policy.create_role IS '创建时使用角色ID';
+COMMENT ON COLUMN sys_role_policy.create_by IS '创建人用户ID';
+COMMENT ON COLUMN sys_role_policy.create_at IS '创建时间';
+COMMENT ON COLUMN sys_role_policy.update_by IS '最后更新人用户ID';
+COMMENT ON COLUMN sys_role_policy.update_at IS '最后更新时间';
+COMMENT ON COLUMN sys_role_policy.is_deleted IS '逻辑删除标记';
+COMMENT ON COLUMN sys_role_policy.deleted_at IS '删除时间';
 
-comment on column sys_perm.id is '主键ID';
-
-comment on column sys_perm.perm_name is '权限名称';
-
-comment on column sys_perm.perm_desc is '权限描述';
-
-comment on column sys_perm.perm_code is '权限编码';
-
-comment on column sys_perm.perm_type is '权限类型';
-
-comment on column sys_perm.parent_id is '父权限ID';
-
-comment on column sys_perm.parent_code is '父权限编码';
-
-comment on column sys_perm.parent_name is '父权限名称';
-
-comment on column sys_perm.path is '权限层级路径';
-
-comment on column sys_perm.sort_order is '排序序号';
-
-comment on column sys_perm.status is '权限状态';
-
-comment on column sys_perm.disable_reason is '禁用原因';
-
-comment on column sys_perm.create_tenant is '创建时所属租户ID';
-
-comment on column sys_perm.create_dept is '创建时所属部门ID';
-
-comment on column sys_perm.create_role is '创建时使用角色ID';
-
-comment on column sys_perm.create_by is '创建人ID';
-
-comment on column sys_perm.create_at is '创建时间';
-
-comment on column sys_perm.update_by is '更新人ID';
-
-comment on column sys_perm.update_at is '更新时间';
-
-comment on column sys_perm.is_deleted is '逻辑删除标记';
-
-comment on column sys_perm.deleted_at is '删除时间';
-
-alter table sys_perm owner to postgres;
-
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4001, '系统管理', '系统基础管理权限', 'SYSTEM_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4001', 1, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4002, '租户管理', '租户信息管理权限', 'TENANT_MANAGE', 'MENU', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4002', 1, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4003, '用户管理', '用户信息管理权限', 'USER_MANAGE', 'MENU', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4003', 2, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4004, '角色管理', '角色信息管理权限', 'ROLE_MANAGE', 'MENU', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4004', 3, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4005, '权限管理', '权限信息管理权限', 'PERM_MANAGE', 'MENU', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4005', 4, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4006, '部门管理', '部门信息管理权限', 'DEPT_MANAGE', 'MENU', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4006', 5, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4007, '财务管理', '财务数据管理权限', 'FINANCE_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4007', 2, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4008, '人事管理', '人力资源管理权限', 'HR_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4008', 3, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4009, '审计管理', '审计监督权限', 'AUDIT_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4009', 4, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4010, '数据查看', '基础数据查看权限', 'DATA_VIEW', 'BUTTON', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4010', 6, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4011, '数据编辑', '基础数据编辑权限', 'DATA_EDIT', 'BUTTON', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4011', 7, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4012, '数据删除', '基础数据删除权限', 'DATA_DELETE', 'BUTTON', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4012', 8, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4013, '数据导出', '基础数据导出权限', 'DATA_EXPORT', 'BUTTON', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4013', 9, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4014, '报表查看', '报表数据查看权限', 'REPORT_VIEW', 'BUTTON', 4007, 'FINANCE_MANAGE', '财务管理', '/4007/4014', 1, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4015, '报表编辑', '报表数据编辑权限', 'REPORT_EDIT', 'BUTTON', 4007, 'FINANCE_MANAGE', '财务管理', '/4007/4015', 2, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4016, '订单管理', '订单业务管理权限', 'ORDER_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4016', 5, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4017, '产品管理', '产品信息管理权限', 'PRODUCT_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4017', 6, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4018, '客户管理', '客户信息管理权限', 'CUSTOMER_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4018', 7, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4019, '供应商管理', '供应商信息管理权限', 'SUPPLIER_MANAGE', 'MENU', 4017, 'PRODUCT_MANAGE', '产品管理', '/4017/4019', 1, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4020, '仓储管理', '仓储信息管理权限', 'WAREHOUSE_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4020', 8, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4021, '物流管理', '物流配送管理权限', 'LOGISTICS_MANAGE', 'MENU', 4020, 'WAREHOUSE_MANAGE', '仓储管理', '/4020/4021', 1, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4022, '研发管理', '研发项目管理权限', 'DEV_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4022', 9, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4023, '代码仓库', '代码仓库访问权限', 'CODE_REPO', 'BUTTON', 4022, 'DEV_MANAGE', '研发管理', '/4022/4023', 1, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4024, '测试管理', '测试用例管理权限', 'TEST_MANAGE', 'BUTTON', 4022, 'DEV_MANAGE', '研发管理', '/4022/4024', 2, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4025, '部署管理', '部署发布管理权限', 'DEPLOY_MANAGE', 'BUTTON', 4022, 'DEV_MANAGE', '研发管理', '/4022/4025', 3, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4026, '市场营销', '市场推广管理权限', 'MARKET_MANAGE', 'MENU', 0, 'ROOT', '根节点', '/4026', 10, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4027, '销售管理', '销售业务管理权限', 'SALES_MANAGE', 'MENU', 4026, 'MARKET_MANAGE', '市场营销', '/4026/4027', 1, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4028, '采购管理', '采购业务管理权限', 'PROCUREMENT_MANAGE', 'MENU', 4017, 'PRODUCT_MANAGE', '产品管理', '/4017/4028', 2, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4029, '质量管理', '质量检验管理权限', 'QUALITY_MANAGE', 'MENU', 4017, 'PRODUCT_MANAGE', '产品管理', '/4017/4029', 3, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_perm (id, perm_name, perm_desc, perm_code, perm_type, parent_id, parent_code, parent_name, path, sort_order, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4030, '系统配置', '系统参数配置权限', 'SYSTEM_CONFIG', 'BUTTON', 4001, 'SYSTEM_MANAGE', '系统管理', '/4001/4030', 10, 'ENABLED', null, 0, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-
-create table sys_user_policy
-(
-    id             bigint       not null
-        primary key,
-    policy_code    varchar(100) not null,
-    policy_name    varchar(100) not null,
-    target_id      bigint       not null,
-    target_type    varchar(20)  not null,
-    user_id        bigint       not null,
-    tenant_id      bigint       not null,
-    tenant_code    varchar(50)  not null,
-    tenant_name    varchar(100) not null,
-    is_primary     boolean      not null default false,
-    join_time      timestamp(6) default CURRENT_TIMESTAMP,
-    status         varchar(20)  not null,
-    disable_reason varchar(200) default NULL::character varying,
-    create_tenant  bigint       not null,
-    create_dept    bigint       not null,
-    create_role    bigint       not null,
-    create_by      bigint       not null,
-    create_at      timestamp(6) default CURRENT_TIMESTAMP,
-    update_by      bigint       not null,
-    update_at      timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted     varchar(20)  not null,
-    deleted_at     timestamp(6)
+-- =============================================
+-- 9. 权限策略表（关系：权限 → 角色/用户/租户）
+-- =============================================
+CREATE TABLE sys_perm_policy (
+                                 id              BIGINT        NOT NULL PRIMARY KEY,
+                                 policy_code     VARCHAR(100)  NOT NULL,
+                                 policy_name     VARCHAR(100)  NOT NULL,
+                                 perm_id         BIGINT        NOT NULL,
+                                 target_type     VARCHAR(20)   NOT NULL,
+                                 target_id       BIGINT        NOT NULL,
+                                 status          VARCHAR(20)   NOT NULL,
+                                 disable_reason  VARCHAR(200)  DEFAULT NULL,
+                                 create_tenant   BIGINT        NOT NULL,
+                                 create_dept     BIGINT        NOT NULL,
+                                 create_role     BIGINT        NOT NULL,
+                                 create_by       BIGINT        NOT NULL,
+                                 create_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                 update_by       BIGINT        NOT NULL,
+                                 update_at       TIMESTAMP(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                 is_deleted      VARCHAR(20)   NOT NULL,
+                                 deleted_at      TIMESTAMP(6)
 );
 
-comment on table sys_user_policy is '用户策略表';
+COMMENT ON TABLE sys_perm_policy IS '权限策略表';
+COMMENT ON COLUMN sys_perm_policy.id IS '主键ID';
+COMMENT ON COLUMN sys_perm_policy.policy_code IS '策略编码';
+COMMENT ON COLUMN sys_perm_policy.policy_name IS '策略名称';
+COMMENT ON COLUMN sys_perm_policy.perm_id IS '权限ID';
+COMMENT ON COLUMN sys_perm_policy.target_type IS '目标类型';
+COMMENT ON COLUMN sys_perm_policy.target_id IS '目标实体ID';
+COMMENT ON COLUMN sys_perm_policy.status IS '关系状态：';
+COMMENT ON COLUMN sys_perm_policy.disable_reason IS '关系禁用原因';
+COMMENT ON COLUMN sys_perm_policy.create_tenant IS '创建时所属租户ID';
+COMMENT ON COLUMN sys_perm_policy.create_dept IS '创建时所属部门ID';
+COMMENT ON COLUMN sys_perm_policy.create_role IS '创建时使用角色ID';
+COMMENT ON COLUMN sys_perm_policy.create_by IS '创建人用户ID';
+COMMENT ON COLUMN sys_perm_policy.create_at IS '创建时间';
+COMMENT ON COLUMN sys_perm_policy.update_by IS '最后更新人用户ID';
+COMMENT ON COLUMN sys_perm_policy.update_at IS '最后更新时间';
+COMMENT ON COLUMN sys_perm_policy.is_deleted IS '逻辑删除标记';
+COMMENT ON COLUMN sys_perm_policy.deleted_at IS '删除时间';
 
-comment on column sys_user_policy.id is '主键ID';
 
-comment on column sys_user_policy.policy_code is '策略编码';
+-- =============================================
+-- 租户表数据 (10条)
+-- =============================================
+INSERT INTO sys_tenant (id, tenant_code, tenant_name, tenant_type, tenant_desc, tenant_logo_url, parent_id, path, contact_name, contact_phone, expire_time, package_id, ext_attributes, has_children, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
+                                                                                                                                                                                                                                                                                                                                               (101, 'WANXIANG', '万象集团', 'ENTERPRISE', '综合性企业集团，覆盖华东、华南、华北等区域', 'https://logo.example.com/wx.png', 0, '/101', '张总', '13800001001', '2030-12-31 23:59:59', 1, '{"scale":5000, "region":"全国", "industry":"综合"}', TRUE, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                                                                                                               (102, 'DINGXIN', '鼎新集团', 'ENTERPRISE', '专注制造业的集团企业', 'https://logo.example.com/dx.png', 0, '/102', '丁总', '13800002001', '2032-06-30 23:59:59', 2, '{"scale":3000, "region":"全国", "industry":"制造业"}', TRUE, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                                                                                                               (111, 'WX_EAST', '万象集团-华东分公司', 'BRANCH', '负责华东区域业务运营', 'https://logo.example.com/wx_east.png', 101, '/101/111', '李经理', '13800001002', '2030-12-31 23:59:59', 1, '{"scale":1200, "region":"华东", "industry":"综合"}', TRUE, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                                                                                                               (112, 'WX_SOUTH', '万象集团-华南分公司', 'BRANCH', '负责华南区域业务运营', 'https://logo.example.com/wx_south.png', 101, '/101/112', '陈经理', '13800001003', '2030-12-31 23:59:59', 1, '{"scale":1000, "region":"华南", "industry":"综合"}', TRUE, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                                                                                                               (113, 'WX_NORTH', '万象集团-华北分公司', 'BRANCH', '负责华北区域业务运营', 'https://logo.example.com/wx_north.png', 101, '/101/113', '武经理', '13800001004', '2030-12-31 23:59:59', 1, '{"scale":800, "region":"华北", "industry":"综合"}', TRUE, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                                                                                                               (121, 'WX_EAST_SH', '万象集团-华东-上海办事处', 'OFFICE', '上海地区业务运营中心', 'https://logo.example.com/wx_sh.png', 111, '/101/111/121', '王主管', '13800001005', '2030-12-31 23:59:59', 1, '{"scale":300, "region":"上海", "industry":"综合"}', FALSE, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                                                                                                               (122, 'WX_EAST_NJ', '万象集团-华东-南京办事处', 'OFFICE', '南京地区业务运营中心（已停用）', 'https://logo.example.com/wx_nj.png', 111, '/101/111/122', '赵主管', '13800001006', '2030-12-31 23:59:59', 1, '{"scale":50, "region":"南京", "industry":"综合"}', FALSE, 'DISABLED', '业务调整，合并至上海办事处', 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-06-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                                                                                                               (201, 'DX_CENTRAL', '鼎新集团-华中分公司', 'BRANCH', '负责华中区域业务运营', 'https://logo.example.com/dx_central.png', 102, '/102/201', '马经理', '13800002002', '2032-06-30 23:59:59', 2, '{"scale":800, "region":"华中", "industry":"制造业"}', TRUE, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                                                                                                               (202, 'DX_NORTH', '鼎新集团-华北分公司', 'BRANCH', '负责华北区域业务运营', 'https://logo.example.com/dx_north.png', 102, '/102/202', '韩经理', '13800002003', '2032-06-30 23:59:59', 2, '{"scale":600, "region":"华北", "industry":"制造业"}', FALSE, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                                                                                                               (211, 'DX_CENTRAL_WH', '鼎新集团-华中-武汉办事处', 'OFFICE', '武汉地区业务运营中心', 'https://logo.example.com/dx_wh.png', 201, '/102/201/211', '董主管', '13800002004', '2032-06-30 23:59:59', 2, '{"scale":300, "region":"武汉", "industry":"制造业"}', FALSE, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL);
 
-comment on column sys_user_policy.policy_name is '策略名称';
+-- =============================================
+-- 部门表数据 (20条)
+-- =============================================
+INSERT INTO sys_dept (id, dept_code, dept_name, dept_desc, parent_id, path, tenant_id, leader_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
+                                                                                                                                                                                                                                           (301, 'DEPT_ZJB', '总经办', '万象集团总经理办公室', 0, '/301', 101, 1, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (302, 'DEPT_CW', '财务部', '万象集团财务管理中心', 0, '/302', 101, 10, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (303, 'DEPT_HR', '人力资源部', '万象集团人力资源管理', 0, '/303', 101, 13, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (304, 'DEPT_IT', '信息技术部', '万象集团信息技术与系统支持', 0, '/304', 101, 18, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (305, 'DEPT_SJ', '审计部', '万象集团内部审计监督', 0, '/305', 101, 17, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (306, 'DEPT_ZHGL', '综合管理部', '华东分公司综合行政管理', 301, '/301/306', 111, 3, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (307, 'DEPT_YW1', '业务一部', '华东分公司核心业务部门', 301, '/301/307', 111, 4, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (308, 'DEPT_XS', '销售部', '华南分公司销售业务管理', 302, '/302/308', 112, 7, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (309, 'DEPT_KF', '客服部', '华南分公司客户服务支持', 302, '/302/309', 112, 8, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (310, 'DEPT_YY', '运营部', '华北分公司运营管理', 303, '/303/310', 113, 11, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (311, 'DEPT_SC', '生产管理部', '鼎新集团生产调度与管理', 0, '/311', 102, 19, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (312, 'DEPT_ZL', '质量部', '鼎新集团质量检验与控制', 0, '/312', 102, 20, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (313, 'DEPT_CG', '采购部', '鼎新集团物资采购管理', 0, '/313', 102, 21, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (314, 'DEPT_YF1', '研发一部', '鼎新集团华中研发', 311, '/311/314', 201, 22, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (315, 'DEPT_SC2', '市场部', '鼎新集团华北市场推广', 312, '/312/315', 202, 23, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (316, 'DEPT_ZX', '咨询部', '万象集团华东-上海办事处咨询业务', 306, '/301/306/316', 121, 5, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (317, 'DEPT_BG', '办公室', '万象集团华东-南京办事处办公室（已停用）', 306, '/301/306/317', 122, 6, 'DISABLED', '办事处已停用', 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-06-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (318, 'DEPT_WL', '物流部', '鼎新集团华中-武汉物流管理', 311, '/311/314/318', 211, 24, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (319, 'DEPT_KFZX', '客服中心', '万象集团集团级客服中心', 0, '/319', 101, 14, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                           (320, 'DEPT_FZ', '发展部', '鼎新集团战略发展部', 0, '/320', 102, 25, 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL);
 
-comment on column sys_user_policy.target_id is '授权目标ID（租户ID）';
+-- =============================================
+-- 角色表数据 (15条)
+-- =============================================
+INSERT INTO sys_role (id, role_code, role_name, role_desc, role_level, tenant_id, data_scope, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
+                                                                                                                                                                                                                                       (401, 'SUPER_ADMIN', '超级管理员', '系统最高权限管理员', 'SYSTEM', 101, 'ALL', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (402, 'TENANT_ADMIN', '租户管理员', '万象集团租户级管理员', 'TENANT', 101, 'ALL', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (403, 'DEPT_MANAGER', '部门管理员', '万象集团部门级管理员', 'DEPT', 101, 'DEPT_AND_SUB', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (404, 'EMPLOYEE', '普通员工', '万象集团普通员工', 'USER', 101, 'SELF', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (405, 'FINANCE', '财务专员', '万象集团财务人员', 'TENANT', 101, 'DEPT', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (406, 'AUDITOR', '审计员', '万象集团审计专员', 'TENANT', 101, 'ALL', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (407, 'BRANCH_ADMIN', '分公司管理员', '华东分公司管理员', 'BRANCH', 111, 'DEPT_AND_SUB', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (408, 'OFFICE_MANAGER', '办事处主管', '上海办事处主管', 'OFFICE', 121, 'DEPT', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (409, 'SALES', '销售人员', '华南分公司销售专员', 'USER', 112, 'SELF', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (410, 'DX_TENANT_ADMIN', '鼎新管理员', '鼎新集团管理员', 'TENANT', 102, 'ALL', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (411, 'DX_DEPT_MANAGER', '鼎新部门管理员', '鼎新集团部门管理员', 'DEPT', 102, 'DEPT_AND_SUB', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (412, 'DX_EMPLOYEE', '鼎新普通员工', '鼎新集团普通员工', 'USER', 102, 'SELF', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (413, 'DX_AUDITOR', '鼎新审计员', '鼎新集团审计专员', 'TENANT', 102, 'ALL', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (414, 'DX_RD_MANAGER', '研发经理', '鼎新华中研发部经理', 'DEPT', 201, 'DEPT_AND_SUB', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                       (415, 'READONLY', '只读用户', '万象集团只读权限用户', 'TENANT', 101, 'ALL', 'DISABLED', '临时停用', 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL);
 
-comment on column sys_user_policy.target_type is '授权目标类型';
+-- =============================================
+-- 用户表数据 (30条)
+-- =============================================
+INSERT INTO sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
+                                                                                                                                                                                                                                                          (1, 'U001', 'admin', '系统管理员', 'admin@wanxiang.com', '13800000001', '$2a$10$encrypted', 'avatar/admin.png', 'MALE', '1990-01-01', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (2, 'U002', 'zhang_zong', '张总', 'zhangzong@wanxiang.com', '13800000002', '$2a$10$encrypted', 'avatar/zhang.png', 'MALE', '1985-03-15', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (3, 'U003', 'li_jingli', '李经理', 'lijingli@wanxiang.com', '13800000003', '$2a$10$encrypted', 'avatar/li.png', 'MALE', '1988-06-20', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (4, 'U004', 'wang_zhuguan', '王主管', 'wangzhuguan@wanxiang.com', '13800000004', '$2a$10$encrypted', 'avatar/wang.png', 'FEMALE', '1992-09-10', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (5, 'U005', 'zhang_san', '张三', 'zhangsan@wanxiang.com', '13800000005', '$2a$10$encrypted', 'avatar/zhangsan.png', 'MALE', '1995-12-01', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (6, 'U006', 'li_si', '李四', 'lisi@wanxiang.com', '13800000006', '$2a$10$encrypted', 'avatar/lisi.png', 'MALE', '1993-04-18', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (7, 'U007', 'wang_wu', '王五', 'wangwu@wanxiang.com', '13800000007', '$2a$10$encrypted', 'avatar/wangwu.png', 'MALE', '1991-07-25', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (8, 'U008', 'zhao_liu', '赵六', 'zhaoliu@wanxiang.com', '13800000008', '$2a$10$encrypted', 'avatar/zhaoliu.png', 'FEMALE', '1994-11-30', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (9, 'U009', 'sun_qi', '孙七', 'sunqi@wanxiang.com', '13800000009', '$2a$10$encrypted', 'avatar/sunqi.png', 'MALE', '1996-02-14', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (10, 'U010', 'zhou_ba', '周八', 'zhouba@wanxiang.com', '13800000010', '$2a$10$encrypted', 'avatar/zhouba.png', 'MALE', '1989-08-08', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (11, 'U011', 'wu_jiu', '吴九', 'wujiu@wanxiang.com', '13800000011', '$2a$10$encrypted', 'avatar/wujiu.png', 'MALE', '1987-05-22', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (12, 'U012', 'zheng_shi', '郑十', 'zhengshi@wanxiang.com', '13800000012', '$2a$10$encrypted', 'avatar/zhengshi.png', 'FEMALE', '1997-01-15', 'DISABLED', '离职', 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (13, 'U013', 'qian_yi', '钱一', 'qianyi@wanxiang.com', '13800000013', '$2a$10$encrypted', 'avatar/qianyi.png', 'FEMALE', '1990-10-05', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (14, 'U014', 'chen_er', '陈二', 'chener@wanxiang.com', '13800000014', '$2a$10$encrypted', 'avatar/chener.png', 'MALE', '1994-03-28', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (15, 'U015', 'feng_san', '冯三', 'fengsan@wanxiang.com', '13800000015', '$2a$10$encrypted', 'avatar/fengsan.png', 'MALE', '1986-12-12', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (16, 'U016', 'chu_si', '楚四', 'chusi@haina.com', '13800000016', '$2a$10$encrypted', 'avatar/chusi.png', 'FEMALE', '1992-06-30', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (17, 'U017', 'huang_audit', '黄审计', 'huangaudit@wanxiang.com', '13800000017', '$2a$10$encrypted', 'avatar/huang.png', 'MALE', '1988-09-18', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (18, 'U018', 'xu_readonly', '徐只读', 'xureadonly@wanxiang.com', '13800000018', '$2a$10$encrypted', 'avatar/xu.png', 'MALE', '1993-11-22', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (19, 'U019', 'dingxin_ceo', '丁总', 'dingxin@dingxin.com', '13800002001', '$2a$10$encrypted', 'avatar/dingxin.png', 'MALE', '1980-01-01', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (20, 'U020', 'dong_manager', '董经理', 'dong@dingxin.com', '13800002002', '$2a$10$encrypted', 'avatar/dong.png', 'MALE', '1984-04-20', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (21, 'U021', 'guo_staff', '郭员工', 'guo@dingxin.com', '13800002003', '$2a$10$encrypted', 'avatar/guo.png', 'FEMALE', '1990-10-10', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (22, 'U022', 'yan_dev', '严研发', 'yan@dingxin.com', '13800002004', '$2a$10$encrypted', 'avatar/yan.png', 'MALE', '1995-05-15', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (23, 'U023', 'cai_market', '蔡市场', 'cai@dingxin.com', '13800002005', '$2a$10$encrypted', 'avatar/cai.png', 'FEMALE', '1993-08-08', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (24, 'U024', 'han_overseas', '韩海外', 'han@dingxin.com', '13800002006', '$2a$10$encrypted', 'avatar/han.png', 'MALE', '1987-02-14', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (25, 'U025', 'hai_manager', '海经理', 'hai@haina.com', '13800004001', '$2a$10$encrypted', 'avatar/hai.png', 'MALE', '1982-11-11', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (26, 'U026', 'lu_edu', '陆教育', 'lu@haina.com', '13800004002', '$2a$10$encrypted', 'avatar/lu.png', 'FEMALE', '1991-07-20', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (27, 'U027', 'qiao_med', '乔医疗', 'qiao@haina.com', '13800004003', '$2a$10$encrypted', 'avatar/qiao.png', 'MALE', '1989-09-09', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (28, 'U028', 'tian_logistics', '田物流', 'tian@tianxiang.com', '13800005001', '$2a$10$encrypted', 'avatar/tian.png', 'MALE', '1985-05-20', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (29, 'U029', 'multi_user', '多租户用户', 'multiuser@test.com', '13900000001', '$2a$10$encrypted', 'avatar/multi.png', 'MALE', '1995-05-05', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                          (30, 'U030', 'test_user', '测试用户', 'testuser@test.com', '13900000002', '$2a$10$encrypted', 'avatar/test.png', 'FEMALE', '2000-01-01', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL);
 
-comment on column sys_user_policy.user_id is '用户ID';
+-- =============================================
+-- 权限表数据 (20条，树形结构)
+-- =============================================
+INSERT INTO sys_perm (id, perm_code, perm_name, perm_desc, perm_type, parent_id, path, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
+                                                                                                                                                                                                                                (501, 'SYSTEM', '系统管理', '系统基础管理', 'MENU', 0, '/501', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (502, 'TENANT_MANAGE', '租户管理', '租户信息管理', 'MENU', 501, '/501/502', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (503, 'USER_MANAGE', '用户管理', '用户信息管理', 'MENU', 501, '/501/503', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (504, 'ROLE_MANAGE', '角色管理', '角色信息管理', 'MENU', 501, '/501/504', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (505, 'PERM_MANAGE', '权限管理', '权限信息管理', 'MENU', 501, '/501/505', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (506, 'DEPT_MANAGE', '部门管理', '部门信息管理', 'MENU', 501, '/501/506', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (507, 'FINANCE', '财务管理', '财务数据管理', 'MENU', 0, '/507', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (508, 'AUDIT', '审计管理', '审计监督权限', 'MENU', 0, '/508', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (509, 'DATA_VIEW', '数据查看', '基础数据查看权限', 'BUTTON', 501, '/501/509', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (510, 'DATA_EDIT', '数据编辑', '基础数据编辑权限', 'BUTTON', 501, '/501/510', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (511, 'DATA_DELETE', '数据删除', '基础数据删除权限', 'BUTTON', 501, '/501/511', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (512, 'EXPORT', '数据导出', '基础数据导出权限', 'BUTTON', 501, '/501/512', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (513, 'REPORT_VIEW', '报表查看', '报表数据查看权限', 'BUTTON', 507, '/507/513', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (514, 'ORDER_MANAGE', '订单管理', '订单业务管理', 'MENU', 0, '/514', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (515, 'PRODUCT_MANAGE', '产品管理', '产品信息管理', 'MENU', 0, '/515', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (516, 'CUSTOMER_MANAGE', '客户管理', '客户信息管理', 'MENU', 0, '/516', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (517, 'SUPPLIER_MANAGE', '供应商管理', '供应商信息管理', 'MENU', 515, '/515/517', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (518, 'WAREHOUSE_MANAGE', '仓储管理', '仓储信息管理', 'MENU', 0, '/518', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (519, 'LOGISTICS_MANAGE', '物流管理', '物流配送管理', 'MENU', 518, '/518/519', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                (520, 'DEV_MANAGE', '研发管理', '研发项目管理', 'MENU', 0, '/520', 'ENABLED', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL);
 
-comment on column sys_user_policy.tenant_id is '所属租户ID';
+-- =============================================
+-- 租户策略表数据 (30条)
+-- =============================================
+INSERT INTO sys_tenant_policy (id, policy_code, policy_name, user_id, target_type, target_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
+                                                                                                                                                                                                                                                              (601, 'TP001', 'admin主万象', 1, 'TENANT', 101, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (602, 'TP002', '张总主万象', 2, 'TENANT', 101, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (603, 'TP003', '李经理主华东', 3, 'TENANT', 111, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (604, 'TP004', '王主管主上海', 4, 'TENANT', 121, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (605, 'TP005', '张三主上海', 5, 'TENANT', 121, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (606, 'TP006', '李四主华南', 6, 'TENANT', 112, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (607, 'TP007', '王五主华南', 7, 'TENANT', 112, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (608, 'TP008', '赵六主华南', 8, 'TENANT', 112, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (609, 'TP009', '孙七主华东', 9, 'TENANT', 111, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (610, 'TP010', '周八主万象', 10, 'TENANT', 101, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (611, 'TP011', '吴九主华北', 11, 'TENANT', 113, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (612, 'TP012', '郑十已禁用万象', 12, 'TENANT', 101, TRUE, '2025-01-01 08:00:00', 'DISABLED', '用户离职', 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (613, 'TP013', '钱一主万象', 13, 'TENANT', 101, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (614, 'TP014', '陈二主华南', 14, 'TENANT', 112, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (615, 'TP015', '冯三主万象', 15, 'TENANT', 101, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (616, 'TP016', '楚四主鼎新', 16, 'TENANT', 102, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (617, 'TP017', '黄审计主万象', 17, 'TENANT', 101, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (618, 'TP018', '徐只读主万象', 18, 'TENANT', 101, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (619, 'TP019', '丁总主鼎新', 19, 'TENANT', 102, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (620, 'TP020', '董经理主华中', 20, 'TENANT', 201, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (621, 'TP021', '郭员工主华北', 21, 'TENANT', 202, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (622, 'TP022', '严研发主武汉', 22, 'TENANT', 211, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (623, 'TP023', '蔡市场主华北', 23, 'TENANT', 202, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (624, 'TP024', '韩海外主华中', 24, 'TENANT', 201, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (625, 'TP025', '海经理主海纳', 25, 'TENANT', 201, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (626, 'TP026', '陆教育主海纳', 26, 'TENANT', 201, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (627, 'TP027', '乔医疗主海纳', 27, 'TENANT', 201, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (628, 'TP028', '田物流主天翔', 28, 'TENANT', 201, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (629, 'TP029', '多租户主万象', 29, 'TENANT', 101, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                              (630, 'TP030', '多租户兼鼎新', 29, 'TENANT', 102, FALSE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL);
 
-comment on column sys_user_policy.tenant_code is '租户编码';
+-- =============================================
+-- 部门策略表数据 (30条)
+-- =============================================
+INSERT INTO sys_dept_policy (id, policy_code, policy_name, user_id, target_type, target_id, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
+                                                                                                                                                                                                                                                            (701, 'DP001', 'admin总经办', 1, 'DEPT', 301, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (702, 'DP002', '张总总经办', 2, 'DEPT', 301, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (703, 'DP003', '李经理综合管理部', 3, 'DEPT', 306, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (704, 'DP004', '王主管咨询部', 4, 'DEPT', 316, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (705, 'DP005', '张三咨询部', 5, 'DEPT', 316, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (706, 'DP006', '李四销售部', 6, 'DEPT', 308, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (707, 'DP007', '王五销售部', 7, 'DEPT', 308, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (708, 'DP008', '赵六客服部', 8, 'DEPT', 309, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (709, 'DP009', '孙七业务一部', 9, 'DEPT', 307, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (710, 'DP010', '周八财务部', 10, 'DEPT', 302, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (711, 'DP011', '吴九运营部', 11, 'DEPT', 310, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (712, 'DP012', '郑十总经办已禁用', 12, 'DEPT', 301, TRUE, '2025-01-01 08:00:00', 'DISABLED', '用户离职', 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (713, 'DP013', '钱一人力资源部', 13, 'DEPT', 303, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (714, 'DP014', '陈二客服部', 14, 'DEPT', 319, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (715, 'DP015', '冯三审计部', 15, 'DEPT', 305, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (716, 'DP016', '楚四生产管理部', 16, 'DEPT', 311, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (717, 'DP017', '黄审计审计部', 17, 'DEPT', 305, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (718, 'DP018', '徐只读信息技术部', 18, 'DEPT', 304, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (719, 'DP019', '丁总生产管理部', 19, 'DEPT', 311, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (720, 'DP020', '董经理研发一部', 20, 'DEPT', 314, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (721, 'DP021', '郭员工市场部', 21, 'DEPT', 315, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (722, 'DP022', '严研发研发一部', 22, 'DEPT', 314, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (723, 'DP023', '蔡市场市场部', 23, 'DEPT', 315, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (724, 'DP024', '韩海外研发一部', 24, 'DEPT', 314, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (725, 'DP025', '海经理生产管理部', 25, 'DEPT', 311, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (726, 'DP026', '陆教育研发一部', 26, 'DEPT', 314, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (727, 'DP027', '乔医疗质量部', 27, 'DEPT', 312, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (728, 'DP028', '田物流仓储管理', 28, 'DEPT', 518, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (729, 'DP029', '多租户主部门总经办', 29, 'DEPT', 301, TRUE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                                            (730, 'DP030', '多租户兼部门生产管理', 29, 'DEPT', 311, FALSE, '2025-01-01 08:00:00', 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL);
 
-comment on column sys_user_policy.tenant_name is '租户名称';
+-- =============================================
+-- 角色策略表数据 (30条)
+-- =============================================
+INSERT INTO sys_role_policy (id, policy_code, policy_name, role_id, target_type, target_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
+                                                                                                                                                                                                                                     (801, 'RP001', 'admin超级管理员', 401, 'USER', 1, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (802, 'RP002', '张总租户管理员', 402, 'USER', 2, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (803, 'RP003', '李经理分公司管理员', 407, 'USER', 3, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (804, 'RP004', '王主管办事处主管', 408, 'USER', 4, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (805, 'RP005', '张三普通员工万象', 404, 'USER', 5, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (806, 'RP006', '李四销售人员', 409, 'USER', 6, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (807, 'RP007', '王五销售人员', 409, 'USER', 7, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (808, 'RP008', '赵六客服部员工', 404, 'USER', 8, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (809, 'RP009', '孙七普通员工华东', 404, 'USER', 9, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (810, 'RP010', '周八财务专员', 405, 'USER', 10, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (811, 'RP011', '吴九分公司管理员华北', 407, 'USER', 11, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (812, 'RP012', '钱一人事专员', 405, 'USER', 13, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (813, 'RP013', '陈二客服中心员工', 404, 'USER', 14, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (814, 'RP014', '冯三审计员', 406, 'USER', 15, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (815, 'RP015', '楚四鼎新管理员', 410, 'USER', 16, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (816, 'RP016', '黄审计审计员', 406, 'USER', 17, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (817, 'RP017', '徐只读只读角色', 415, 'USER', 18, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (818, 'RP018', '丁总鼎新管理员', 410, 'USER', 19, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (819, 'RP019', '董经理研发经理', 414, 'USER', 20, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (820, 'RP020', '郭员工普通员工鼎新', 412, 'USER', 21, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (821, 'RP021', '严研发普通员工', 412, 'USER', 22, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (822, 'RP022', '蔡市场普通员工', 412, 'USER', 23, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (823, 'RP023', '韩海外普通员工', 412, 'USER', 24, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (824, 'RP024', '角色授予部门示例：财务部授财务专员', 405, 'DEPT', 302, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (825, 'RP025', '销售部授销售角色', 409, 'DEPT', 308, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (826, 'RP026', '多租户用户万象普通员工', 404, 'USER', 29, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (827, 'RP027', '多租户用户鼎新普通员工', 412, 'USER', 29, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (828, 'RP028', '测试用户万象普通员工', 404, 'USER', 30, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (829, 'RP029', '测试用户鼎新普通员工', 412, 'USER', 30, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (830, 'RP030', 'admin鼎新管理员', 410, 'USER', 1, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL);
 
-comment on column sys_user_policy.is_primary is '是否主租户';
-
-comment on column sys_user_policy.join_time is '加入租户时间';
-
-comment on column sys_user_policy.status is '策略状态';
-
-comment on column sys_user_policy.disable_reason is '禁用原因';
-
-comment on column sys_user_policy.create_tenant is '创建时所属租户ID';
-
-comment on column sys_user_policy.create_dept is '创建时所属部门ID';
-
-comment on column sys_user_policy.create_role is '创建时使用角色ID';
-
-comment on column sys_user_policy.create_by is '创建人ID';
-
-comment on column sys_user_policy.create_at is '创建时间';
-
-comment on column sys_user_policy.update_by is '更新人ID';
-
-comment on column sys_user_policy.update_at is '更新时间';
-
-comment on column sys_user_policy.is_deleted is '逻辑删除标记';
-
-comment on column sys_user_policy.deleted_at is '删除时间';
-
-alter table sys_user_policy owner to postgres;
-
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1001, 'UP_001', 'admin→万象集团(主)', 100, 'TENANT', 1, 100, 'WANXIANG', '万象集团', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1002, 'UP_002', 'zhang_zong→万象集团(主)', 100, 'TENANT', 2, 100, 'WANXIANG', '万象集团', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1003, 'UP_003', 'li_jingli→华东分公司(主)', 110, 'TENANT', 3, 110, 'WX_EAST', '万象集团-华东分公司', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1004, 'UP_004', 'wang_zhuguan→上海办事处(主)', 111, 'TENANT', 4, 111, 'WX_EAST_SH', '万象集团-华东-上海办事处', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1005, 'UP_005', 'zhang_san→上海办事处(主)', 111, 'TENANT', 5, 111, 'WX_EAST_SH', '万象集团-华东-上海办事处', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1006, 'UP_006', 'li_si→深圳办事处(主)', 121, 'TENANT', 6, 121, 'WX_SOUTH_SZ', '万象集团-华南-深圳办事处', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 121, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1007, 'UP_007', 'wang_wu→华南分公司(主)', 120, 'TENANT', 7, 120, 'WX_SOUTH', '万象集团-华南分公司', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1008, 'UP_008', 'wang_wu→深圳办事处(兼)', 121, 'TENANT', 7, 121, 'WX_SOUTH_SZ', '万象集团-华南-深圳办事处', false, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 121, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1009, 'UP_009', 'zhao_liu→广州办事处(主)', 122, 'TENANT', 8, 122, 'WX_SOUTH_GZ', '万象集团-华南-广州办事处', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 122, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1010, 'UP_010', 'sun_qi→杭州办事处(主)', 112, 'TENANT', 9, 112, 'WX_EAST_HZ', '万象集团-华东-杭州办事处', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 112, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1011, 'UP_011', 'zhou_ba→万象集团(主)', 100, 'TENANT', 10, 100, 'WANXIANG', '万象集团', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1012, 'UP_012', 'wu_jiu→华北分公司(主)', 130, 'TENANT', 11, 130, 'WX_NORTH', '万象集团-华北分公司', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 130, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1013, 'UP_013', 'zheng_shi→星辰科技(主)', 300, 'TENANT', 12, 300, 'XINGCHEN', '星辰科技有限公司', true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1014, 'UP_014', 'qian_yi→万象集团(主)', 100, 'TENANT', 13, 100, 'WANXIANG', '万象集团', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1015, 'UP_015', 'chen_er→广州办事处(主)', 122, 'TENANT', 14, 122, 'WX_SOUTH_GZ', '万象集团-华南-广州办事处', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 122, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1016, 'UP_016', 'feng_san→万象集团(主)', 100, 'TENANT', 15, 100, 'WANXIANG', '万象集团', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1017, 'UP_017', 'chu_si→教育科技(主)', 410, 'TENANT', 16, 410, 'HN_EDU', '海纳百川-教育科技', true, '2026-04-01 08:00:00.000000', 'ACTIVE', null, 410, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1018, 'UP_018', 'huang_audit→万象集团(主)', 100, 'TENANT', 17, 100, 'WANXIANG', '万象集团', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1019, 'UP_019', 'xu_readonly→万象集团(主)', 100, 'TENANT', 18, 100, 'WANXIANG', '万象集团', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1020, 'UP_020', 'dingxin_ceo→鼎新集团(主)', 200, 'TENANT', 19, 200, 'DINGXIN', '鼎新集团', true, '2026-02-01 08:00:00.000000', 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1021, 'UP_021', 'dong_manager→武汉办事处(主)', 211, 'TENANT', 20, 211, 'DX_CENTRAL_WH', '鼎新集团-华中-武汉办事处', true, '2026-02-01 08:00:00.000000', 'ACTIVE', null, 211, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1022, 'UP_022', 'guo_staff→石家庄办事处(主)', 221, 'TENANT', 21, 221, 'DX_NORTH_SJZ', '鼎新集团-华北-石家庄办事处', true, '2026-02-01 08:00:00.000000', 'ACTIVE', null, 221, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1023, 'UP_023', 'xingchen_cto→星辰科技(主)', 300, 'TENANT', 22, 300, 'XINGCHEN', '星辰科技有限公司', true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1024, 'UP_024', 'yan_dev→研发中心(主)', 310, 'TENANT', 23, 310, 'XC_RD', '星辰科技-研发中心', true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 310, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1025, 'UP_025', 'cai_market→营销中心(主)', 320, 'TENANT', 24, 320, 'XC_MARKET', '星辰科技-营销中心', true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 320, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1026, 'UP_026', 'han_overseas→海外事业部(主)', 330, 'TENANT', 25, 330, 'XC_OVERSEAS', '星辰科技-海外事业部', true, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 330, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1027, 'UP_027', 'hai_manager→海纳百川(主)', 400, 'TENANT', 26, 400, 'HAINA', '海纳百川集团', true, '2026-04-01 08:00:00.000000', 'ACTIVE', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1028, 'UP_028', 'multi_user→万象集团(主)', 100, 'TENANT', 30, 100, 'WANXIANG', '万象集团', true, '2026-01-01 08:00:00.000000', 'ACTIVE', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1029, 'UP_029', 'multi_user→鼎新集团(兼)', 200, 'TENANT', 30, 200, 'DINGXIN', '鼎新集团', false, '2026-02-01 08:00:00.000000', 'ACTIVE', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user_policy (id, policy_code, policy_name, target_id, target_type, user_id, tenant_id, tenant_code, tenant_name, is_primary, join_time, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1030, 'UP_030', 'multi_user→星辰科技(兼)', 300, 'TENANT', 30, 300, 'XINGCHEN', '星辰科技有限公司', false, '2026-03-01 08:00:00.000000', 'ACTIVE', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-
-create table sys_user
-(
-    id             bigint        not null
-        primary key,
-    user_code      varchar(50)   not null,
-    user_name      varchar(50)   not null,
-    nick_name      varchar(50)   not null,
-    email          varchar(100)  not null,
-    phone          varchar(20)   not null,
-    password       varchar(200)  not null,
-    avatar_url     varchar(500)  not null,
-    gender         varchar(10)   not null,
-    birthday       date,
-    status         varchar(20)   not null,
-    disable_reason varchar(200) default NULL::character varying,
-    create_tenant  bigint        not null,
-    create_dept    bigint        not null,
-    create_role    bigint        not null,
-    create_by      bigint        not null,
-    create_at      timestamp(6) default CURRENT_TIMESTAMP,
-    update_by      bigint        not null,
-    update_at      timestamp(6) default CURRENT_TIMESTAMP,
-    is_deleted     varchar(20)   not null,
-    deleted_at     timestamp(6)
-);
-
-comment on table sys_user is '用户表';
-
-comment on column sys_user.id is '主键ID';
-
-comment on column sys_user.user_code is '用户编码';
-
-comment on column sys_user.user_name is '用户名';
-
-comment on column sys_user.nick_name is '昵称';
-
-comment on column sys_user.email is '邮箱';
-
-comment on column sys_user.phone is '手机号';
-
-comment on column sys_user.password is '密码';
-
-comment on column sys_user.avatar_url is '头像URL';
-
-comment on column sys_user.gender is '性别';
-
-comment on column sys_user.birthday is '生日';
-
-comment on column sys_user.status is '用户状态';
-
-comment on column sys_user.disable_reason is '禁用原因';
-
-comment on column sys_user.create_tenant is '创建时所属租户ID';
-
-comment on column sys_user.create_dept is '创建时所属部门ID';
-
-comment on column sys_user.create_role is '创建时使用角色ID';
-
-comment on column sys_user.create_by is '创建人ID';
-
-comment on column sys_user.create_at is '创建时间';
-
-comment on column sys_user.update_by is '更新人ID';
-
-comment on column sys_user.update_at is '更新时间';
-
-comment on column sys_user.is_deleted is '逻辑删除标记';
-
-comment on column sys_user.deleted_at is '删除时间';
-
-alter table sys_user owner to postgres;
-
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (1, 'U_ADMIN', 'admin', '系统管理员', 'admin@wanxiang.com', '13800000001', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/admin.png', 'MALE', '1990-01-01', 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (2, 'U_ZHANG_ZONG', 'zhang_zong', '张总', 'zhangzong@wanxiang.com', '13800000002', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/zhang_zong.png', 'MALE', '1985-03-15', 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (3, 'U_LI_JINGLI', 'li_jingli', '李经理', 'lijingli@wanxiang.com', '13800000003', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/li_jingli.png', 'MALE', '1988-06-20', 'ENABLED', null, 110, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (4, 'U_WANG_ZHUGUAN', 'wang_zhuguan', '王主管', 'wangzhuguan@wanxiang.com', '13800000004', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/wang_zhuguan.png', 'FEMALE', '1992-09-10', 'ENABLED', null, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (5, 'U_ZHANG_SAN', 'zhang_san', '张三', 'zhangsan@wanxiang.com', '13800000005', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/zhang_san.png', 'MALE', '1995-12-01', 'ENABLED', null, 111, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (6, 'U_LI_SI', 'li_si', '李四', 'lisi@wanxiang.com', '13800000006', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/li_si.png', 'MALE', '1993-04-18', 'ENABLED', null, 121, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (7, 'U_WANG_WU', 'wang_wu', '王五', 'wangwu@wanxiang.com', '13800000007', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/wang_wu.png', 'MALE', '1991-07-25', 'ENABLED', null, 120, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (8, 'U_ZHAO_LIU', 'zhao_liu', '赵六', 'zhaoliu@wanxiang.com', '13800000008', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/zhao_liu.png', 'FEMALE', '1994-11-30', 'ENABLED', null, 122, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (9, 'U_SUN_QI', 'sun_qi', '孙七', 'sunqi@wanxiang.com', '13800000009', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/sun_qi.png', 'MALE', '1996-02-14', 'ENABLED', null, 112, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (10, 'U_ZHOU_BA', 'zhou_ba', '周八', 'zhouba@wanxiang.com', '13800000010', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/zhou_ba.png', 'MALE', '1989-08-08', 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (11, 'U_WU_JIU', 'wu_jiu', '吴九', 'wujiu@wanxiang.com', '13800000011', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/wu_jiu.png', 'MALE', '1987-05-22', 'ENABLED', null, 130, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (12, 'U_ZHENG_SHI', 'zheng_shi', '郑十', 'zhengshi@xingchen.com', '13800000012', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/zheng_shi.png', 'FEMALE', '1997-01-15', 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (13, 'U_QIAN_YI', 'qian_yi', '钱一', 'qianyi@wanxiang.com', '13800000013', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/qian_yi.png', 'FEMALE', '1990-10-05', 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (14, 'U_CHEN_ER', 'chen_er', '陈二', 'chener@wanxiang.com', '13800000014', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/chen_er.png', 'MALE', '1994-03-28', 'ENABLED', null, 122, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (15, 'U_FENG_SAN', 'feng_san', '冯三', 'fengsan@wanxiang.com', '13800000015', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/feng_san.png', 'MALE', '1986-12-12', 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (16, 'U_CHU_SI', 'chu_si', '楚四', 'chusi@haina.com', '13800000016', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/chu_si.png', 'FEMALE', '1992-06-30', 'ENABLED', null, 410, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (17, 'U_HUANG_AUDIT', 'huang_audit', '黄审计', 'huangaudit@wanxiang.com', '13800000017', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/huang_audit.png', 'MALE', '1988-09-18', 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (18, 'U_XU_READONLY', 'xu_readonly', '徐只读', 'xureadonly@wanxiang.com', '13800000018', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/xu_readonly.png', 'MALE', '1993-11-22', 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (19, 'U_DINGXIN_CEO', 'dingxin_ceo', '丁总', 'dingxinceo@dingxin.com', '13800000019', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/dingxin_ceo.png', 'MALE', '1982-04-08', 'ENABLED', null, 200, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (20, 'U_DONG_MANAGER', 'dong_manager', '董主管', 'dongmanager@dingxin.com', '13800000020', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/dong_manager.png', 'MALE', '1990-07-14', 'ENABLED', null, 211, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (21, 'U_GUO_STAFF', 'guo_staff', '郭员工', 'guostaff@dingxin.com', '13800000021', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/guo_staff.png', 'FEMALE', '1996-03-05', 'ENABLED', null, 221, 0, 0, 1, '2026-02-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (22, 'U_XINGCHEN_CTO', 'xingchen_cto', '程总', 'xingchencto@xingchen.com', '13800000022', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/xingchen_cto.png', 'MALE', '1984-01-20', 'ENABLED', null, 300, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (23, 'U_YAN_DEV', 'yan_dev', '严经理', 'yandev@xingchen.com', '13800000023', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/yan_dev.png', 'MALE', '1991-08-16', 'ENABLED', null, 310, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (24, 'U_CAI_MARKET', 'cai_market', '蔡总监', 'caimarket@xingchen.com', '13800000024', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/cai_market.png', 'FEMALE', '1989-05-12', 'ENABLED', null, 320, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (25, 'U_HAN_OVERSEAS', 'han_overseas', '韩经理', 'hanoverseas@xingchen.com', '13800000025', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/han_overseas.png', 'MALE', '1987-02-28', 'ENABLED', null, 330, 0, 0, 1, '2026-03-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (26, 'U_HAI_MANAGER', 'hai_manager', '海总', 'haimanager@haina.com', '13800000026', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/hai_manager.png', 'MALE', '1983-10-10', 'ENABLED', null, 400, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (27, 'U_LU_EDU', 'lu_edu', '陆老师', 'luedu@haina.com', '13800000027', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/lu_edu.png', 'FEMALE', '1992-04-25', 'ENABLED', null, 410, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (28, 'U_QIAO_MED', 'qiao_med', '乔医生', 'qiaomed@haina.com', '13800000028', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/qiao_med.png', 'MALE', '1988-12-08', 'ENABLED', null, 420, 0, 0, 1, '2026-04-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (29, 'U_TIAN_LOGISTICS', 'tian_logistics', '田调度', 'tianlogistics@tianxiang.com', '13800000029', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/tian_logistics.png', 'MALE', '1990-06-15', 'DISABLED', '所属租户已停用', 500, 0, 0, 1, '2026-05-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
-INSERT INTO public.sys_user (id, user_code, user_name, nick_name, email, phone, password, avatar_url, gender, birthday, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES (30, 'U_MULTI_USER', 'multi_user', '多租户用户', 'multiuser@wanxiang.com', '13800000030', '$2a$10$encrypted_password_hash', 'https://avatar.example.com/multi_user.png', 'MALE', '1993-09-03', 'ENABLED', null, 100, 0, 0, 1, '2026-01-01 08:00:00.000000', 1, '2026-06-01 10:00:00.000000', 'NOT_DELETED', null);
+-- =============================================
+-- 权限策略表数据 (30条)
+-- =============================================
+INSERT INTO sys_perm_policy (id, policy_code, policy_name, perm_id, target_type, target_id, status, disable_reason, create_tenant, create_dept, create_role, create_by, create_at, update_by, update_at, is_deleted, deleted_at) VALUES
+                                                                                                                                                                                                                                     (901, 'PP001', '超级管理员所有系统管理', 501, 'ROLE', 401, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (902, 'PP002', '超级管理员用户管理', 503, 'ROLE', 401, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (903, 'PP003', '超级管理员数据查看', 509, 'ROLE', 401, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (904, 'PP004', '租户管理员租户管理', 502, 'ROLE', 402, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (905, 'PP005', '租户管理员用户管理', 503, 'ROLE', 402, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (906, 'PP006', '财务专员财务管理', 507, 'ROLE', 405, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (907, 'PP007', '审计员审计管理', 508, 'ROLE', 406, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (908, 'PP008', '普通员工数据查看', 509, 'ROLE', 404, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (909, 'PP009', '销售人员客户管理', 516, 'ROLE', 409, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (910, 'PP010', '鼎新管理员产品管理', 515, 'ROLE', 410, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (911, 'PP011', '鼎新管理员用户管理', 503, 'ROLE', 410, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (912, 'PP012', '鼎新普通员工数据查看', 509, 'ROLE', 412, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (913, 'PP013', '只读用户数据查看', 509, 'ROLE', 415, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (914, 'PP014', '直接用户admin系统配置', 501, 'USER', 1, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (915, 'PP015', '直接用户张总导出', 512, 'USER', 2, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (916, 'PP016', '租户万象默认权限系统管理', 501, 'TENANT', 101, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (917, 'PP017', '租户鼎新默认权限生产管理', 515, 'TENANT', 102, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (918, 'PP018', '分公司管理员部门管理', 506, 'ROLE', 407, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (919, 'PP019', '办事处主管数据查看', 509, 'ROLE', 408, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (920, 'PP020', '鼎新审计员审计管理', 508, 'ROLE', 413, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (921, 'PP021', '研发经理研发管理', 520, 'ROLE', 414, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (922, 'PP022', '部门财务部授予财务管理权限', 507, 'DEPT', 302, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (923, 'PP023', '部门销售部授予客户管理权限', 516, 'DEPT', 308, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (924, 'PP024', '多租户用户直接授予数据查看', 509, 'USER', 29, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (925, 'PP025', '测试用户数据编辑', 510, 'USER', 30, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (926, 'PP026', '租户万象默认订单管理', 514, 'TENANT', 101, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (927, 'PP027', '鼎新审计员审计管理授权', 508, 'ROLE', 413, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (928, 'PP028', '研发管理授予研发一部部门', 520, 'DEPT', 314, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (929, 'PP029', '只读用户报表查看', 513, 'ROLE', 415, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL),
+                                                                                                                                                                                                                                     (930, 'PP030', '超级管理员数据编辑', 510, 'ROLE', 401, 'ACTIVE', NULL, 0, 0, 0, 1, '2025-01-01 08:00:00', 1, '2025-01-01 08:00:00', 'NOT_DELETED', NULL);
