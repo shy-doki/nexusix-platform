@@ -1,33 +1,36 @@
 package com.shy.nexusix.iam.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.IdType;
+import java.time.LocalDateTime;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import java.io.Serializable;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
-
 /**
  * <p>
- * 权限策略表 - 存储权限的分配策略 (TENANT能力边界/ROLE角色权限/USER个人权限)
+ * 权限策略表：权限授予租户/部门/角色/用户
  * </p>
  *
  * @author shy
- * @since 2026-06-10
+ * @since 2026-06-12
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("sys_perm_policy")
-@Schema(name = "SysPermPolicy对象", description = "权限策略表 - 存储权限的分配策略 (TENANT能力边界/ROLE角色权限/USER个人权限)")
+@Schema(name = "SysPermPolicy对象", description = "权限策略表：权限授予租户/部门/角色/用户")
 public class SysPermPolicy implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "主键 ID (雪花算法)", example = "1987654321098765432")
+    @Schema(description = "主键ID（系统权限授予租户时作为租户权限ID）", example = "5001")
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
@@ -35,71 +38,79 @@ public class SysPermPolicy implements Serializable {
     @TableField(value = "policy_code")
     private String policyCode;
 
-    @Schema(description = "策略名称", example = "租户基础权限策略")
+    @Schema(description = "策略名称", example = "用户管理权限→万象集团")
     @TableField(value = "policy_name")
     private String policyName;
 
-    @Schema(description = "授权目标ID（角色策略ID、用户策略ID、系统租户ID）", example = "100")
-    @TableField(value = "target_id")
-    private Long targetId;
-
-    @Schema(description = "授权目标类型 (TENANT/ROLE/USER)", example = "TENANT")
-    @TableField(value = "target_type")
-    private String targetType;
-
-    @Schema(description = "关联权限ID", example = "1001")
+    @Schema(description = "权限ID（系统权限ID或租户权限ID）", example = "511")
     @TableField(value = "perm_id")
     private Long permId;
 
-    @Schema(description = "控制的数据表名", example = "sys_tenant")
+    @Schema(description = "目标类型：TENANT, DEPT, ROLE, USER", example = "TENANT")
+    @TableField(value = "target_type")
+    private String targetType;
+
+    @Schema(description = "目标ID", example = "101")
+    @TableField(value = "target_id")
+    private Long targetId;
+
+    @Schema(description = "行级权限（数据范围）：ALL, DEPT_AND_SUB, DEPT, SELF", example = "ALL")
+    @TableField(value = "data_scope")
+    private String dataScope;
+
+    @Schema(description = "关联的数据表名（用于字段级权限）", example = "sys_user")
     @TableField(value = "table_name")
     private String tableName;
 
-    @Schema(description = "数据表描述", example = "租户信息表")
-    @TableField(value = "table_desc")
-    private String tableDesc;
+    @Schema(description = "字段级权限配置 {\"field_name\": [\"READ\",\"CREATE\",\"UPDATE\",\"DELETE\"]}")
+    @TableField(value = "field_operation")
+    private String fieldPermissions;
 
-    @Schema(description = "访问类型 (QUERY/CREATE/UPDATE)", example = "QUERY")
-    @TableField(value = "access_type")
-    private String accessType;
-
-    @Schema(description = "允许操作的字段列表 (JSON数组)", example = "[\"tenantCode\",\"tenantName\"]")
-    @TableField(value = "field_operates")
-    private String fieldOperates;
-
-    @Schema(description = "策略状态 (ACTIVE/DISABLED_SYSTEM_LEVEL/DISABLED_TENANT_LEVEL/DISABLED_ROLE_LEVEL/DISABLED_USER_LEVEL)", example = "ACTIVE")
+    @Schema(description = "策略状态：ACTIVE, DISABLED", example = "ACTIVE")
     @TableField(value = "status")
     private String status;
 
-    @Schema(description = "禁用原因", example = "系统管理员全局禁用")
+    @Schema(description = "禁用原因")
     @TableField(value = "disable_reason")
     private String disableReason;
 
-    @Schema(description = "创建人ID", example = "100")
+    @Schema(description = "创建时所属租户ID")
+    @TableField(value = "create_tenant")
+    private Long createTenant;
+
+    @Schema(description = "创建时所属部门ID")
+    @TableField(value = "create_dept")
+    private Long createDept;
+
+    @Schema(description = "创建时使用角色ID")
+    @TableField(value = "create_role")
+    private Long createRole;
+
+    @Schema(description = "创建人用户ID", example = "1")
     @TableField(value = "create_by")
     private Long createBy;
 
-    @Schema(description = "创建时间", example = "2026-04-07 15:45:30")
-    @TableField(value = "create_at", fill = FieldFill.INSERT)
+    @Schema(description = "创建时间", format = "date-time", example = "2026-06-12 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @TableField(value = "create_at")
     private LocalDateTime createAt;
 
-    @Schema(description = "更新人ID", example = "100")
+    @Schema(description = "最后更新人用户ID", example = "1")
     @TableField(value = "update_by")
     private Long updateBy;
 
-    @Schema(description = "更新时间", example = "2026-04-07 15:45:30")
-    @TableField(value = "update_at", fill = FieldFill.INSERT_UPDATE)
+    @Schema(description = "最后更新时间", format = "date-time", example = "2026-06-12 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @TableField(value = "update_at")
     private LocalDateTime updateAt;
 
-    @Schema(description = "逻辑删除标记 (NOT_DELETED/DELETED)", example = "NOT_DELETED")
+    @Schema(description = "逻辑删除标记", example = "NOT_DELETED")
     @TableField(value = "is_deleted")
     private String isDeleted;
 
-    @Schema(description = "删除时间", example = "2026-04-07 15:45:30")
-    @TableField(value = "deleted_at")
+    @Schema(description = "删除时间", format = "date-time", example = "2026-06-12 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @TableField(value = "deleted_at")
     private LocalDateTime deletedAt;
 
 }

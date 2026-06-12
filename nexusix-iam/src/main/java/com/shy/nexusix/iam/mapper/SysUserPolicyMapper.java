@@ -1,39 +1,45 @@
 package com.shy.nexusix.iam.mapper;
 
-import com.shy.nexusix.iam.dto.UserLoginJoinDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.shy.nexusix.iam.dto.UserDeptDTO;
+import com.shy.nexusix.iam.dto.UserRoleDTO;
 import com.shy.nexusix.iam.dto.UserTenantItemDTO;
 import com.shy.nexusix.iam.entity.SysUserPolicy;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
 /**
  * <p>
- * 租户策略表  Mapper 接口
+ * 用户策略表 Mapper 接口
  * </p>
  *
  * @author shy
- * @since 2026-06-10
+ * @since 2026-06-12
  */
+@Mapper
 public interface SysUserPolicyMapper extends BaseMapper<SysUserPolicy> {
 
     /**
-     * <p>根据用户名查询用户登录关联信息</p>
-     * <p>联查 sys_user + sys_user_policy(默认租户) + sys_tenant，获取登录校验所需数据</p>
-     *
-     * @param username 登录用户名
-     * @return 用户登录关联信息DTO
+     * 查询用户在所有租户下的部门信息
+     * @param userId 系统用户ID
+     * @return 用户部门列表
      */
-    UserLoginJoinDTO queryUserLoginJoin(@Param("username") String username);
+    List<UserDeptDTO> queryUserAllDeptInfo(@Param("userId") Long userId);
 
     /**
-     * <p>查询用户关联的所有租户信息</p>
-     * <p>从 sys_user_policy 联查 sys_tenant，获取用户所属全部租户</p>
-     *
-     * @param userId 用户ID
-     * @return 用户关联的租户信息列表
+     * 查询用户在所有租户下的角色信息
+     * @param userId 系统用户ID
+     * @return 用户角色列表
      */
-    List<UserTenantItemDTO> queryUserAllTenants(@Param("userId") Long userId);
+    List<UserRoleDTO> queryUserAllRoleInfo(@Param("userId") Long userId);
+
+    /**
+     * 查询用户所有租户信息
+     * @param userId 系统用户ID
+     * @return 用户租户列表
+     */
+    List<UserTenantItemDTO> queryUserAllTenantInfo(@Param("userId") Long userId);
 
 }

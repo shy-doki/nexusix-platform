@@ -55,6 +55,15 @@ public class UserContext {
                 ensureFieldPermMapNonNull(fieldPermission.getUpdate());
             }
         }
+
+        // 部门分组
+        UserContextDTO.DeptGroup deptGroup = dto.getDepts();
+        if (deptGroup != null) {
+            deptGroup.setCurrent(nullToEmpty(deptGroup.getCurrent()));
+            deptGroup.setAll(nullToEmpty(deptGroup.getAll()));
+            deptGroup.setValid(nullToEmpty(deptGroup.getValid()));
+            deptGroup.setInvalid(nullToEmpty(deptGroup.getInvalid()));
+        }
     }
 
     private static void ensureFieldPermMapNonNull(Map<String, UserContextDTO.TableFieldPermission> map) {

@@ -2,44 +2,136 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shy.nexusix.iam.mapper.SysPermPolicyMapper">
 
-    <!-- 查询用户在当前租户下的全部权限策略数据（两路径汇聚：ROLE / USER） -->
-    <!-- 用户权限 = 用户当前登录租户中所属角色具有的权限 + 用户当前登录租户中该用户本身具有的权限 -->
-    <!--
-        TENANT路径（target_type='TENANT'）是租户能力边界约束，不作为用户直接权限参与计算。
-        用户实际权限仅来自以下两条路径：
-        - ROLE路径：target_type='ROLE'，target_id 为 sys_role_policy.id（角色策略ID）
-        - USER路径：target_type='USER'，target_id 为 sys_user_policy.id（用户策略ID）
-    -->
-    <select id="queryUserPermJoin" resultType="com.shy.nexusix.iam.dto.UserPermJoinDTO">
+    <!-- 查询用户所有权限信息 -->
+    <!-- 包括：用户直接拥有的权限 + 用户角色拥有的权限 + 用户部门拥有的权限 + 租户权限 -->
+    <select id="queryUserAllPermInfo" resultType="com.shy.nexusix.iam.dto.UserPermDTO">
+        -- 1. 用户直接授予的权限（USER级别）
         SELECT
-            pp.id             AS policyId,
-            pp.perm_id        AS permId,
-            pp.status         AS policyStatus,
-            pp.access_type    AS accessType,
-            pp.field_operates AS fieldOperates,
-            pp.table_name     AS tableName,
-            pp.target_type    AS targetType,
-            p.perm_code       AS permCode
-        FROM sys_perm_policy pp
-        INNER JOIN sys_perm p ON pp.perm_id = p.id AND p.is_deleted = 'NOT_DELETED'
-        WHERE pp.is_deleted = 'NOT_DELETED'
-          AND (
-              <!-- 角色级策略：用户在当前租户中所属角色具有的权限 -->
-              <!-- target_id 为角色策略ID，通过 sys_role_policy 找到用户关联的角色策略 -->
-              (pp.target_type = 'ROLE' AND pp.target_id IN (
-                  SELECT rp.id
-                  FROM sys_role_policy rp
-                  INNER JOIN sys_role r ON r.id = rp.role_id AND r.tenant_id = #{tenantId} AND r.is_deleted = 'NOT_DELETED'
-                  WHERE rp.target_type = 'USER'
-                    AND rp.target_id = #{userPolicyId}
-                    AND rp.is_deleted = 'NOT_DELETED'
-                    AND rp.status = 'ACTIVE'
-              ))
-              OR
-              <!-- 用户级策略：用户在当前租户中本身具有的权限 -->
-              <!-- target_id 为用户策略ID（sys_user_policy.id） -->
-              (pp.target_type = 'USER' AND pp.target_id = #{userPolicyId})
-          )
+            p.perm_code AS permCode,
+            p.perm_name AS permName,
+            p.perm_type AS permType,
+            t.tenant_code AS tenantCode,
+            t.tenant_name AS tenantName,
+            pp.status AS permPolicyStatus,
+            pp.target_type AS targetType,
+            pp.data_scope AS dataScope,
+            pp.table_name AS tableName,
+            pp.field_operation AS fieldPermissions,
+            up_tenant.id AS tenantUserId
+        FROM sys_user_policy up_tenant
+        INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
+            AND up_tenant.target_type = 'TENANT'
+            AND t.is_deleted = 'NOT_DELETED'
+        -- 权限策略表：授予用户
+        LEFT JOIN sys_perm_policy pp ON pp.target_type = 'USER'
+            AND pp.target_id = up_tenant.id
+            AND pp.is_deleted = 'NOT_DELETED'
+        -- 系统权限表或租户权限表
+        LEFT JOIN sys_perm p ON p.id = pp.perm_id
+            AND p.is_deleted = 'NOT_DELETED'
+        WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.is_deleted = 'NOT_DELETED'
+          AND p.perm_code IS NOT NULL
+
+        UNION ALL
+
+        -- 2. 用户角色授予的权限（ROLE级别）
+        SELECT
+            p.perm_code AS permCode,
+            p.perm_name AS permName,
+            p.perm_type AS permType,
+            t.tenant_code AS tenantCode,
+            t.tenant_name AS tenantName,
+            pp.status AS permPolicyStatus,
+            pp.target_type AS targetType,
+            pp.data_scope AS dataScope,
+            pp.table_name AS tableName,
+            pp.field_operation AS fieldPermissions,
+            up_tenant.id AS tenantUserId
+        FROM sys_user_policy up_tenant
+        INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
+            AND up_tenant.target_type = 'TENANT'
+            AND t.is_deleted = 'NOT_DELETED'
+        -- 用户绑定角色
+        LEFT JOIN sys_user_policy up_role ON up_role.user_id = up_tenant.id
+            AND up_role.target_type = 'ROLE'
+            AND up_role.is_deleted = 'NOT_DELETED'
+        -- 权限策略表：授予角色
+        LEFT JOIN sys_perm_policy pp ON pp.target_type = 'ROLE'
+            AND pp.target_id = up_role.target_id
+            AND pp.is_deleted = 'NOT_DELETED'
+        -- 系统权限表或租户权限表
+        LEFT JOIN sys_perm p ON p.id = pp.perm_id
+            AND p.is_deleted = 'NOT_DELETED'
+        WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.is_deleted = 'NOT_DELETED'
+          AND p.perm_code IS NOT NULL
+
+        UNION ALL
+
+        -- 3. 用户部门授予的权限（DEPT级别）
+        SELECT
+            p.perm_code AS permCode,
+            p.perm_name AS permName,
+            p.perm_type AS permType,
+            t.tenant_code AS tenantCode,
+            t.tenant_name AS tenantName,
+            pp.status AS permPolicyStatus,
+            pp.target_type AS targetType,
+            pp.data_scope AS dataScope,
+            pp.table_name AS tableName,
+            pp.field_operation AS fieldPermissions,
+            up_tenant.id AS tenantUserId
+        FROM sys_user_policy up_tenant
+        INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
+            AND up_tenant.target_type = 'TENANT'
+            AND t.is_deleted = 'NOT_DELETED'
+        -- 用户绑定部门
+        LEFT JOIN sys_user_policy up_dept ON up_dept.user_id = up_tenant.id
+            AND up_dept.target_type = 'DEPT'
+            AND up_dept.is_deleted = 'NOT_DELETED'
+        -- 权限策略表：授予部门
+        LEFT JOIN sys_perm_policy pp ON pp.target_type = 'DEPT'
+            AND pp.target_id = up_dept.target_id
+            AND pp.is_deleted = 'NOT_DELETED'
+        -- 系统权限表或租户权限表
+        LEFT JOIN sys_perm p ON p.id = pp.perm_id
+            AND p.is_deleted = 'NOT_DELETED'
+        WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.is_deleted = 'NOT_DELETED'
+          AND p.perm_code IS NOT NULL
+
+        UNION ALL
+
+        -- 4. 租户级别授予的权限（TENANT级别）
+        SELECT
+            p.perm_code AS permCode,
+            p.perm_name AS permName,
+            p.perm_type AS permType,
+            t.tenant_code AS tenantCode,
+            t.tenant_name AS tenantName,
+            pp.status AS permPolicyStatus,
+            pp.target_type AS targetType,
+            pp.data_scope AS dataScope,
+            pp.table_name AS tableName,
+            pp.field_operation AS fieldPermissions,
+            up_tenant.id AS tenantUserId
+        FROM sys_user_policy up_tenant
+        INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
+            AND up_tenant.target_type = 'TENANT'
+            AND t.is_deleted = 'NOT_DELETED'
+        -- 权限策略表：授予租户
+        LEFT JOIN sys_perm_policy pp ON pp.target_type = 'TENANT'
+            AND pp.target_id = t.id
+            AND pp.is_deleted = 'NOT_DELETED'
+        -- 系统权限表或租户权限表
+        LEFT JOIN sys_perm p ON p.id = pp.perm_id
+            AND p.is_deleted = 'NOT_DELETED'
+        WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.is_deleted = 'NOT_DELETED'
+          AND p.perm_code IS NOT NULL
+
+        ORDER BY tenantCode, permCode
     </select>
 
 </mapper>

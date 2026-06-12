@@ -35,6 +35,9 @@ public class UserContextDTO {
     /** 角色分组（当前租户/全部/有效/无效），含租户标注 */
     private RoleGroup roles;
 
+    /** 部门分组（当前租户/全部/有效/无效），含租户标注 */
+    private DeptGroup depts;
+
     // ==================== 租户相关 ====================
 
     @Data
@@ -55,6 +58,8 @@ public class UserContextDTO {
         private String tenantName;
         /** 租户状态（ENABLED/DISABLED/EXPIRED/PENDING） */
         private String status;
+        /** 是否主租户 */
+        private Boolean isPrimary;
     }
 
     @Data
@@ -130,13 +135,47 @@ public class UserContextDTO {
     @Data
     public static class RoleGroup {
         /** 当前登录租户下的角色列表 */
-        private List<RoleItem> current;
+        private List<RoleItem> current = new ArrayList<>();
         /** 全部角色（跨所有租户，含有效+无效） */
-        private List<RoleItem> all;
+        private List<RoleItem> all = new ArrayList<>();
         /** 有效角色（角色策略状态为ACTIVE） */
-        private List<RoleItem> valid;
+        private List<RoleItem> valid = new ArrayList<>();
         /** 无效角色（角色策略状态非ACTIVE） */
-        private List<RoleItem> invalid;
+        private List<RoleItem> invalid = new ArrayList<>();
+    }
+
+    // ==================== 部门相关 ====================
+
+    @Data
+    public static class DeptItem {
+        /** 部门编码 */
+        private String deptCode;
+        /** 部门名称 */
+        private String deptName;
+        /** 部门路径 */
+        private String path;
+        /** 层级深度 */
+        private Integer level;
+        /** 所属租户编码 */
+        private String tenantCode;
+        /** 所属租户名称 */
+        private String tenantName;
+        /** 是否主部门 */
+        private Boolean isPrimary;
+        /** 用户策略状态（ACTIVE/DISABLED） */
+        private String userPolicyStatus;
+    }
+
+    @Data
+    public static class DeptGroup {
+        /** 当前登录租户下的部门列表 */
+        private List<DeptItem> current = new ArrayList<>();
+        /** 全部部门（跨所有租户，含有效+无效） */
+        private List<DeptItem> all = new ArrayList<>();
+        /** 有效部门（用户策略状态为ACTIVE） */
+        private List<DeptItem> valid = new ArrayList<>();
+        /** 无效部门（用户策略状态非ACTIVE） */
+        private List<DeptItem> invalid = new ArrayList<>();
     }
 
 }

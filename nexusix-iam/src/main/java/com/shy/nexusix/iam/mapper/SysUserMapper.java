@@ -1,7 +1,8 @@
 package com.shy.nexusix.iam.mapper;
 
-import com.shy.nexusix.iam.entity.SysUser;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.shy.nexusix.iam.entity.SysUser;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
  * <p>
@@ -9,8 +10,9 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * </p>
  *
  * @author shy
- * @since 2026-06-10
+ * @since 2026-06-12
  */
+@Mapper
 public interface SysUserMapper extends BaseMapper<SysUser> {
 
 }

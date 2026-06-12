@@ -233,7 +233,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 先查询根节点总数用于分页
         LambdaQueryWrapper<SysTenant> rootCountWrapper = new LambdaQueryWrapper<SysTenant>()
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
-                .and(w -> w.isNull(SysTenant::getParentId).or().eq(SysTenant::getParentId, "0"));
+                .and(w -> w.isNull(SysTenant::getParentId).or().eq(SysTenant::getParentId, 0L));
         long rootTotal = this.count(rootCountWrapper);
 
         // 分页查询根节点 选择用户有权限查看的列 + 业务必要字段
@@ -638,13 +638,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         if (isSuperAdmin) {
             // 超级管理员：若明确填写了审核字段值则以填写值为准，若未填写则自动应用默认值
             if (entity.getCreateBy() == null) {
-                entity.setCreateBy(StpUtil.getLoginIdAsString());
+                entity.setCreateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
             }
             if (entity.getCreateAt() == null) {
                 entity.setCreateAt(LocalDateTime.now());
             }
             if (entity.getUpdateBy() == null) {
-                entity.setUpdateBy(StpUtil.getLoginIdAsString());
+                entity.setUpdateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
             }
             if (entity.getUpdateAt() == null) {
                 entity.setUpdateAt(LocalDateTime.now());
@@ -654,9 +654,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
         } else {
             // 非超级管理员：严格禁止设置审核字段，系统自动填充默认值，忽略前端传递的审核字段参数
-            entity.setCreateBy(StpUtil.getLoginIdAsString());
+            entity.setCreateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
             entity.setCreateAt(LocalDateTime.now());
-            entity.setUpdateBy(StpUtil.getLoginIdAsString());
+            entity.setUpdateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
             entity.setUpdateAt(LocalDateTime.now());
             entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
             entity.setDeletedAt(null);
@@ -737,7 +737,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 entity.setCreateAt(existingTenant.getCreateAt());
             }
             if (entity.getUpdateBy() == null) {
-                entity.setUpdateBy(StpUtil.getLoginIdAsString());
+                entity.setUpdateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
             }
             if (entity.getUpdateAt() == null) {
                 entity.setUpdateAt(LocalDateTime.now());
@@ -750,7 +750,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 非超级管理员：严格禁止修改审核字段，系统自动填充更新人信息和更新时间，保留原创建信息
             entity.setCreateBy(null);
             entity.setCreateAt(null);
-            entity.setUpdateBy(StpUtil.getLoginIdAsString());
+            entity.setUpdateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
             entity.setUpdateAt(LocalDateTime.now());
             entity.setIsDeleted(null);
             entity.setDeletedAt(null);
@@ -834,7 +834,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 启用租户时校验父租户状态 若父租户处于停用状态，则不允许启用子租户
         if (GlobalEnum.TenantStatus.ENABLED.getCode().equals(status)
                 && tenant.getParentId() != null
-                && !"0".equals(tenant.getParentId())) {
+                && !Long.valueOf(0L).equals(tenant.getParentId())) {
             SysTenant parentTenant = this.getOne(new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getId, tenant.getParentId())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
@@ -930,7 +930,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 .set(SysTenant::getUpdateAt, LocalDateTime.now()));
 
         // 更新父租户的hasChildren标记 检查父租户是否还有其他子租户
-        if (tenant.getParentId() != null && !"0".equals(tenant.getParentId())) {
+        if (tenant.getParentId() != null && !Long.valueOf(0L).equals(tenant.getParentId())) {
             long siblingCount = this.count(new LambdaQueryWrapper<SysTenant>()
                     .eq(SysTenant::getParentId, tenant.getParentId())
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
@@ -1033,13 +1033,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             if (isSuperAdmin) {
                 // 超级管理员：若明确填写了审核字段值则以填写值为准，若未填写则自动应用默认值
                 if (entity.getCreateBy() == null) {
-                    entity.setCreateBy(StpUtil.getLoginIdAsString());
+                    entity.setCreateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
                 }
                 if (entity.getCreateAt() == null) {
                     entity.setCreateAt(LocalDateTime.now());
                 }
                 if (entity.getUpdateBy() == null) {
-                    entity.setUpdateBy(StpUtil.getLoginIdAsString());
+                    entity.setUpdateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
                 }
                 if (entity.getUpdateAt() == null) {
                     entity.setUpdateAt(LocalDateTime.now());
@@ -1049,9 +1049,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 }
             } else {
                 // 非超级管理员：严格禁止设置审核字段，系统自动填充默认值
-                entity.setCreateBy(StpUtil.getLoginIdAsString());
+                entity.setCreateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
                 entity.setCreateAt(LocalDateTime.now());
-                entity.setUpdateBy(StpUtil.getLoginIdAsString());
+                entity.setUpdateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
                 entity.setUpdateAt(LocalDateTime.now());
                 entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
                 entity.setDeletedAt(null);
@@ -1129,7 +1129,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     entity.setCreateAt(existingTenant.getCreateAt());
                 }
                 if (entity.getUpdateBy() == null) {
-                    entity.setUpdateBy(StpUtil.getLoginIdAsString());
+                    entity.setUpdateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
                 }
                 if (entity.getUpdateAt() == null) {
                     entity.setUpdateAt(LocalDateTime.now());
@@ -1141,7 +1141,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 // 非超级管理员：严格禁止修改审核字段，系统自动填充更新人信息和更新时间
                 entity.setCreateBy(null);
                 entity.setCreateAt(null);
-                entity.setUpdateBy(StpUtil.getLoginIdAsString());
+                entity.setUpdateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
                 entity.setUpdateAt(LocalDateTime.now());
                 entity.setIsDeleted(null);
                 entity.setDeletedAt(null);
@@ -1329,7 +1329,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             totalDeleted++;
 
             // 更新父租户的hasChildren标记
-            if (tenant.getParentId() != null && !"0".equals(tenant.getParentId())) {
+            if (tenant.getParentId() != null && !Long.valueOf(0L).equals(tenant.getParentId())) {
                 long siblingCount = this.count(new LambdaQueryWrapper<SysTenant>()
                         .eq(SysTenant::getParentId, tenant.getParentId())
                         .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
@@ -1404,7 +1404,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             }
 
             // 重复分配检查 检查子租户是否已分配在该父租户下
-            if (String.valueOf(parentTenant.getId()).equals(subTenant.getParentId())) {
+            if (parentTenant.getId().equals(subTenant.getParentId())) {
                 throw new BusinessException("子租户已分配在该父租户下: " + subTenantCode);
             }
 
@@ -1416,7 +1416,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 更新子租户的父租户信息和路径 审核字段updateBy和updateAt由系统自动设置
             this.update(new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, subTenant.getId())
-                    .set(SysTenant::getParentId, String.valueOf(parentTenant.getId()))
+                    .set(SysTenant::getParentId, parentTenant.getId())
                     .set(SysTenant::getParentName, parentTenant.getTenantName())
                     .set(SysTenant::getPath, newPath)
                     .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
@@ -1524,7 +1524,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 更新当前子租户的父租户信息和路径 审核字段updateBy和updateAt由系统自动设置
             this.update(new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, subTenant.getId())
-                    .set(SysTenant::getParentId, String.valueOf(newParent.getId()))
+                    .set(SysTenant::getParentId, newParent.getId())
                     .set(SysTenant::getParentName, newParent.getTenantName())
                     .set(SysTenant::getPath, newPath)
                     .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
@@ -1644,11 +1644,11 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 设置父租户信息
         if (parentTenant != null) {
-            entity.setParentId(String.valueOf(parentTenant.getId()));
+            entity.setParentId(parentTenant.getId());
             entity.setParentName(parentTenant.getTenantName());
             entity.setPath(parentTenant.getPath() + "/" + tenantCode);
         } else {
-            entity.setParentId("0");
+            entity.setParentId(0L);
             entity.setParentName(null);
             entity.setPath(tenantCode);
         }
@@ -1656,9 +1656,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 默认值
         entity.setHasChildren(false);
         entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
-        entity.setCreateBy(registerParam.getContactPhone());
+        entity.setCreateBy(0L); // 注册时暂无用户ID，使用0
         entity.setCreateAt(LocalDateTime.now());
-        entity.setUpdateBy(registerParam.getContactPhone());
+        entity.setUpdateBy(0L); // 注册时暂无用户ID，使用0
         entity.setUpdateAt(LocalDateTime.now());
 
         this.save(entity);

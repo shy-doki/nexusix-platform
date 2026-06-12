@@ -2,40 +2,35 @@ package com.shy.nexusix.iam.dto;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 /**
- * <p>
- * 用户关联的所有租户信息DTO，用于登录时查询用户所属全部租户
- * </p>
+ * <p>用户租户关联DTO - 用于查询用户所有租户信息</p>
  *
  * @author shy
- * @since 2026-06-09
+ * @since 2026-06-12
  */
 @Data
 public class UserTenantItemDTO {
 
-    /**
-     * 租户ID
-     */
-    private Long tenantId;
-
-    /**
-     * 租户编码
-     */
+    /** 租户编码 */
     private String tenantCode;
 
-    /**
-     * 租户名称
-     */
+    /** 租户名称 */
     private String tenantName;
 
-    /**
-     * 租户状态（ENABLED/DISABLED/EXPIRED/PENDING）
-     */
-    private String tenantStatus;
+    /** 租户状态 */
+    private String status;
 
-    /**
-     * 用户策略状态（ENABLED/DISABLED），用于判定该租户关联是否有效
-     */
-    private String userPolicyStatus;
+    /** 是否主租户 */
+    private Boolean isPrimary;
 
+    /** 服务过期时间 */
+    private LocalDateTime expireTime;
+
+    /** 租户用户ID（sys_user_policy.id，当 target_type='TENANT' 时） */
+    private Long tenantUserId;
+
+    /** 系统租户ID */
+    private Long tenantId;
 }

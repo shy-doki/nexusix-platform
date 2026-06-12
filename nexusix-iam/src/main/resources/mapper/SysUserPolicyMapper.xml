@@ -2,46 +2,86 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.shy.nexusix.iam.mapper.SysUserPolicyMapper">
 
-    <!-- 根据用户名查询用户登录关联信息 -->
-    <!-- 联查 sys_user + sys_user_policy(默认租户绑定) + sys_tenant -->
-    <!-- sys_user_policy.target_id 为系统租户ID，通过它关联 sys_tenant -->
-    <select id="queryUserLoginJoin" resultType="com.shy.nexusix.iam.dto.UserLoginJoinDTO">
+    <!-- 查询用户所有租户信息 -->
+    <select id="queryUserAllTenantInfo" resultType="com.shy.nexusix.iam.dto.UserTenantItemDTO">
         SELECT
-            u.id          AS userId,
-            u.password    AS password,
-            up.id         AS userPolicyId,
-            t.id          AS tenantId,
-            t.tenant_name AS tenantName,
-            t.tenant_code AS tenantCode,
-            t.status      AS tenantStatus
-        FROM sys_user u
-        INNER JOIN sys_user_policy up ON up.user_id = u.id
-            AND up.target_type = 'TENANT'
-            AND up.is_default = true
-            AND up.status = 'ENABLED'
-            AND up.is_deleted = 'NOT_DELETED'
-        INNER JOIN sys_tenant t ON t.id = up.target_id
-            AND t.is_deleted = 'NOT_DELETED'
-        WHERE u.user_name = #{username}
-          AND u.is_deleted = 'NOT_DELETED'
-    </select>
-
-    <!-- 查询用户关联的所有租户信息（包含有效和无效的用户策略） -->
-    <!-- 从 sys_user_policy 联查 sys_tenant，通过 up.target_id 关联租户 -->
-    <!-- 不再过滤 up.status，以便在 Service 层按 userPolicyStatus + tenantStatus 共同判定有效/无效 -->
-    <select id="queryUserAllTenants" resultType="com.shy.nexusix.iam.dto.UserTenantItemDTO">
-        SELECT
-            t.id          AS tenantId,
+            t.id AS tenantId,
             t.tenant_code AS tenantCode,
             t.tenant_name AS tenantName,
-            t.status      AS tenantStatus,
-            up.status     AS userPolicyStatus
+            t.status AS status,
+            t.expire_time AS expireTime,
+            up.is_primary AS isPrimary,
+            up.id AS tenantUserId
         FROM sys_user_policy up
         INNER JOIN sys_tenant t ON t.id = up.target_id
+            AND up.target_type = 'TENANT'
             AND t.is_deleted = 'NOT_DELETED'
         WHERE up.user_id = #{userId}
-          AND up.target_type = 'TENANT'
           AND up.is_deleted = 'NOT_DELETED'
+        ORDER BY up.is_primary DESC, t.tenant_code
+    </select>
+
+    <!-- 查询用户所有角色信息（含租户、角色、用户策略状态） -->
+    <select id="queryUserAllRoleInfo" resultType="com.shy.nexusix.iam.dto.UserRoleDTO">
+        SELECT
+            r.role_code AS roleCode,
+            r.role_name AS roleName,
+            t.tenant_code AS tenantCode,
+            t.tenant_name AS tenantName,
+            up_role.status AS rolePolicyStatus,
+            up_tenant.id AS tenantUserId
+        FROM sys_user_policy up_tenant
+        -- 用户加入租户（target_type='TENANT'）
+        INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
+            AND up_tenant.target_type = 'TENANT'
+            AND t.is_deleted = 'NOT_DELETED'
+        -- 租户用户绑定角色（user_id=租户用户ID, target_type='ROLE'）
+        LEFT JOIN sys_user_policy up_role ON up_role.user_id = up_tenant.id
+            AND up_role.target_type = 'ROLE'
+            AND up_role.is_deleted = 'NOT_DELETED'
+        -- 租户策略表（租户角色ID → 系统角色ID）
+        LEFT JOIN sys_tenant_policy tp ON tp.id = up_role.target_id
+            AND tp.source_type = 'ROLE'
+            AND tp.is_deleted = 'NOT_DELETED'
+        -- 系统角色表
+        LEFT JOIN sys_role r ON r.id = tp.source_id
+            AND r.is_deleted = 'NOT_DELETED'
+        WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.is_deleted = 'NOT_DELETED'
+        ORDER BY t.tenant_code, r.role_code
+    </select>
+
+    <!-- 查询用户所有部门信息（含租户、部门、用户策略状态） -->
+    <select id="queryUserAllDeptInfo" resultType="com.shy.nexusix.iam.dto.UserDeptDTO">
+        SELECT
+            d.dept_code AS deptCode,
+            d.dept_name AS deptName,
+            d.path AS path,
+            d.level AS level,
+            t.tenant_code AS tenantCode,
+            t.tenant_name AS tenantName,
+            up_dept.is_primary AS isPrimary,
+            up_dept.status AS userPolicyStatus,
+            up_tenant.id AS tenantUserId
+        FROM sys_user_policy up_tenant
+        -- 用户加入租户（target_type='TENANT'）
+        INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
+            AND up_tenant.target_type = 'TENANT'
+            AND t.is_deleted = 'NOT_DELETED'
+        -- 租户用户绑定部门（user_id=租户用户ID, target_type='DEPT'）
+        LEFT JOIN sys_user_policy up_dept ON up_dept.user_id = up_tenant.id
+            AND up_dept.target_type = 'DEPT'
+            AND up_dept.is_deleted = 'NOT_DELETED'
+        -- 租户策略表（租户部门ID → 系统部门ID）
+        LEFT JOIN sys_tenant_policy tp ON tp.id = up_dept.target_id
+            AND tp.source_type = 'DEPT'
+            AND tp.is_deleted = 'NOT_DELETED'
+        -- 系统部门表
+        LEFT JOIN sys_dept d ON d.id = tp.source_id
+            AND d.is_deleted = 'NOT_DELETED'
+        WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.is_deleted = 'NOT_DELETED'
+        ORDER BY t.tenant_code, d.dept_code
     </select>
 
 </mapper>

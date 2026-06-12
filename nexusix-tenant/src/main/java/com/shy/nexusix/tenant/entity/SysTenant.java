@@ -56,7 +56,7 @@ public class SysTenant implements Serializable {
 
     @Schema(description = "父租户ID", example = "1")
     @TableField(value = "parent_id")
-    private String parentId;
+    private Long parentId;
 
     @Schema(description = "父租户名称", example = "阿里云")
     @TableField(value = "parent_name")
@@ -66,6 +66,10 @@ public class SysTenant implements Serializable {
     @TableField(value = "path")
     private String path;
 
+    @Schema(description = "层级深度", example = "1")
+    @TableField(value = "level")
+    private Integer level;
+
     @Schema(description = "联系人姓名", example = "张三")
     @TableField(value = "contact_name")
     private String contactName;
@@ -73,6 +77,10 @@ public class SysTenant implements Serializable {
     @Schema(description = "联系人电话", example = "13800138000", pattern = "^1[3-9]\\d{9}$")
     @TableField(value = "contact_phone")
     private String contactPhone;
+
+    @Schema(description = "联系人邮箱", example = "zhangsan@example.com")
+    @TableField(value = "contact_email")
+    private String contactEmail;
 
     @Schema(description = "状态", example = "ENABLED")
     @TableField(value = "status")
@@ -95,6 +103,10 @@ public class SysTenant implements Serializable {
     @TableField(value = "package_name")
     private String packageName;
 
+    @Schema(description = "最大用户数限制", example = "1000")
+    @TableField(value = "max_users")
+    private Integer maxUsers;
+
     @Schema(description = "扩展属性(JSONB，存储行业特定配置)", example = "{\"industry\": \"tech\", \"quota\": 100}")
     @TableField(value = "ext_attributes")
     private String extAttributes;
@@ -103,9 +115,21 @@ public class SysTenant implements Serializable {
     @TableField(value = "has_children")
     private Boolean hasChildren;
 
+    @Schema(description = "创建时所属租户ID", example = "0")
+    @TableField(value = "create_tenant")
+    private Long createTenant;
+
+    @Schema(description = "创建时所属部门ID", example = "0")
+    @TableField(value = "create_dept")
+    private Long createDept;
+
+    @Schema(description = "创建时使用角色ID", example = "0")
+    @TableField(value = "create_role")
+    private Long createRole;
+
     @Schema(description = "创建人ID", example = "100")
     @TableField(value = "create_by")
-    private String createBy;
+    private Long createBy;
 
     @Schema(description = "创建时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "create_at")
@@ -113,7 +137,7 @@ public class SysTenant implements Serializable {
 
     @Schema(description = "更新人ID", example = "100")
     @TableField(value = "update_by")
-    private String updateBy;
+    private Long updateBy;
 
     @Schema(description = "更新时间", format = "date-time", example = "2026-04-07 15:45:30")
     @TableField(value = "update_at")

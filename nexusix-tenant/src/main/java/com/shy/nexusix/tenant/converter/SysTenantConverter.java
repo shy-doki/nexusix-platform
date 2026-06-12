@@ -251,97 +251,56 @@ public interface SysTenantConverter {
     List<SysTenant> updateRTOListToEntityList(List<SysTenantUpdateRTO> updateRTOList);
 
     /**
-     * 根据用户可操作字段列表过滤树形VO对象
-     * <p>将不在visibleFields对应的VO字段设为null，确保前端仅接收有权限的数据</p>
-     * <p>使用直接setter替代反射，性能更优且类型安全</p>
+     * 根据可见字段过滤树形VO列表
+     * <p>根据用户权限控制返回的字段，将不可见字段置为null</p>
      *
-     * @param treeVO        树形视图对象
-     * @param visibleFields 用户可操作字段列表（DB列名）
+     * @param treeVoList 树形VO列表
+     * @param visibleFields 可见字段列表
      */
-    default void filterTreeVoByVisibleFields(SysTenantTreeVO treeVO, List<String> visibleFields) {
-        if (treeVO == null || visibleFields == null) return;
+    default void filterTreeVoListByVisibleFields(List<SysTenantTreeVO> treeVoList, List<String> visibleFields) {
+        if (treeVoList == null || treeVoList.isEmpty() || visibleFields == null) {
+            return;
+        }
 
-        // 构建允许的VO字段名集合
-        Set<String> allowedVoFields = buildAllowedVoFields(visibleFields);
+        for (SysTenantTreeVO vo : treeVoList) {
+            filterTreeVoByVisibleFields(vo, visibleFields);
 
-        // 使用BFS队列遍历树形结构，替代递归避免深层树栈溢出
-        Deque<SysTenantTreeVO> queue = new ArrayDeque<>();
-        queue.add(treeVO);
-
-        while (!queue.isEmpty()) {
-            SysTenantTreeVO node = queue.poll();
-            // 使用直接setter过滤SysTenantCommonVO中的字段
-            filterCommonVoFields(node, allowedVoFields);
-            // 过滤SysTenantTreeVO自身字段
-            if (!allowedVoFields.contains("parentCode")) {
-                node.setParentCode(null);
-            }
-            // childTenant是结构性字段，不属于数据字段，不参与过滤
-            // 将子节点加入队列继续处理
-            if (node.getChildTenant() != null) {
-                queue.addAll(node.getChildTenant());
+            // 递归处理子节点
+            if (vo.getChildTenant() != null && !vo.getChildTenant().isEmpty()) {
+                filterTreeVoListByVisibleFields(vo.getChildTenant(), visibleFields);
             }
         }
     }
 
     /**
-     * 批量过滤树形VO列表
-     *
-     * @param treeVOList    树形视图对象列表
-     * @param visibleFields 用户可操作字段列表（DB列名）
+     * 过滤单个树形VO对象的字段
      */
-    default void filterTreeVoListByVisibleFields(List<SysTenantTreeVO> treeVOList, List<String> visibleFields) {
-        if (treeVOList == null) return;
-        for (SysTenantTreeVO treeVO : treeVOList) {
-            filterTreeVoByVisibleFields(treeVO, visibleFields);
+    default void filterTreeVoByVisibleFields(SysTenantTreeVO vo, List<String> visibleFields) {
+        if (vo == null || visibleFields == null) {
+            return;
         }
-    }
 
-    /**
-     * 构建允许的VO字段名集合：将DB列名转换为VO字段名
-     *
-     * @param visibleFields 用户可操作字段列表（DB列名）
-     * @return 允许的VO字段名集合
-     */
-    private Set<String> buildAllowedVoFields(List<String> visibleFields) {
-        Map<String, List<String>> dbColumnToVoFields = GlobalConstant.FieldPerm.DB_COLUMN_TO_VO_FIELDS;
-        Set<String> allowedVoFields = new HashSet<>();
-        for (String dbColumn : visibleFields) {
-            List<String> voFields = dbColumnToVoFields.get(dbColumn);
-            if (voFields != null) {
-                allowedVoFields.addAll(voFields);
-            }
-        }
-        return allowedVoFields;
-    }
+        Set<String> visibleFieldSet = new HashSet<>(visibleFields);
 
-    /**
-     * 使用直接setter过滤SysTenantCommonVO中的字段
-     * <p>替代反射方式，性能更优且类型安全</p>
-     *
-     * @param vo              视图对象
-     * @param allowedVoFields 允许的VO字段名集合
-     */
-    private void filterCommonVoFields(SysTenantCommonVO vo, Set<String> allowedVoFields) {
-        if (vo == null) return;
-        if (!allowedVoFields.contains("tenantCode")) vo.setTenantCode(null);
-        if (!allowedVoFields.contains("tenantName")) vo.setTenantName(null);
-        if (!allowedVoFields.contains("tenantType")) vo.setTenantType(null);
-        if (!allowedVoFields.contains("parentName")) vo.setParentName(null);
-        if (!allowedVoFields.contains("contactName")) vo.setContactName(null);
-        if (!allowedVoFields.contains("contactPhone")) vo.setContactPhone(null);
-        if (!allowedVoFields.contains("status")) vo.setStatus(null);
-        if (!allowedVoFields.contains("disableReason")) vo.setDisableReason(null);
-        if (!allowedVoFields.contains("expireTime")) vo.setExpireTime(null);
-        if (!allowedVoFields.contains("hasChildren")) vo.setHasChildren(null);
-        if (!allowedVoFields.contains("packageName")) vo.setPackageName(null);
-        if (!allowedVoFields.contains("createByName")) vo.setCreateByName(null);
-        if (!allowedVoFields.contains("createTime")) vo.setCreateTime(null);
-        if (!allowedVoFields.contains("updateByName")) vo.setUpdateByName(null);
-        if (!allowedVoFields.contains("updateTime")) vo.setUpdateTime(null);
-        if (!allowedVoFields.contains("isDeleted")) vo.setIsDeleted(null);
-        if (!allowedVoFields.contains("deleteTime")) vo.setDeleteTime(null);
+        // 根据可见字段控制，不可见的字段置为null
+        if (!visibleFieldSet.contains("tenantCode")) vo.setTenantCode(null);
+        if (!visibleFieldSet.contains("tenantName")) vo.setTenantName(null);
+        if (!visibleFieldSet.contains("tenantType")) vo.setTenantType(null);
+        if (!visibleFieldSet.contains("parentName")) vo.setParentName(null);
+        if (!visibleFieldSet.contains("contactName")) vo.setContactName(null);
+        if (!visibleFieldSet.contains("contactPhone")) vo.setContactPhone(null);
+        if (!visibleFieldSet.contains("status")) vo.setStatus(null);
+        if (!visibleFieldSet.contains("disableReason")) vo.setDisableReason(null);
+        if (!visibleFieldSet.contains("expireTime")) vo.setExpireTime(null);
+        if (!visibleFieldSet.contains("hasChildren")) vo.setHasChildren(null);
+        if (!visibleFieldSet.contains("packageName")) vo.setPackageName(null);
+        if (!visibleFieldSet.contains("createByName")) vo.setCreateByName(null);
+        if (!visibleFieldSet.contains("createTime")) vo.setCreateTime(null);
+        if (!visibleFieldSet.contains("updateByName")) vo.setUpdateByName(null);
+        if (!visibleFieldSet.contains("updateTime")) vo.setUpdateTime(null);
+        if (!visibleFieldSet.contains("isDeleted")) vo.setIsDeleted(null);
+        if (!visibleFieldSet.contains("deleteTime")) vo.setDeleteTime(null);
+        if (!visibleFieldSet.contains("parentCode")) vo.setParentCode(null);
     }
-
 
 }

@@ -1,4 +1,4 @@
-package com.shy.nexusix.iam.entity;
+package com.shy.nexusix.tenant.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -15,7 +15,7 @@ import lombok.experimental.Accessors;
 
 /**
  * <p>
- * 角色表：系统级角色实体（全局）
+ * 租户策略表：将系统部门/角色绑定到租户
  * </p>
  *
  * @author shy
@@ -24,29 +24,42 @@ import lombok.experimental.Accessors;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@TableName("sys_role")
-@Schema(name = "SysRole对象", description = "角色表：系统级角色实体（全局）")
-public class SysRole implements Serializable {
+@TableName("sys_tenant_policy")
+@Schema(name = "SysTenantPolicy对象", description = "租户策略表：将系统部门/角色绑定到租户")
+public class SysTenantPolicy implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "主键ID（系统角色ID）", example = "401")
+    @Schema(description = "主键ID（租户部门ID或租户角色ID）", example = "2001")
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
-    @Schema(description = "角色编码", example = "SUPER_ADMIN")
-    @TableField(value = "role_code")
-    private String roleCode;
+    @Schema(description = "策略编码", example = "TP_DEPT_001")
+    @TableField(value = "policy_code")
+    private String policyCode;
 
-    @Schema(description = "角色名称", example = "超级管理员")
-    @TableField(value = "role_name")
-    private String roleName;
+    @Schema(description = "策略名称", example = "财务部→万象集团")
+    @TableField(value = "policy_name")
+    private String policyName;
 
-    @Schema(description = "角色描述")
-    @TableField(value = "role_desc")
-    private String roleDesc;
+    @Schema(description = "源实体类型：DEPT, ROLE", example = "DEPT")
+    @TableField(value = "source_type")
+    private String sourceType;
 
-    @Schema(description = "状态：ENABLED, DISABLED", example = "ENABLED")
+    @Schema(description = "系统实体ID（系统部门ID或系统角色ID）", example = "301")
+    @TableField(value = "source_id")
+    private Long sourceId;
+
+    @Schema(description = "目标租户ID（系统租户ID）", example = "101")
+    @TableField(value = "tenant_id")
+    private Long tenantId;
+
+    @Schema(description = "绑定时间", format = "date-time", example = "2026-06-12 15:45:30")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @TableField(value = "bind_time")
+    private LocalDateTime bindTime;
+
+    @Schema(description = "策略状态：ACTIVE, DISABLED", example = "ACTIVE")
     @TableField(value = "status")
     private String status;
 
@@ -54,15 +67,15 @@ public class SysRole implements Serializable {
     @TableField(value = "disable_reason")
     private String disableReason;
 
-    @Schema(description = "创建时所属租户ID", example = "0")
+    @Schema(description = "创建时所属租户ID")
     @TableField(value = "create_tenant")
     private Long createTenant;
 
-    @Schema(description = "创建时所属部门ID", example = "0")
+    @Schema(description = "创建时所属部门ID")
     @TableField(value = "create_dept")
     private Long createDept;
 
-    @Schema(description = "创建时使用角色ID", example = "0")
+    @Schema(description = "创建时使用角色ID")
     @TableField(value = "create_role")
     private Long createRole;
 
