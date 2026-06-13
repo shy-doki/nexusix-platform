@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * <p>认证服务实现类</p>
@@ -92,10 +91,16 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 确定当前登录租户（优先主租户）
-        UserTenantItemDTO currentTenant = tenantList.stream()
-                .filter(t -> Boolean.TRUE.equals(t.getIsPrimary()))
-                .findFirst()
-                .orElse(tenantList.get(0));
+        UserTenantItemDTO currentTenant = null;
+        for (UserTenantItemDTO tenant : tenantList) {
+            if (Boolean.TRUE.equals(tenant.getIsPrimary())) {
+                currentTenant = tenant;
+                break;
+            }
+        }
+        if (currentTenant == null) {
+            currentTenant = tenantList.get(0);
+        }
 
         // 校验当前租户是否处于停用状态
         if ("DISABLED".equals(currentTenant.getStatus())) {
@@ -111,7 +116,7 @@ public class AuthServiceImpl implements IAuthService {
         // 执行登录操作
         StpUtil.login(user.getId());
 
-        // 更新最后登录时间和IP
+        // 更新最后登录时间和IP（UPDATE操作）
         user.setLastLoginAt(LocalDateTime.now());
         // user.setLastLoginIp(获取真实IP); // 从请求中获取
         sysUserMapper.updateById(user);
@@ -130,7 +135,7 @@ public class AuthServiceImpl implements IAuthService {
         Map<String, UserContextDTO.TableFieldPermission> createFieldMap = new HashMap<>();
         Map<String, UserContextDTO.TableFieldPermission> updateFieldMap = new HashMap<>();
 
-        // 遍历所有权限记录，提取权限编码和字段级权限
+        // 遍历所有权限记录，提取权限编码和字段级权限（优化：减少嵌套循环和重复操作）
         for (UserPermDTO perm : permList) {
             if (perm.getPermCode() == null) {
                 continue;
@@ -140,7 +145,8 @@ public class AuthServiceImpl implements IAuthService {
             allPermCodeSet.add(perm.getPermCode());
 
             // 根据权限策略状态分类权限编码
-            if ("ACTIVE".equals(perm.getPermPolicyStatus())) {
+            boolean isActive = "ACTIVE".equals(perm.getPermPolicyStatus());
+            if (isActive) {
                 validPermCodeList.add(perm.getPermCode());
             } else {
                 invalidPermCodeList.add(perm.getPermCode());
@@ -156,6 +162,13 @@ public class AuthServiceImpl implements IAuthService {
                     );
 
                     if (fieldMap != null && !fieldMap.isEmpty()) {
+                        String tableName = perm.getTableName();
+
+                        // 预先获取或创建三个操作类型的表字段权限对象，避免在循环中重复computeIfAbsent
+                        UserContextDTO.TableFieldPermission queryTablePerm = null;
+                        UserContextDTO.TableFieldPermission createTablePerm = null;
+                        UserContextDTO.TableFieldPermission updateTablePerm = null;
+
                         // 遍历每个字段及其操作类型
                         for (Map.Entry<String, List<String>> entry : fieldMap.entrySet()) {
                             String fieldName = entry.getKey();
@@ -165,59 +178,65 @@ public class AuthServiceImpl implements IAuthService {
                                 continue;
                             }
 
-                            boolean isActive = "ACTIVE".equals(perm.getPermPolicyStatus());
-
                             // 处理READ操作，映射到查询权限
                             if (operations.contains("READ")) {
-                                UserContextDTO.TableFieldPermission tableFieldPerm =
-                                    queryFieldMap.computeIfAbsent(perm.getTableName(), k -> new UserContextDTO.TableFieldPermission());
+                                if (queryTablePerm == null) {
+                                    queryTablePerm = queryFieldMap.computeIfAbsent(tableName,
+                                        k -> new UserContextDTO.TableFieldPermission());
+                                }
 
                                 // 黑名单机制：只要有一个来源是DISABLED，字段就不可操作
                                 if (!isActive) {
-                                    if (!tableFieldPerm.getInoperable().contains(fieldName)) {
-                                        tableFieldPerm.getInoperable().add(fieldName);
+                                    if (!queryTablePerm.getInoperable().contains(fieldName)) {
+                                        queryTablePerm.getInoperable().add(fieldName);
                                     }
-                                    tableFieldPerm.getOperable().remove(fieldName);
+                                    queryTablePerm.getOperable().remove(fieldName);
                                 } else {
-                                    if (!tableFieldPerm.getInoperable().contains(fieldName)
-                                        && !tableFieldPerm.getOperable().contains(fieldName)) {
-                                        tableFieldPerm.getOperable().add(fieldName);
+                                    if (!queryTablePerm.getInoperable().contains(fieldName)
+                                        && !queryTablePerm.getOperable().contains(fieldName)) {
+                                        queryTablePerm.getOperable().add(fieldName);
                                     }
                                 }
                             }
 
                             // 处理CREATE操作，映射到创建权限
                             if (operations.contains("CREATE")) {
-                                UserContextDTO.TableFieldPermission tableFieldPerm =
-                                    createFieldMap.computeIfAbsent(perm.getTableName(), k -> new UserContextDTO.TableFieldPermission());
+                                if (createTablePerm == null) {
+                                    createTablePerm = createFieldMap.computeIfAbsent(tableName,
+                                        k -> new UserContextDTO.TableFieldPermission());
+                                }
 
+                                // 黑名单机制：只要有一个来源是DISABLED，字段就不可操作
                                 if (!isActive) {
-                                    if (!tableFieldPerm.getInoperable().contains(fieldName)) {
-                                        tableFieldPerm.getInoperable().add(fieldName);
+                                    if (!createTablePerm.getInoperable().contains(fieldName)) {
+                                        createTablePerm.getInoperable().add(fieldName);
                                     }
-                                    tableFieldPerm.getOperable().remove(fieldName);
+                                    createTablePerm.getOperable().remove(fieldName);
                                 } else {
-                                    if (!tableFieldPerm.getInoperable().contains(fieldName)
-                                        && !tableFieldPerm.getOperable().contains(fieldName)) {
-                                        tableFieldPerm.getOperable().add(fieldName);
+                                    if (!createTablePerm.getInoperable().contains(fieldName)
+                                        && !createTablePerm.getOperable().contains(fieldName)) {
+                                        createTablePerm.getOperable().add(fieldName);
                                     }
                                 }
                             }
 
                             // 处理UPDATE操作，映射到更新权限
                             if (operations.contains("UPDATE")) {
-                                UserContextDTO.TableFieldPermission tableFieldPerm =
-                                    updateFieldMap.computeIfAbsent(perm.getTableName(), k -> new UserContextDTO.TableFieldPermission());
+                                if (updateTablePerm == null) {
+                                    updateTablePerm = updateFieldMap.computeIfAbsent(tableName,
+                                        k -> new UserContextDTO.TableFieldPermission());
+                                }
 
+                                // 黑名单机制：只要有一个来源是DISABLED，字段就不可操作
                                 if (!isActive) {
-                                    if (!tableFieldPerm.getInoperable().contains(fieldName)) {
-                                        tableFieldPerm.getInoperable().add(fieldName);
+                                    if (!updateTablePerm.getInoperable().contains(fieldName)) {
+                                        updateTablePerm.getInoperable().add(fieldName);
                                     }
-                                    tableFieldPerm.getOperable().remove(fieldName);
+                                    updateTablePerm.getOperable().remove(fieldName);
                                 } else {
-                                    if (!tableFieldPerm.getInoperable().contains(fieldName)
-                                        && !tableFieldPerm.getOperable().contains(fieldName)) {
-                                        tableFieldPerm.getOperable().add(fieldName);
+                                    if (!updateTablePerm.getInoperable().contains(fieldName)
+                                        && !updateTablePerm.getOperable().contains(fieldName)) {
+                                        updateTablePerm.getOperable().add(fieldName);
                                     }
                                 }
                             }
@@ -252,148 +271,87 @@ public class AuthServiceImpl implements IAuthService {
         // 查询用户所有部门信息
         List<UserDeptDTO> deptList = sysUserPolicyMapper.queryUserAllDeptInfo(user.getId());
 
-        // 构建部门分组信息
+        // 构建部门分组信息（优化：一次遍历完成所有分组）
         UserContextDTO.DeptGroup deptGroup = new UserContextDTO.DeptGroup();
-        List<UserDeptDTO> validDepts = deptList.stream()
-                .filter(d -> d.getDeptCode() != null)
-                .collect(Collectors.toList());
+        List<UserContextDTO.DeptItem> currentDepts = new ArrayList<>();
+        List<UserContextDTO.DeptItem> allDepts = new ArrayList<>();
+        List<UserContextDTO.DeptItem> validDeptItems = new ArrayList<>();
+        List<UserContextDTO.DeptItem> invalidDeptItems = new ArrayList<>();
 
-        // 当前租户的部门
-        List<UserContextDTO.DeptItem> currentDepts = validDepts.stream()
-                .filter(d -> currentTenant.getTenantCode() != null && currentTenant.getTenantCode().equals(d.getTenantCode()))
-                .map(dto -> {
-                    UserContextDTO.DeptItem item = new UserContextDTO.DeptItem();
-                    item.setDeptCode(dto.getDeptCode());
-                    item.setDeptName(dto.getDeptName());
-                    item.setPath(dto.getPath());
-                    item.setLevel(dto.getLevel());
-                    item.setTenantCode(dto.getTenantCode());
-                    item.setTenantName(dto.getTenantName());
-                    item.setIsPrimary(dto.getIsPrimary());
-                    item.setUserPolicyStatus(dto.getUserPolicyStatus());
-                    return item;
-                })
-                .collect(Collectors.toList());
+        String currentTenantCode = currentTenant.getTenantCode();
+        for (UserDeptDTO dto : deptList) {
+            if (dto.getDeptCode() == null) {
+                continue;
+            }
+
+            UserContextDTO.DeptItem item = new UserContextDTO.DeptItem();
+            item.setDeptCode(dto.getDeptCode());
+            item.setDeptName(dto.getDeptName());
+            item.setPath(dto.getPath());
+            item.setLevel(dto.getLevel());
+            item.setTenantCode(dto.getTenantCode());
+            item.setTenantName(dto.getTenantName());
+            item.setIsPrimary(dto.getIsPrimary());
+            item.setUserPolicyStatus(dto.getUserPolicyStatus());
+
+            allDepts.add(item);
+
+            if (currentTenantCode != null && currentTenantCode.equals(dto.getTenantCode())) {
+                currentDepts.add(item);
+            }
+
+            if ("ACTIVE".equals(dto.getUserPolicyStatus())) {
+                validDeptItems.add(item);
+            } else {
+                invalidDeptItems.add(item);
+            }
+        }
+
         deptGroup.setCurrent(currentDepts);
-
-        // 全部部门
-        List<UserContextDTO.DeptItem> allDepts = validDepts.stream()
-                .map(dto -> {
-                    UserContextDTO.DeptItem item = new UserContextDTO.DeptItem();
-                    item.setDeptCode(dto.getDeptCode());
-                    item.setDeptName(dto.getDeptName());
-                    item.setPath(dto.getPath());
-                    item.setLevel(dto.getLevel());
-                    item.setTenantCode(dto.getTenantCode());
-                    item.setTenantName(dto.getTenantName());
-                    item.setIsPrimary(dto.getIsPrimary());
-                    item.setUserPolicyStatus(dto.getUserPolicyStatus());
-                    return item;
-                })
-                .collect(Collectors.toList());
         deptGroup.setAll(allDepts);
-
-        // 有效部门（状态为ACTIVE）
-        List<UserContextDTO.DeptItem> validDeptItems = validDepts.stream()
-                .filter(d -> "ACTIVE".equals(d.getUserPolicyStatus()))
-                .map(dto -> {
-                    UserContextDTO.DeptItem item = new UserContextDTO.DeptItem();
-                    item.setDeptCode(dto.getDeptCode());
-                    item.setDeptName(dto.getDeptName());
-                    item.setPath(dto.getPath());
-                    item.setLevel(dto.getLevel());
-                    item.setTenantCode(dto.getTenantCode());
-                    item.setTenantName(dto.getTenantName());
-                    item.setIsPrimary(dto.getIsPrimary());
-                    item.setUserPolicyStatus(dto.getUserPolicyStatus());
-                    return item;
-                })
-                .collect(Collectors.toList());
         deptGroup.setValid(validDeptItems);
-
-        // 无效部门（状态非ACTIVE）
-        List<UserContextDTO.DeptItem> invalidDeptItems = validDepts.stream()
-                .filter(d -> !"ACTIVE".equals(d.getUserPolicyStatus()))
-                .map(dto -> {
-                    UserContextDTO.DeptItem item = new UserContextDTO.DeptItem();
-                    item.setDeptCode(dto.getDeptCode());
-                    item.setDeptName(dto.getDeptName());
-                    item.setPath(dto.getPath());
-                    item.setLevel(dto.getLevel());
-                    item.setTenantCode(dto.getTenantCode());
-                    item.setTenantName(dto.getTenantName());
-                    item.setIsPrimary(dto.getIsPrimary());
-                    item.setUserPolicyStatus(dto.getUserPolicyStatus());
-                    return item;
-                })
-                .collect(Collectors.toList());
         deptGroup.setInvalid(invalidDeptItems);
 
         // 查询用户所有角色信息
         List<UserRoleDTO> roleList = sysUserPolicyMapper.queryUserAllRoleInfo(user.getId());
 
-        // 构建角色分组信息
+        // 构建角色分组信息（优化：一次遍历完成所有分组）
         UserContextDTO.RoleGroup roleGroup = new UserContextDTO.RoleGroup();
-        List<UserRoleDTO> validRoles = roleList.stream()
-                .filter(r -> r.getRoleCode() != null)
-                .collect(Collectors.toList());
+        List<UserContextDTO.RoleItem> currentRoles = new ArrayList<>();
+        List<UserContextDTO.RoleItem> allRoles = new ArrayList<>();
+        List<UserContextDTO.RoleItem> validRoleItems = new ArrayList<>();
+        List<UserContextDTO.RoleItem> invalidRoleItems = new ArrayList<>();
 
-        // 当前租户的角色
-        List<UserContextDTO.RoleItem> currentRoles = validRoles.stream()
-                .filter(r -> currentTenant.getTenantCode() != null && currentTenant.getTenantCode().equals(r.getTenantCode()))
-                .map(dto -> {
-                    UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
-                    item.setRoleCode(dto.getRoleCode());
-                    item.setDataScope(dto.getDataScope() != null ? dto.getDataScope() : "SELF");
-                    item.setTenantCode(dto.getTenantCode());
-                    item.setTenantName(dto.getTenantName());
-                    return item;
-                })
-                .collect(Collectors.toList());
+        for (UserRoleDTO dto : roleList) {
+            if (dto.getRoleCode() == null) {
+                continue;
+            }
+
+            UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
+            item.setRoleCode(dto.getRoleCode());
+            item.setDataScope(dto.getDataScope() != null ? dto.getDataScope() : "SELF");
+            item.setTenantCode(dto.getTenantCode());
+            item.setTenantName(dto.getTenantName());
+
+            allRoles.add(item);
+
+            if (currentTenantCode != null && currentTenantCode.equals(dto.getTenantCode())) {
+                currentRoles.add(item);
+            }
+
+            if ("ACTIVE".equals(dto.getRolePolicyStatus())) {
+                validRoleItems.add(item);
+            } else {
+                invalidRoleItems.add(item);
+            }
+        }
+
         roleGroup.setCurrent(currentRoles);
-
-        // 全部角色
-        List<UserContextDTO.RoleItem> allRoles = validRoles.stream()
-                .map(dto -> {
-                    UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
-                    item.setRoleCode(dto.getRoleCode());
-                    item.setDataScope(dto.getDataScope() != null ? dto.getDataScope() : "SELF");
-                    item.setTenantCode(dto.getTenantCode());
-                    item.setTenantName(dto.getTenantName());
-                    return item;
-                })
-                .collect(Collectors.toList());
         roleGroup.setAll(allRoles);
-
-        // 有效角色（状态为ACTIVE）
-        List<UserContextDTO.RoleItem> validRoleItems = validRoles.stream()
-                .filter(r -> "ACTIVE".equals(r.getRolePolicyStatus()))
-                .map(dto -> {
-                    UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
-                    item.setRoleCode(dto.getRoleCode());
-                    item.setDataScope(dto.getDataScope() != null ? dto.getDataScope() : "SELF");
-                    item.setTenantCode(dto.getTenantCode());
-                    item.setTenantName(dto.getTenantName());
-                    return item;
-                })
-                .collect(Collectors.toList());
         roleGroup.setValid(validRoleItems);
-
-        // 无效角色（状态非ACTIVE）
-        List<UserContextDTO.RoleItem> invalidRoleItems = validRoles.stream()
-                .filter(r -> !"ACTIVE".equals(r.getRolePolicyStatus()))
-                .map(dto -> {
-                    UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
-                    item.setRoleCode(dto.getRoleCode());
-                    item.setDataScope(dto.getDataScope() != null ? dto.getDataScope() : "SELF");
-                    item.setTenantCode(dto.getTenantCode());
-                    item.setTenantName(dto.getTenantName());
-                    return item;
-                })
-                .collect(Collectors.toList());
         roleGroup.setInvalid(invalidRoleItems);
 
-        // 构建租户分组信息
+        // 构建租户分组信息（优化：一次遍历完成所有分组）
         UserContextDTO.TenantGroup tenantGroup = new UserContextDTO.TenantGroup();
         List<UserContextDTO.TenantItem> currentTenantList = new ArrayList<>();
         List<UserContextDTO.TenantItem> allTenants = new ArrayList<>();
@@ -410,12 +368,10 @@ public class AuthServiceImpl implements IAuthService {
 
             allTenants.add(item);
 
-            // 判断是否是当前租户
             if (dto.getTenantCode().equals(currentTenant.getTenantCode())) {
                 currentTenantList.add(item);
             }
 
-            // 分类为有效或无效
             if ("ENABLED".equals(dto.getStatus())) {
                 validTenants.add(item);
             } else {
