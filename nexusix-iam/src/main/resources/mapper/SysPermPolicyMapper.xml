@@ -3,7 +3,9 @@
 <mapper namespace="com.shy.nexusix.iam.mapper.SysPermPolicyMapper">
 
     <!-- 查询用户所有权限信息 -->
-    <!-- 包括：用户直接拥有的权限 + 用户角色拥有的权限 + 用户部门拥有的权限 + 租户权限 -->
+    <!-- 包括：用户直接拥有的权限 + 用户角色拥有的权限 + 用户部门拥有的权限 -->
+    <!-- 注意：所有权限都必须是有效状态（权限、角色、部门、租户、策略均需启用） -->
+    <!-- 权限策略支持继承：perm_id可以指向系统权限ID，也可以指向父权限策略ID -->
     <select id="queryUserAllPermInfo" resultType="com.shy.nexusix.iam.dto.UserPermDTO">
         -- 1. 用户直接授予的权限（USER级别）
         SELECT
@@ -21,17 +23,19 @@
         FROM sys_user_policy up_tenant
         INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
             AND up_tenant.target_type = 'TENANT'
+            AND t.status = 'ENABLED'
             AND t.is_deleted = 'NOT_DELETED'
-        -- 权限策略表：授予用户
-        LEFT JOIN sys_perm_policy pp ON pp.target_type = 'USER'
+        INNER JOIN sys_perm_policy pp ON pp.target_type = 'USER'
             AND pp.target_id = up_tenant.id
+            AND pp.status = 'ACTIVE'
             AND pp.is_deleted = 'NOT_DELETED'
-        -- 系统权限表或租户权限表
-        LEFT JOIN sys_perm p ON p.id = pp.perm_id
+        LEFT JOIN sys_perm_policy pp_parent ON pp_parent.id = pp.perm_id
+        INNER JOIN sys_perm p ON p.id = COALESCE(pp_parent.perm_id, pp.perm_id)
+            AND p.status = 'ENABLED'
             AND p.is_deleted = 'NOT_DELETED'
         WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.status = 'ACTIVE'
           AND up_tenant.is_deleted = 'NOT_DELETED'
-          AND p.perm_code IS NOT NULL
 
         UNION ALL
 
@@ -51,21 +55,31 @@
         FROM sys_user_policy up_tenant
         INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
             AND up_tenant.target_type = 'TENANT'
+            AND t.status = 'ENABLED'
             AND t.is_deleted = 'NOT_DELETED'
-        -- 用户绑定角色
-        LEFT JOIN sys_user_policy up_role ON up_role.user_id = up_tenant.id
+        INNER JOIN sys_user_policy up_role ON up_role.user_id = up_tenant.id
             AND up_role.target_type = 'ROLE'
+            AND up_role.status = 'ACTIVE'
             AND up_role.is_deleted = 'NOT_DELETED'
-        -- 权限策略表：授予角色
-        LEFT JOIN sys_perm_policy pp ON pp.target_type = 'ROLE'
-            AND pp.target_id = up_role.target_id
+        INNER JOIN sys_tenant_policy tp_role ON tp_role.id = up_role.target_id
+            AND tp_role.source_type = 'ROLE'
+            AND tp_role.tenant_id = t.id
+            AND tp_role.status = 'ACTIVE'
+            AND tp_role.is_deleted = 'NOT_DELETED'
+        INNER JOIN sys_role r ON r.id = tp_role.source_id
+            AND r.status = 'ENABLED'
+            AND r.is_deleted = 'NOT_DELETED'
+        INNER JOIN sys_perm_policy pp ON pp.target_type = 'ROLE'
+            AND pp.target_id = tp_role.id
+            AND pp.status = 'ACTIVE'
             AND pp.is_deleted = 'NOT_DELETED'
-        -- 系统权限表或租户权限表
-        LEFT JOIN sys_perm p ON p.id = pp.perm_id
+        LEFT JOIN sys_perm_policy pp_parent ON pp_parent.id = pp.perm_id
+        INNER JOIN sys_perm p ON p.id = COALESCE(pp_parent.perm_id, pp.perm_id)
+            AND p.status = 'ENABLED'
             AND p.is_deleted = 'NOT_DELETED'
         WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.status = 'ACTIVE'
           AND up_tenant.is_deleted = 'NOT_DELETED'
-          AND p.perm_code IS NOT NULL
 
         UNION ALL
 
@@ -85,51 +99,31 @@
         FROM sys_user_policy up_tenant
         INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
             AND up_tenant.target_type = 'TENANT'
+            AND t.status = 'ENABLED'
             AND t.is_deleted = 'NOT_DELETED'
-        -- 用户绑定部门
-        LEFT JOIN sys_user_policy up_dept ON up_dept.user_id = up_tenant.id
+        INNER JOIN sys_user_policy up_dept ON up_dept.user_id = up_tenant.id
             AND up_dept.target_type = 'DEPT'
+            AND up_dept.status = 'ACTIVE'
             AND up_dept.is_deleted = 'NOT_DELETED'
-        -- 权限策略表：授予部门
-        LEFT JOIN sys_perm_policy pp ON pp.target_type = 'DEPT'
-            AND pp.target_id = up_dept.target_id
+        INNER JOIN sys_tenant_policy tp_dept ON tp_dept.id = up_dept.target_id
+            AND tp_dept.source_type = 'DEPT'
+            AND tp_dept.tenant_id = t.id
+            AND tp_dept.status = 'ACTIVE'
+            AND tp_dept.is_deleted = 'NOT_DELETED'
+        INNER JOIN sys_dept d ON d.id = tp_dept.source_id
+            AND d.status = 'ENABLED'
+            AND d.is_deleted = 'NOT_DELETED'
+        INNER JOIN sys_perm_policy pp ON pp.target_type = 'DEPT'
+            AND pp.target_id = tp_dept.id
+            AND pp.status = 'ACTIVE'
             AND pp.is_deleted = 'NOT_DELETED'
-        -- 系统权限表或租户权限表
-        LEFT JOIN sys_perm p ON p.id = pp.perm_id
+        LEFT JOIN sys_perm_policy pp_parent ON pp_parent.id = pp.perm_id
+        INNER JOIN sys_perm p ON p.id = COALESCE(pp_parent.perm_id, pp.perm_id)
+            AND p.status = 'ENABLED'
             AND p.is_deleted = 'NOT_DELETED'
         WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.status = 'ACTIVE'
           AND up_tenant.is_deleted = 'NOT_DELETED'
-          AND p.perm_code IS NOT NULL
-
-        UNION ALL
-
-        -- 4. 租户级别授予的权限（TENANT级别）
-        SELECT
-            p.perm_code AS permCode,
-            p.perm_name AS permName,
-            p.perm_type AS permType,
-            t.tenant_code AS tenantCode,
-            t.tenant_name AS tenantName,
-            pp.status AS permPolicyStatus,
-            pp.target_type AS targetType,
-            pp.data_scope AS dataScope,
-            pp.table_name AS tableName,
-            pp.field_operation AS fieldPermissions,
-            up_tenant.id AS tenantUserId
-        FROM sys_user_policy up_tenant
-        INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
-            AND up_tenant.target_type = 'TENANT'
-            AND t.is_deleted = 'NOT_DELETED'
-        -- 权限策略表：授予租户
-        LEFT JOIN sys_perm_policy pp ON pp.target_type = 'TENANT'
-            AND pp.target_id = t.id
-            AND pp.is_deleted = 'NOT_DELETED'
-        -- 系统权限表或租户权限表
-        LEFT JOIN sys_perm p ON p.id = pp.perm_id
-            AND p.is_deleted = 'NOT_DELETED'
-        WHERE up_tenant.user_id = #{userId}
-          AND up_tenant.is_deleted = 'NOT_DELETED'
-          AND p.perm_code IS NOT NULL
 
         ORDER BY tenantCode, permCode
     </select>
