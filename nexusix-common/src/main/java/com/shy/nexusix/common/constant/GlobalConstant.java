@@ -143,6 +143,11 @@ public class GlobalConstant {
          */
         public static final String TENANT = "sys_tenant";
 
+        /**
+         * 租户策略表
+         */
+        public static final String TENANT_POLICY = "sys_tenant_policy";
+
     }
 
     /**
