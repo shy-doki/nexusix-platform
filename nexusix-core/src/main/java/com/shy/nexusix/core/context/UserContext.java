@@ -34,7 +34,7 @@ public class UserContext {
             return;
         }
         // 权限信息
-        UserContextDTO.PermissionInfo permissionInfo = dto.getPermissions();
+        UserContextDTO.PermissionInfo permissionInfo = dto.getPermInfo();
         if (permissionInfo != null) {
             permissionInfo.setAll(nullToEmpty(permissionInfo.getAll()));
             permissionInfo.setValid(nullToEmpty(permissionInfo.getValid()));
@@ -57,12 +57,30 @@ public class UserContext {
         }
 
         // 部门分组
-        UserContextDTO.DeptGroup deptGroup = dto.getDepts();
+        UserContextDTO.DeptGroup deptGroup = dto.getDeptInfo();
         if (deptGroup != null) {
             deptGroup.setCurrent(nullToEmpty(deptGroup.getCurrent()));
             deptGroup.setAll(nullToEmpty(deptGroup.getAll()));
             deptGroup.setValid(nullToEmpty(deptGroup.getValid()));
             deptGroup.setInvalid(nullToEmpty(deptGroup.getInvalid()));
+        }
+
+        // 角色分组
+        UserContextDTO.RoleGroup roleGroup = dto.getRoleInfo();
+        if (roleGroup != null) {
+            roleGroup.setCurrent(nullToEmpty(roleGroup.getCurrent()));
+            roleGroup.setAll(nullToEmpty(roleGroup.getAll()));
+            roleGroup.setValid(nullToEmpty(roleGroup.getValid()));
+            roleGroup.setInvalid(nullToEmpty(roleGroup.getInvalid()));
+        }
+
+        // 租户分组
+        UserContextDTO.TenantGroup tenantGroup = dto.getTenantInfo();
+        if (tenantGroup != null) {
+            tenantGroup.setCurrent(nullToEmpty(tenantGroup.getCurrent()));
+            tenantGroup.setAll(nullToEmpty(tenantGroup.getAll()));
+            tenantGroup.setValid(nullToEmpty(tenantGroup.getValid()));
+            tenantGroup.setInvalid(nullToEmpty(tenantGroup.getInvalid()));
         }
     }
 

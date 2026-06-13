@@ -11,10 +11,11 @@ import java.util.Map;
  *
  * <pre>
  * 结构概览：
- *   currentTenant     — 当前登录租户基础信息
- *   tenants           — 租户分组（全部/有效/无效）
- *   permissions       — 权限汇总（全部/有效/无效 + 级联禁用详情 + 字段级权限）
- *   roles             — 角色分组（当前租户/全部/有效/无效），每条角色标注所属租户
+ *   userInfo          — 用户基本信息
+ *   tenantInfo        — 租户分组（当前/全部/有效/无效）
+ *   permInfo          — 权限汇总（全部/有效/无效 + 级联禁用详情 + 字段级权限）
+ *   roleInfo          — 角色分组（当前租户/全部/有效/无效），每条角色标注所属租户
+ *   deptInfo          — 部门分组（当前租户/全部/有效/无效），每条部门标注所属租户
  * </pre>
  *
  * @author shy
@@ -23,32 +24,42 @@ import java.util.Map;
 @Data
 public class UserContextDTO {
 
-    /** 当前登录租户信息 */
-    private TenantInfo currentTenant;
+    /** 用户基本信息 */
+    private UserInfo userInfo;
 
-    /** 租户分组（全部/有效/无效） */
-    private TenantGroup tenants;
+    /** 租户分组（当前/全部/有效/无效） */
+    private TenantGroup tenantInfo;
 
     /** 权限汇总信息 */
-    private PermissionInfo permissions;
+    private PermissionInfo permInfo;
 
     /** 角色分组（当前租户/全部/有效/无效），含租户标注 */
-    private RoleGroup roles;
+    private RoleGroup roleInfo;
 
     /** 部门分组（当前租户/全部/有效/无效），含租户标注 */
-    private DeptGroup depts;
+    private DeptGroup deptInfo;
 
-    // ==================== 租户相关 ====================
+    // ==================== 用户信息 ====================
 
     @Data
-    public static class TenantInfo {
-        /** 租户编码 */
-        private String tenantCode;
-        /** 租户名称 */
-        private String tenantName;
-        /** 租户状态（ENABLED/DISABLED/EXPIRED/PENDING） */
-        private String status;
+    public static class UserInfo {
+        /** 用户ID */
+        private Long userId;
+        /** 用户编码 */
+        private String userCode;
+        /** 用户名（登录名） */
+        private String userName;
+        /** 昵称 */
+        private String nickName;
+        /** 邮箱 */
+        private String email;
+        /** 手机号 */
+        private String phone;
+        /** 头像URL */
+        private String avatar;
     }
+
+    // ==================== 租户相关 ====================
 
     @Data
     public static class TenantItem {
@@ -58,12 +69,16 @@ public class UserContextDTO {
         private String tenantName;
         /** 租户状态（ENABLED/DISABLED/EXPIRED/PENDING） */
         private String status;
+        /** 服务过期时间 */
+        private String expireTime;
         /** 是否主租户 */
         private Boolean isPrimary;
     }
 
     @Data
     public static class TenantGroup {
+        /** 当前登录租户 */
+        private List<TenantItem> current;
         /** 全部租户（有效+无效） */
         private List<TenantItem> all;
         /** 有效租户（用户策略ENABLED 且 租户ENABLED） */

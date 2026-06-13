@@ -59,7 +59,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         UserContextDTO.FieldPermission fieldPerm =
-            userContext.getPermissions().getFieldPermission();
+            userContext.getPermInfo().getFieldPermission();
 
         if (fieldPerm == null || fieldPerm.getQuery() == null) {
             return null;
@@ -152,7 +152,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的查询操作字段权限
         UserContextDTO.TableFieldPermission tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
@@ -357,7 +357,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的查询操作字段权限
         UserContextDTO.TableFieldPermission tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
@@ -575,7 +575,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的新增操作字段权限
         UserContextDTO.TableFieldPermission tenantCreatePerm = fieldPerm.getCreate().get(GlobalConstant.Table.TENANT);
 
@@ -697,7 +697,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的更新操作字段权限
         UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
@@ -791,7 +791,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的更新操作字段权限
         UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
@@ -886,7 +886,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的更新操作字段权限（删除属于更新操作范畴）
         UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
@@ -954,7 +954,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的新增操作字段权限
         UserContextDTO.TableFieldPermission tenantCreatePerm = fieldPerm.getCreate().get(GlobalConstant.Table.TENANT);
 
@@ -1086,7 +1086,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的更新操作字段权限
         UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
@@ -1182,7 +1182,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的更新操作字段权限
         UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
@@ -1280,7 +1280,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的更新操作字段权限（删除属于更新操作范畴）
         UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
@@ -1354,7 +1354,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的更新操作字段权限
         UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
@@ -1459,7 +1459,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         UserContextDTO userContext = UserContext.getUserContext();
 
         // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
         // 获取用户对租户表的更新操作字段权限
         UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
 
@@ -1736,8 +1736,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 从缓存的有效租户列表中查找目标租户
         UserContextDTO.TenantItem targetTenantItem = null;
-        if (userContext.getTenants().getValid() != null) {
-            for (UserContextDTO.TenantItem item : userContext.getTenants().getValid()) {
+        if (userContext.getTenantInfo().getValid() != null) {
+            for (UserContextDTO.TenantItem item : userContext.getTenantInfo().getValid()) {
                 if (switchParam.getTargetTenantCode().equals(item.getTenantCode())) {
                     targetTenantItem = item;
                     break;
@@ -1747,8 +1747,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
         // 目标租户不在有效租户列表中，检查是否在无效租户列表中
         if (targetTenantItem == null) {
-            if (userContext.getTenants().getInvalid() != null) {
-                for (UserContextDTO.TenantItem item : userContext.getTenants().getInvalid()) {
+            if (userContext.getTenantInfo().getInvalid() != null) {
+                for (UserContextDTO.TenantItem item : userContext.getTenantInfo().getInvalid()) {
                     if (switchParam.getTargetTenantCode().equals(item.getTenantCode())) {
                         // 目标租户在无效租户列表中，根据状态给出具体提示
                         String status = item.getStatus();
@@ -1769,12 +1769,16 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("当前用户不属于目标租户，无法切换");
         }
 
-        // 更新Session中的租户上下文信息
-        UserContextDTO.TenantInfo tenantInfo = new UserContextDTO.TenantInfo();
-        tenantInfo.setTenantCode(targetTenantItem.getTenantCode());
-        tenantInfo.setTenantName(targetTenantItem.getTenantName());
-        tenantInfo.setStatus(targetTenantItem.getStatus());
-        userContext.setCurrentTenant(tenantInfo);
+        // 更新Session中的当前租户信息
+        List<UserContextDTO.TenantItem> currentTenantList = new ArrayList<>();
+        UserContextDTO.TenantItem currentTenantItem = new UserContextDTO.TenantItem();
+        currentTenantItem.setTenantCode(targetTenantItem.getTenantCode());
+        currentTenantItem.setTenantName(targetTenantItem.getTenantName());
+        currentTenantItem.setStatus(targetTenantItem.getStatus());
+        currentTenantItem.setIsPrimary(targetTenantItem.getIsPrimary());
+        currentTenantList.add(currentTenantItem);
+
+        userContext.getTenantInfo().setCurrent(currentTenantList);
 
         // 将更新后的上下文写回Session
         StpUtil.getSession().set(GlobalConstant.Session.USER_CONTEXT, userContext);

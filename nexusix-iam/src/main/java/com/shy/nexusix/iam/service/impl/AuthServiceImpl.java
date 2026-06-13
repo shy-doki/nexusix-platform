@@ -119,30 +119,34 @@ public class AuthServiceImpl implements IAuthService {
         List<UserRoleDTO> roleList = sysUserPolicyMapper.queryUserAllRoleInfo(user.getId());
         UserContextDTO.RoleGroup roleGroup = buildRoleGroup(roleList, currentTenant.getTenantCode());
 
-        // ==================== 7. 构建租户分组 ====================
-        UserContextDTO.TenantGroup tenantGroup = buildTenantGroup(tenantList);
+        // ==================== 7. 构建租户分组（包含当前租户） ====================
+        UserContextDTO.TenantGroup tenantGroup = buildTenantGroup(tenantList, currentTenant);
 
         // ==================== 8. 组装 UserContextDTO ====================
         UserContextDTO userContext = new UserContextDTO();
 
-        // 设置当前租户
-        UserContextDTO.TenantInfo tenantInfo = new UserContextDTO.TenantInfo();
-        tenantInfo.setTenantCode(currentTenant.getTenantCode());
-        tenantInfo.setTenantName(currentTenant.getTenantName());
-        tenantInfo.setStatus(currentTenant.getStatus());
-        userContext.setCurrentTenant(tenantInfo);
+        // 设置用户信息
+        UserContextDTO.UserInfo userInfo = new UserContextDTO.UserInfo();
+        userInfo.setUserId(user.getId());
+        userInfo.setUserCode(user.getUserCode());
+        userInfo.setUserName(user.getUserName());
+        userInfo.setNickName(user.getNickName());
+        userInfo.setEmail(user.getEmail());
+        userInfo.setPhone(user.getPhone());
+        userInfo.setAvatar(user.getAvatarUrl());
+        userContext.setUserInfo(userInfo);
 
         // 设置租户分组
-        userContext.setTenants(tenantGroup);
+        userContext.setTenantInfo(tenantGroup);
 
         // 设置权限信息
-        userContext.setPermissions(permissionInfo);
+        userContext.setPermInfo(permissionInfo);
 
         // 设置角色分组
-        userContext.setRoles(roleGroup);
+        userContext.setRoleInfo(roleGroup);
 
         // 设置部门分组
-        userContext.setDepts(deptGroup);
+        userContext.setDeptInfo(deptGroup);
 
         // ==================== 9. 存入 Session ====================
         StpUtil.getSession().set(GlobalConstant.Session.USER_CONTEXT, userContext);
@@ -303,9 +307,13 @@ public class AuthServiceImpl implements IAuthService {
     /**
      * 构建租户分组信息
      */
-    private UserContextDTO.TenantGroup buildTenantGroup(List<UserTenantItemDTO> tenantList) {
+    private UserContextDTO.TenantGroup buildTenantGroup(
+        List<UserTenantItemDTO> tenantList,
+        UserTenantItemDTO currentTenant) {
+
         UserContextDTO.TenantGroup tenantGroup = new UserContextDTO.TenantGroup();
 
+        List<UserContextDTO.TenantItem> currentTenantList = new ArrayList<>();
         List<UserContextDTO.TenantItem> allTenants = new ArrayList<>();
         List<UserContextDTO.TenantItem> validTenants = new ArrayList<>();
         List<UserContextDTO.TenantItem> invalidTenants = new ArrayList<>();
@@ -315,10 +323,17 @@ public class AuthServiceImpl implements IAuthService {
             item.setTenantCode(dto.getTenantCode());
             item.setTenantName(dto.getTenantName());
             item.setStatus(dto.getStatus());
+            item.setExpireTime(dto.getExpireTime() != null ? dto.getExpireTime().toString() : null);
             item.setIsPrimary(dto.getIsPrimary());
 
             allTenants.add(item);
 
+            // 判断是否是当前租户
+            if (dto.getTenantCode().equals(currentTenant.getTenantCode())) {
+                currentTenantList.add(item);
+            }
+
+            // 分类为有效或无效
             if ("ENABLED".equals(dto.getStatus())) {
                 validTenants.add(item);
             } else {
@@ -326,6 +341,7 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
 
+        tenantGroup.setCurrent(currentTenantList);
         tenantGroup.setAll(allTenants);
         tenantGroup.setValid(validTenants);
         tenantGroup.setInvalid(invalidTenants);
