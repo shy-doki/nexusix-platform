@@ -161,17 +161,21 @@ public class AuthServiceImpl implements IAuthService {
         List<String> validPermCodeList = new ArrayList<>();
         List<String> invalidPermCodeList = new ArrayList<>();
 
-        // 字段级权限映射
-        Map<String, Map<String, List<String>>> fieldPermMap = new HashMap<>();
+        // 字段级权限映射 - 按操作类型分组
+        // Map<表名, TableFieldPermission>
+        Map<String, UserContextDTO.TableFieldPermission> queryFieldMap = new HashMap<>();
+        Map<String, UserContextDTO.TableFieldPermission> createFieldMap = new HashMap<>();
+        Map<String, UserContextDTO.TableFieldPermission> updateFieldMap = new HashMap<>();
 
         for (UserPermDTO perm : permList) {
             if (perm.getPermCode() == null) {
                 continue;
             }
 
+            // 权限编码去重
             allPermCodeSet.add(perm.getPermCode());
 
-            // 根据状态分类
+            // 根据状态分类权限编码
             if ("ACTIVE".equals(perm.getPermPolicyStatus())) {
                 validPermCodeList.add(perm.getPermCode());
             } else {
@@ -182,12 +186,55 @@ public class AuthServiceImpl implements IAuthService {
             if (perm.getFieldPermissions() != null && !perm.getFieldPermissions().isEmpty()
                 && perm.getTableName() != null) {
                 try {
+                    // 解析JSON：{"user_name":["READ","CREATE","UPDATE"], "email":["READ","UPDATE"]}
                     Map<String, List<String>> fieldMap = JSON.parseObject(
                         perm.getFieldPermissions(),
                         Map.class
                     );
+
                     if (fieldMap != null && !fieldMap.isEmpty()) {
-                        fieldPermMap.put(perm.getTableName(), fieldMap);
+                        // 遍历每个字段及其操作
+                        for (Map.Entry<String, List<String>> entry : fieldMap.entrySet()) {
+                            String fieldName = entry.getKey();
+                            List<String> operations = entry.getValue();
+
+                            if (operations == null || operations.isEmpty()) {
+                                continue;
+                            }
+
+                            // 根据操作类型分类字段
+                            boolean isActive = "ACTIVE".equals(perm.getPermPolicyStatus());
+
+                            // 处理 READ 操作 → query
+                            if (operations.contains("READ")) {
+                                addFieldToPermissionMap(
+                                    queryFieldMap,
+                                    perm.getTableName(),
+                                    fieldName,
+                                    isActive
+                                );
+                            }
+
+                            // 处理 CREATE 操作 → create
+                            if (operations.contains("CREATE")) {
+                                addFieldToPermissionMap(
+                                    createFieldMap,
+                                    perm.getTableName(),
+                                    fieldName,
+                                    isActive
+                                );
+                            }
+
+                            // 处理 UPDATE 操作 → update
+                            if (operations.contains("UPDATE")) {
+                                addFieldToPermissionMap(
+                                    updateFieldMap,
+                                    perm.getTableName(),
+                                    fieldName,
+                                    isActive
+                                );
+                            }
+                        }
                     }
                 } catch (Exception e) {
                     // 解析失败，忽略该字段权限
@@ -200,16 +247,57 @@ public class AuthServiceImpl implements IAuthService {
         permissionInfo.setValid(validPermCodeList);
         permissionInfo.setInvalid(invalidPermCodeList);
 
-        // 设置字段级权限（简化版，实际可能需要更复杂的结构）
+        // 设置字段级权限
         UserContextDTO.FieldPermission fieldPermission = new UserContextDTO.FieldPermission();
-        // TODO: 根据实际需求填充 fieldPermission
+        fieldPermission.setQuery(queryFieldMap);
+        fieldPermission.setCreate(createFieldMap);
+        fieldPermission.setUpdate(updateFieldMap);
         permissionInfo.setFieldPermission(fieldPermission);
 
-        // 设置禁用详情（简化版）
+        // 设置禁用详情（初始化为空）
         UserContextDTO.DisabledDetail disabledDetail = new UserContextDTO.DisabledDetail();
+        disabledDetail.setSystem(new ArrayList<>());
+        disabledDetail.setTenant(new ArrayList<>());
+        disabledDetail.setRole(new ArrayList<>());
+        disabledDetail.setUser(new ArrayList<>());
         permissionInfo.setDisabledDetail(disabledDetail);
 
         return permissionInfo;
+    }
+
+    /**
+     * 将字段添加到权限映射中
+     *
+     * @param permissionMap 权限映射（表名 → TableFieldPermission）
+     * @param tableName 表名
+     * @param fieldName 字段名
+     * @param isActive 权限是否激活
+     */
+    private void addFieldToPermissionMap(
+        Map<String, UserContextDTO.TableFieldPermission> permissionMap,
+        String tableName,
+        String fieldName,
+        boolean isActive) {
+
+        // 获取或创建该表的字段权限对象
+        UserContextDTO.TableFieldPermission tableFieldPerm =
+            permissionMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
+
+        // 黑名单机制：只要有一个来源是DISABLED，字段就不可操作
+        if (!isActive) {
+            // 权限禁用 → 字段不可操作（优先级最高）
+            if (!tableFieldPerm.getInoperable().contains(fieldName)) {
+                tableFieldPerm.getInoperable().add(fieldName);
+            }
+            // 如果之前在 operable 中，移除（DISABLED优先）
+            tableFieldPerm.getOperable().remove(fieldName);
+        } else {
+            // 权限激活 → 字段可操作（但只有在不存在于inoperable时才加入）
+            if (!tableFieldPerm.getInoperable().contains(fieldName)
+                && !tableFieldPerm.getOperable().contains(fieldName)) {
+                tableFieldPerm.getOperable().add(fieldName);
+            }
+        }
     }
 
     /**
@@ -292,7 +380,7 @@ public class AuthServiceImpl implements IAuthService {
     private UserContextDTO.RoleItem convertToRoleItem(UserRoleDTO dto) {
         UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
         item.setRoleCode(dto.getRoleCode());
-        item.setDataScope("SELF"); // 默认值，后续可从配置读取
+        item.setDataScope(dto.getDataScope() != null ? dto.getDataScope() : "SELF"); // 使用数据库值，如果为null则默认SELF
         item.setTenantCode(dto.getTenantCode());
         item.setTenantName(dto.getTenantName());
         return item;

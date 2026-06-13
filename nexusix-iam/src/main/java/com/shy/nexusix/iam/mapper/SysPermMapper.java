@@ -1,16 +1,16 @@
 package com.shy.nexusix.iam.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.shy.nexusix.iam.entity.SysUser;
+import com.shy.nexusix.iam.entity.SysPerm;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 系统用户Mapper接口
+ * 系统权限Mapper接口
  *
  * @author NexusIX
  * @since 2026-06-12
  */
 @Mapper
-public interface SysUserMapper extends BaseMapper<SysUser> {
+public interface SysPermMapper extends BaseMapper<SysPerm> {
 
 }

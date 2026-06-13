@@ -47,6 +47,36 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     private SysTenantConverter sysTenantConverter;
 
     /**
+     * 获取查询操作的可操作字段
+     *
+     * @return 可操作字段列表，null表示无限制
+     */
+    private List<String> getQueryOperableFields() {
+        // 直接从UserContext获取字段权限，不使用独立工具类
+        UserContextDTO userContext = UserContext.getUserContext();
+        if (userContext == null) {
+            return null;
+        }
+
+        UserContextDTO.FieldPermission fieldPerm =
+            userContext.getPermissions().getFieldPermission();
+
+        if (fieldPerm == null || fieldPerm.getQuery() == null) {
+            return null;
+        }
+
+        UserContextDTO.TableFieldPermission tableFieldPerm =
+            fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
+
+        if (tableFieldPerm == null || tableFieldPerm.getOperable() == null
+            || tableFieldPerm.getOperable().isEmpty()) {
+            return null;  // null表示无限制
+        }
+
+        return tableFieldPerm.getOperable();
+    }
+
+    /**
      * <p>查询租户列表</p>
      *
      * @return 租户通用VO列表，封装用户有权查看的租户信息
@@ -55,25 +85,19 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public List<SysTenantCommonVO> queryTenantList() {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
-        // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.TableFieldPermission tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于动态列选择
-        List<String> visibleFields = tenantQueryPerm.getOperable();
-        if (visibleFields == null || visibleFields.isEmpty()) {
-            throw new BusinessException("无权查询租户信息");
-        }
+        // 使用工具类获取字段权限
+        List<String> visibleFields = getQueryOperableFields();
 
         // 构建查询条件 仅选择用户有权限查看的列，并排除已删除的租户记录
-        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                // 遍历 SysTenant 实体的所有字段 仅选择可操作字段
-                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
-                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>();
+
+        // 如果有字段级权限限制，则只选择可操作字段
+        if (visibleFields != null && !visibleFields.isEmpty()) {
+            wrapper.select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()));
+        }
+
+        wrapper.eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+
         List<SysTenant> tenantList = this.list(wrapper);
         // 通过 MapStruct 转换器将实体列表转换为 VO 列表，同时完成状态码到描述的转换
         return sysTenantConverter.entityListToCommonVoList(tenantList);
@@ -90,24 +114,18 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public IPage<SysTenantCommonVO> queryTenantPage(PageCommonRTO page) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
-        // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.TableFieldPermission tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于动态列选择
-        List<String> visibleFields = tenantQueryPerm.getOperable();
-        if (visibleFields == null || visibleFields.isEmpty()) {
-            throw new BusinessException("无权查询租户信息");
-        }
+        // 使用工具类获取字段权限
+        List<String> visibleFields = getQueryOperableFields();
 
         // 构建分页查询条件 仅选择用户有权限查看的列，并排除已删除的租户记录
-        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
-                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>();
+
+        // 如果有字段级权限限制，则只选择可操作字段
+        if (visibleFields != null && !visibleFields.isEmpty()) {
+            wrapper.select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()));
+        }
+
+        wrapper.eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
         // 执行分页查询
         IPage<SysTenant> entityPage = this.page(new Page<>(page.getPageNum(), page.getPageSize()), wrapper);
@@ -211,24 +229,17 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public IPage<SysTenantTreeVO> queryTenantTreePage(PageCommonRTO page) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
-        // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.TableFieldPermission tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于动态列选择和返回数据过滤
-        List<String> visibleFields = tenantQueryPerm.getOperable();
-        if (visibleFields == null || visibleFields.isEmpty()) {
-            throw new BusinessException("无权查询租户信息");
-        }
+        // 使用工具类获取字段权限
+        List<String> visibleFields = getQueryOperableFields();
 
         // 构建查询字段集合：合并用户可见字段和树形查询业务必要字段
         // 创建新集合，不修改原始visibleFields，避免污染Session缓存中的权限数据
-        Set<String> queryFields = new HashSet<>(visibleFields);
-        queryFields.addAll(GlobalConstant.FieldPerm.TREE_MANDATORY_FIELDS);
+        Set<String> queryFieldSet = new HashSet<>();
+        if (visibleFields != null && !visibleFields.isEmpty()) {
+            queryFieldSet.addAll(visibleFields);
+        }
+        queryFieldSet.addAll(GlobalConstant.FieldPerm.TREE_MANDATORY_FIELDS);
+        Set<String> queryFields = queryFieldSet;
 
         // 先查询根节点总数用于分页
         LambdaQueryWrapper<SysTenant> rootCountWrapper = new LambdaQueryWrapper<SysTenant>()
@@ -436,24 +447,15 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public IPage<SysTenantCommonVO> queryTenant(SysTenantQueryRTO queryParam) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
-        // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.TableFieldPermission tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于动态列选择
-        List<String> visibleFields = tenantQueryPerm.getOperable();
-        if (visibleFields == null || visibleFields.isEmpty()) {
-            throw new BusinessException("无权查询租户信息");
-        }
+        // 使用工具类获取字段权限
+        List<String> visibleFields = getQueryOperableFields();
 
         // 构建条件查询 仅选择用户有权限查看的列
-        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
-                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>();
+        if (visibleFields != null && !visibleFields.isEmpty()) {
+            wrapper.select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()));
+        }
+        wrapper.eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
         // 租户编码精确匹配
         if (queryParam.getTenantCode() != null && !queryParam.getTenantCode().isEmpty()) {
@@ -536,25 +538,17 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("租户编码不能为空");
         }
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermissions().getFieldPermission();
-        // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.TableFieldPermission tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于动态列选择
-        List<String> visibleFields = tenantQueryPerm.getOperable();
-        if (visibleFields == null || visibleFields.isEmpty()) {
-            throw new BusinessException("无权查询租户信息");
-        }
+        // 使用工具类获取字段权限
+        List<String> visibleFields = getQueryOperableFields();
 
         // 根据租户编码查询 仅选择用户有权限查看的列
-        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>()
-                .select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()))
-                .eq(SysTenant::getTenantCode, tenantCode)
-                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+        LambdaQueryWrapper<SysTenant> wrapper = new LambdaQueryWrapper<SysTenant>();
+        if (visibleFields != null && !visibleFields.isEmpty()) {
+            wrapper.select(SysTenant.class, entity -> visibleFields.contains(entity.getColumn()));
+        }
+        wrapper.eq(SysTenant::getTenantCode, tenantCode)
+               .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
+
         SysTenant tenant = this.getOne(wrapper);
         if (tenant == null) {
             throw new BusinessException("租户不存在");

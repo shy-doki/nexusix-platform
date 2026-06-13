@@ -26,6 +26,9 @@ public class UserRoleDTO {
     /** 角色策略状态（ACTIVE/DISABLED） */
     private String rolePolicyStatus;
 
+    /** 数据范围（ALL/DEPT_AND_SUB/DEPT/SELF） */
+    private String dataScope;
+
     /** 租户用户ID */
     private Long tenantUserId;
 }

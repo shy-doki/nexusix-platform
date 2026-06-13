@@ -11,11 +11,9 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * <p>
- * 用户策略表 Mapper 接口
- * </p>
+ * 用户策略Mapper接口
  *
- * @author shy
+ * @author NexusIX
  * @since 2026-06-12
  */
 @Mapper

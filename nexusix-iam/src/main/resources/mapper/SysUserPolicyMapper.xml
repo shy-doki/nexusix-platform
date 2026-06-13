@@ -29,6 +29,7 @@
             t.tenant_code AS tenantCode,
             t.tenant_name AS tenantName,
             up_role.status AS rolePolicyStatus,
+            'SELF' AS dataScope,  -- TODO: 后续从角色配置或权限策略中查询真实的数据范围
             up_tenant.id AS tenantUserId
         FROM sys_user_policy up_tenant
         -- 用户加入租户（target_type='TENANT'）
