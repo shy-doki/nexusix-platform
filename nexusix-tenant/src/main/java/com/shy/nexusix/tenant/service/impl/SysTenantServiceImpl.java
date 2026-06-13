@@ -77,6 +77,51 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     }
 
     /**
+     * 获取指定操作类型的字段权限
+     * <p>
+     * 从用户上下文中提取字段级权限配置，支持查询、创建、更新三种操作类型
+     * </p>
+     *
+     * @param operationType 操作类型："query"、"create"、"update"
+     * @return 可操作字段列表，null表示无权限或无限制
+     * @throws BusinessException 用户上下文为空或操作类型不支持时抛出
+     */
+    private List<String> getTableFieldPermission(String operationType) {
+        UserContextDTO userContext = UserContext.getUserContext();
+        if (userContext == null) {
+            throw new BusinessException("无法获取用户上下文");
+        }
+
+        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
+        if (fieldPerm == null) {
+            return null;
+        }
+
+        UserContextDTO.TableFieldPermission tableFieldPerm = null;
+        if ("query".equalsIgnoreCase(operationType)) {
+            if (fieldPerm.getQuery() != null) {
+                tableFieldPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
+            }
+        } else if ("create".equalsIgnoreCase(operationType)) {
+            if (fieldPerm.getCreate() != null) {
+                tableFieldPerm = fieldPerm.getCreate().get(GlobalConstant.Table.TENANT);
+            }
+        } else if ("update".equalsIgnoreCase(operationType)) {
+            if (fieldPerm.getUpdate() != null) {
+                tableFieldPerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
+            }
+        } else {
+            throw new BusinessException("不支持的操作类型: " + operationType);
+        }
+
+        if (tableFieldPerm == null || tableFieldPerm.getOperable() == null) {
+            return null;
+        }
+
+        return tableFieldPerm.getOperable();
+    }
+
+    /**
      * <p>查询租户列表</p>
      *
      * @return 租户通用VO列表，封装用户有权查看的租户信息
@@ -148,16 +193,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public List<SysTenantTreeVO> queryTenantTreeList() {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.TableFieldPermission tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于动态列选择和返回数据过滤
-        List<String> visibleFields = tenantQueryPerm.getOperable();
+        // 获取查询操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("query");
         if (visibleFields == null || visibleFields.isEmpty()) {
             throw new BusinessException("无权查询租户信息");
         }
@@ -353,16 +390,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("租户ID不能为空");
         }
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的查询操作字段权限
-        UserContextDTO.TableFieldPermission tenantQueryPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于动态列选择和返回数据过滤
-        List<String> visibleFields = tenantQueryPerm.getOperable();
+        // 获取查询操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("query");
         if (visibleFields == null || visibleFields.isEmpty()) {
             throw new BusinessException("无权查询租户信息");
         }
@@ -571,16 +600,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer addTenant(SysTenantAddRTO addParam) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的新增操作字段权限
-        UserContextDTO.TableFieldPermission tenantCreatePerm = fieldPerm.getCreate().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于字段权限校验
-        List<String> visibleFields = tenantCreatePerm.getOperable();
+        // 获取创建操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("create");
         if (visibleFields == null || visibleFields.isEmpty()) {
             throw new BusinessException("无权新增租户");
         }
@@ -693,16 +714,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer updateTenant(SysTenantUpdateRTO updateParam) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于字段权限校验
-        List<String> visibleFields = tenantUpdatePerm.getOperable();
+        // 获取更新操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("update");
         if (visibleFields == null || visibleFields.isEmpty()) {
             throw new BusinessException("无权修改租户");
         }
@@ -787,16 +800,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public Integer updateTenantStatus(String id, String status) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
-
-        // 校验用户是否有权限修改status字段
-        List<String> visibleFields = tenantUpdatePerm.getOperable();
+        // 获取更新操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("update");
         if (visibleFields == null || !visibleFields.contains("status")) {
             throw new BusinessException("无权修改租户状态字段");
         }
@@ -882,16 +887,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Override
     public Integer deleteTenant(String id) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的更新操作字段权限（删除属于更新操作范畴）
-        UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
-
-        // 校验用户是否有权限修改is_deleted字段
-        List<String> visibleFields = tenantUpdatePerm.getOperable();
+        // 获取更新操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("update");
         if (visibleFields == null || !visibleFields.contains("is_deleted")) {
             throw new BusinessException("无权删除租户");
         }
@@ -950,16 +947,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer batchAddTenant(List<SysTenantAddRTO> addParamList) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的新增操作字段权限
-        UserContextDTO.TableFieldPermission tenantCreatePerm = fieldPerm.getCreate().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于字段权限校验
-        List<String> visibleFields = tenantCreatePerm.getOperable();
+        // 获取创建操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("create");
         if (visibleFields == null || visibleFields.isEmpty()) {
             throw new BusinessException("无权新增租户");
         }
@@ -1082,16 +1071,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer batchUpdateTenant(List<SysTenantUpdateRTO> updateParamList) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
-
-        // 提取用户可操作的字段列表 用于字段权限校验
-        List<String> visibleFields = tenantUpdatePerm.getOperable();
+        // 获取更新操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("update");
         if (visibleFields == null || visibleFields.isEmpty()) {
             throw new BusinessException("无权修改租户");
         }
@@ -1178,16 +1159,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer batchUpdateTenantStatus(List<String> ids, String status) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
-
-        // 校验用户是否有权限修改status字段
-        List<String> visibleFields = tenantUpdatePerm.getOperable();
+        // 获取更新操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("update");
         if (visibleFields == null || !visibleFields.contains("status")) {
             throw new BusinessException("无权修改租户状态字段");
         }
@@ -1276,16 +1249,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer batchDeleteTenant(List<String> ids) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的更新操作字段权限（删除属于更新操作范畴）
-        UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
-
-        // 校验用户是否有权限修改is_deleted字段
-        List<String> visibleFields = tenantUpdatePerm.getOperable();
+        // 获取更新操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("update");
         if (visibleFields == null || !visibleFields.contains("is_deleted")) {
             throw new BusinessException("无权删除租户");
         }
@@ -1350,16 +1315,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer assignSubTenant(SysTenantAssignRTO assignParam) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
-
-        // 校验用户是否有权限修改parentId和path字段
-        List<String> visibleFields = tenantUpdatePerm.getOperable();
+        // 获取更新操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("update");
         if (visibleFields == null || !visibleFields.contains("parent_id") || !visibleFields.contains("path")) {
             throw new BusinessException("无权修改租户层级关系字段");
         }
@@ -1455,16 +1412,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     @Transactional(rollbackFor = Exception.class)
     public Integer assignParentTenant(SysTenantAssignRTO assignParam) {
 
-        // 获取当前登录用户的上下文信息，包含权限配置
-        UserContextDTO userContext = UserContext.getUserContext();
-
-        // 从权限上下文中提取字段级权限配置
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
-        // 获取用户对租户表的更新操作字段权限
-        UserContextDTO.TableFieldPermission tenantUpdatePerm = fieldPerm.getUpdate().get(GlobalConstant.Table.TENANT);
-
-        // 校验用户是否有权限修改parentId和path字段
-        List<String> visibleFields = tenantUpdatePerm.getOperable();
+        // 获取更新操作的字段权限
+        List<String> visibleFields = getTableFieldPermission("update");
         if (visibleFields == null || !visibleFields.contains("parent_id") || !visibleFields.contains("path")) {
             throw new BusinessException("无权修改租户层级关系字段");
         }
