@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shy.nexusix.tenant.mapper.SysTenantPolicyMapper">
+
+    <!-- 通用结果映射 -->
+    <resultMap id="CommonVOResultMap" type="com.shy.nexusix.tenant.vo.SysTenantPolicyCommonVO">
+        <result column="policy_code" property="policyCode"/>
+        <result column="policy_name" property="policyName"/>
+        <result column="source_type" property="sourceType"/>
+        <result column="source_code" property="sourceCode"/>
+        <result column="source_name" property="sourceName"/>
+        <result column="tenant_code" property="tenantCode"/>
+        <result column="tenant_name" property="tenantName"/>
+        <result column="bind_time" property="bindTime"/>
+        <result column="status" property="status"/>
+        <result column="disable_reason" property="disableReason"/>
+        <result column="create_by_name" property="createByName"/>
+        <result column="create_at" property="createTime"/>
+        <result column="update_by_name" property="updateByName"/>
+        <result column="update_at" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+        <result column="deleted_at" property="deleteTime"/>
+    </resultMap>
+
+    <!-- 查询租户策略列表，关联查询源实体和目标租户的详细信息 -->
+    <select id="queryPolicyListWithDetails" resultMap="CommonVOResultMap">
+        SELECT
+            tp.policy_code,
+            tp.policy_name,
+            tp.source_type,
+            CASE
+                WHEN tp.source_type = 'DEPT' THEN sd.dept_code
+                WHEN tp.source_type = 'ROLE' THEN sr.role_code
+                ELSE NULL
+            END AS source_code,
+            CASE
+                WHEN tp.source_type = 'DEPT' THEN sd.dept_name
+                WHEN tp.source_type = 'ROLE' THEN sr.role_name
+                ELSE NULL
+            END AS source_name,
+            st.tenant_code,
+            st.tenant_name,
+            tp.bind_time,
+            tp.status,
+            tp.disable_reason,
+            cu.user_name AS create_by_name,
+            tp.create_at,
+            uu.user_name AS update_by_name,
+            tp.update_at,
+            tp.is_deleted,
+            tp.deleted_at
+        FROM sys_tenant_policy tp
+        LEFT JOIN sys_tenant st ON tp.tenant_id = st.id AND st.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_dept sd ON tp.source_type = 'DEPT' AND tp.source_id = sd.id AND sd.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_role sr ON tp.source_type = 'ROLE' AND tp.source_id = sr.id AND sr.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_user cu ON tp.create_by = cu.id AND cu.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_user uu ON tp.update_by = uu.id AND uu.is_deleted = 'NOT_DELETED'
+        WHERE tp.is_deleted = 'NOT_DELETED'
+        <if test="sourceType != null and sourceType != ''">
+            AND tp.source_type = #{sourceType}
+        </if>
+        <if test="sourceId != null">
+            AND tp.source_id = #{sourceId}
+        </if>
+        <if test="tenantId != null">
+            AND tp.tenant_id = #{tenantId}
+        </if>
+        <if test="status != null and status != ''">
+            AND tp.status = #{status}
+        </if>
+        ORDER BY tp.create_at DESC
+    </select>
+
+    <!-- 根据策略编码查询策略详情，关联查询源实体和目标租户的详细信息 -->
+    <select id="queryPolicyDetailByCode" resultMap="CommonVOResultMap">
+        SELECT
+            tp.policy_code,
+            tp.policy_name,
+            tp.source_type,
+            CASE
+                WHEN tp.source_type = 'DEPT' THEN sd.dept_code
+                WHEN tp.source_type = 'ROLE' THEN sr.role_code
+                ELSE NULL
+            END AS source_code,
+            CASE
+                WHEN tp.source_type = 'DEPT' THEN sd.dept_name
+                WHEN tp.source_type = 'ROLE' THEN sr.role_name
+                ELSE NULL
+            END AS source_name,
+            st.tenant_code,
+            st.tenant_name,
+            tp.bind_time,
+            tp.status,
+            tp.disable_reason,
+            cu.user_name AS create_by_name,
+            tp.create_at,
+            uu.user_name AS update_by_name,
+            tp.update_at,
+            tp.is_deleted,
+            tp.deleted_at
+        FROM sys_tenant_policy tp
+        LEFT JOIN sys_tenant st ON tp.tenant_id = st.id AND st.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_dept sd ON tp.source_type = 'DEPT' AND tp.source_id = sd.id AND sd.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_role sr ON tp.source_type = 'ROLE' AND tp.source_id = sr.id AND sr.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_user cu ON tp.create_by = cu.id AND cu.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_user uu ON tp.update_by = uu.id AND uu.is_deleted = 'NOT_DELETED'
+        WHERE tp.policy_code = #{policyCode}
+          AND tp.is_deleted = 'NOT_DELETED'
+    </select>
+
+</mapper>
