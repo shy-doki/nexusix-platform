@@ -137,15 +137,15 @@ public class AuthServiceImpl implements IAuthService {
         List<UserContextDTO.PermItem> currentEnabledPerms = new ArrayList<>();
         List<UserContextDTO.PermItem> currentDisabledPerms = new ArrayList<>();
 
-        // 字段级权限（只保留当前租户）
-        Map<String, UserContextDTO.TableFieldPermission> queryFieldMap = new HashMap<>();
-        Map<String, UserContextDTO.TableFieldPermission> createFieldMap = new HashMap<>();
-        Map<String, UserContextDTO.TableFieldPermission> updateFieldMap = new HashMap<>();
+        // 字段级权限（按租户分组）
+        Map<String, Map<String, UserContextDTO.TableFieldPermission>> queryFieldMapByTenant = new HashMap<>();
+        Map<String, Map<String, UserContextDTO.TableFieldPermission>> createFieldMapByTenant = new HashMap<>();
+        Map<String, Map<String, UserContextDTO.TableFieldPermission>> updateFieldMapByTenant = new HashMap<>();
 
         // 用于去重的集合（基于 permCode + tenantCode）
         Set<String> permDeduplicationSet = new LinkedHashSet<>();
 
-        // 用于字段权限去重（基于 tableName + fieldName + operation）
+        // 用于字段权限去重（基于 tenantCode + tableName + fieldName + operation）
         Set<String> fieldOpDeduplicationSet = new LinkedHashSet<>();
 
         // 遍历所有权限记录
@@ -184,12 +184,7 @@ public class AuthServiceImpl implements IAuthService {
                 }
             }
 
-            // 🔴 关键修复：字段级权限只处理当前租户
-            if (!currentTenantCode.equals(tenantCode)) {
-                continue;
-            }
-
-            // 处理字段级权限
+            // 处理字段级权限（处理当前用户下的所有租户）
             boolean isActive = "ACTIVE".equals(perm.getPermPolicyStatus());
             if (perm.getFieldPermissions() != null && !perm.getFieldPermissions().isEmpty()
                 && perm.getTableName() != null) {
@@ -208,8 +203,8 @@ public class AuthServiceImpl implements IAuthService {
 
                             // 🔴 关键修复：遍历每个操作并去重
                             for (String operation : operations) {
-                                // 使用 表名:字段名:操作 作为去重key
-                                String fieldOpKey = tableName + ":" + fieldName + ":" + operation;
+                                // 使用 租户:表名:字段名:操作 作为去重key
+                                String fieldOpKey = tenantCode + ":" + tableName + ":" + fieldName + ":" + operation;
 
                                 // 如果已经处理过这个字段+操作组合，跳过
                                 if (fieldOpDeduplicationSet.contains(fieldOpKey)) {
@@ -219,6 +214,8 @@ public class AuthServiceImpl implements IAuthService {
 
                                 // 处理READ操作
                                 if ("READ".equals(operation)) {
+                                    Map<String, UserContextDTO.TableFieldPermission> queryFieldMap =
+                                        queryFieldMapByTenant.computeIfAbsent(tenantCode, k -> new HashMap<>());
                                     UserContextDTO.TableFieldPermission tablePerm =
                                         queryFieldMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
 
@@ -237,6 +234,8 @@ public class AuthServiceImpl implements IAuthService {
 
                                 // 处理CREATE操作
                                 if ("CREATE".equals(operation)) {
+                                    Map<String, UserContextDTO.TableFieldPermission> createFieldMap =
+                                        createFieldMapByTenant.computeIfAbsent(tenantCode, k -> new HashMap<>());
                                     UserContextDTO.TableFieldPermission tablePerm =
                                         createFieldMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
 
@@ -255,6 +254,8 @@ public class AuthServiceImpl implements IAuthService {
 
                                 // 处理UPDATE操作
                                 if ("UPDATE".equals(operation)) {
+                                    Map<String, UserContextDTO.TableFieldPermission> updateFieldMap =
+                                        updateFieldMapByTenant.computeIfAbsent(tenantCode, k -> new HashMap<>());
                                     UserContextDTO.TableFieldPermission tablePerm =
                                         updateFieldMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
 
@@ -334,13 +335,15 @@ public class AuthServiceImpl implements IAuthService {
         permissionInfo.setValid(validTenantPerms);
         permissionInfo.setInvalid(invalidTenantPerms);
 
-        // 设置字段级权限（按租户分组，当前只有当前租户）
+        // 设置字段级权限（按租户分组，包含所有租户）
         Map<String, UserContextDTO.FieldPermission> fieldPermByTenant = new HashMap<>();
-        UserContextDTO.FieldPermission fp = new UserContextDTO.FieldPermission();
-        fp.setQuery(queryFieldMap);
-        fp.setCreate(createFieldMap);
-        fp.setUpdate(updateFieldMap);
-        fieldPermByTenant.put(currentTenantCode, fp);
+        for (String tenantCode : permsByTenant.keySet()) {
+            UserContextDTO.FieldPermission fp = new UserContextDTO.FieldPermission();
+            fp.setQuery(queryFieldMapByTenant.getOrDefault(tenantCode, new HashMap<>()));
+            fp.setCreate(createFieldMapByTenant.getOrDefault(tenantCode, new HashMap<>()));
+            fp.setUpdate(updateFieldMapByTenant.getOrDefault(tenantCode, new HashMap<>()));
+            fieldPermByTenant.put(tenantCode, fp);
+        }
         permissionInfo.setFieldPermissionByTenant(fieldPermByTenant);
 
         // 初始化禁用详情（按租户分组）
