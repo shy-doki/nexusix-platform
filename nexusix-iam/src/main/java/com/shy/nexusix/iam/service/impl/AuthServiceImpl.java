@@ -142,6 +142,9 @@ public class AuthServiceImpl implements IAuthService {
         Map<String, Map<String, UserContextDTO.TableFieldPermission>> createFieldMapByTenant = new HashMap<>();
         Map<String, Map<String, UserContextDTO.TableFieldPermission>> updateFieldMapByTenant = new HashMap<>();
 
+        // 禁用权限详情（按租户分组）
+        Map<String, UserContextDTO.DisabledDetail> disabledDetailByTenant = new HashMap<>();
+
         // 用于去重的集合（基于 permCode + tenantCode）
         Set<String> permDeduplicationSet = new LinkedHashSet<>();
 
@@ -180,6 +183,43 @@ public class AuthServiceImpl implements IAuthService {
                         currentEnabledPerms.add(item);
                     } else {
                         currentDisabledPerms.add(item);
+                    }
+                }
+            }
+
+            // 🔴 收集禁用权限的级别信息
+            if (!"ACTIVE".equals(perm.getPermPolicyStatus())) {
+                // 获取该租户的DisabledDetail（如果不存在则创建）
+                UserContextDTO.DisabledDetail detail = disabledDetailByTenant.get(tenantCode);
+                if (detail == null) {
+                    detail = new UserContextDTO.DisabledDetail();
+                    detail.setSystem(new ArrayList<>());
+                    detail.setTenant(new ArrayList<>());
+                    detail.setDept(new ArrayList<>());
+                    detail.setRole(new ArrayList<>());
+                    detail.setUser(new ArrayList<>());
+                    disabledDetailByTenant.put(tenantCode, detail);
+                }
+
+                String permCode = perm.getPermCode();
+                String targetType = perm.getTargetType();
+
+                // 根据策略类型分类禁用权限
+                if ("TENANT".equals(targetType)) {
+                    if (!detail.getTenant().contains(permCode)) {
+                        detail.getTenant().add(permCode);
+                    }
+                } else if ("DEPT".equals(targetType)) {
+                    if (!detail.getDept().contains(permCode)) {
+                        detail.getDept().add(permCode);
+                    }
+                } else if ("ROLE".equals(targetType)) {
+                    if (!detail.getRole().contains(permCode)) {
+                        detail.getRole().add(permCode);
+                    }
+                } else if ("USER".equals(targetType)) {
+                    if (!detail.getUser().contains(permCode)) {
+                        detail.getUser().add(permCode);
                     }
                 }
             }
@@ -346,15 +386,17 @@ public class AuthServiceImpl implements IAuthService {
         }
         permissionInfo.setFieldPermissionByTenant(fieldPermByTenant);
 
-        // 初始化禁用详情（按租户分组）
-        Map<String, UserContextDTO.DisabledDetail> disabledDetailByTenant = new HashMap<>();
+        // 设置禁用详情（确保所有租户都有完整结构）
         for (String tenantCode : permsByTenant.keySet()) {
-            UserContextDTO.DisabledDetail detail = new UserContextDTO.DisabledDetail();
-            detail.setSystem(new ArrayList<>());
-            detail.setTenant(new ArrayList<>());
-            detail.setRole(new ArrayList<>());
-            detail.setUser(new ArrayList<>());
-            disabledDetailByTenant.put(tenantCode, detail);
+            if (!disabledDetailByTenant.containsKey(tenantCode)) {
+                UserContextDTO.DisabledDetail detail = new UserContextDTO.DisabledDetail();
+                detail.setSystem(new ArrayList<>());
+                detail.setTenant(new ArrayList<>());
+                detail.setDept(new ArrayList<>());
+                detail.setRole(new ArrayList<>());
+                detail.setUser(new ArrayList<>());
+                disabledDetailByTenant.put(tenantCode, detail);
+            }
         }
         permissionInfo.setDisabledDetailByTenant(disabledDetailByTenant);
 

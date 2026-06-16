@@ -27,7 +27,6 @@
             AND t.is_deleted = 'NOT_DELETED'
         INNER JOIN sys_perm_policy pp ON pp.target_type = 'TENANT'
             AND pp.target_id = t.id
-            AND pp.status = 'ACTIVE'
             AND pp.is_deleted = 'NOT_DELETED'
         LEFT JOIN sys_perm_policy pp_parent ON pp_parent.id = pp.perm_id
         INNER JOIN sys_perm p ON p.id = COALESCE(pp_parent.perm_id, pp.perm_id)
@@ -59,7 +58,6 @@
             AND t.is_deleted = 'NOT_DELETED'
         INNER JOIN sys_perm_policy pp ON pp.target_type = 'USER'
             AND pp.target_id = up_tenant.id
-            AND pp.status = 'ACTIVE'
             AND pp.is_deleted = 'NOT_DELETED'
         LEFT JOIN sys_perm_policy pp_parent ON pp_parent.id = pp.perm_id
         INNER JOIN sys_perm p ON p.id = COALESCE(pp_parent.perm_id, pp.perm_id)
@@ -103,7 +101,6 @@
             AND r.is_deleted = 'NOT_DELETED'
         INNER JOIN sys_perm_policy pp ON pp.target_type = 'ROLE'
             AND pp.target_id = tp_role.id
-            AND pp.status = 'ACTIVE'
             AND pp.is_deleted = 'NOT_DELETED'
         LEFT JOIN sys_perm_policy pp_parent ON pp_parent.id = pp.perm_id
         INNER JOIN sys_perm p ON p.id = COALESCE(pp_parent.perm_id, pp.perm_id)
@@ -147,7 +144,6 @@
             AND d.is_deleted = 'NOT_DELETED'
         INNER JOIN sys_perm_policy pp ON pp.target_type = 'DEPT'
             AND pp.target_id = tp_dept.id
-            AND pp.status = 'ACTIVE'
             AND pp.is_deleted = 'NOT_DELETED'
         LEFT JOIN sys_perm_policy pp_parent ON pp_parent.id = pp.perm_id
         INNER JOIN sys_perm p ON p.id = COALESCE(pp_parent.perm_id, pp.perm_id)

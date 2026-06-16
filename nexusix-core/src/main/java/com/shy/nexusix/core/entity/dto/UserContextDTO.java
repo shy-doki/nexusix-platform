@@ -145,6 +145,8 @@ public class UserContextDTO {
         private List<String> system;
         /** 租户级禁用的权限编码 */
         private List<String> tenant;
+        /** 部门级禁用的权限编码 */
+        private List<String> dept;
         /** 角色级禁用的权限编码 */
         private List<String> role;
         /** 用户级禁用的权限编码 */
