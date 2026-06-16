@@ -8,7 +8,7 @@
             t.id AS tenantId,
             t.tenant_code AS tenantCode,
             t.tenant_name AS tenantName,
-            t.status AS status,
+            up.status AS status,
             t.expire_time AS expireTime,
             up.is_primary AS isPrimary,
             up.id AS tenantUserId

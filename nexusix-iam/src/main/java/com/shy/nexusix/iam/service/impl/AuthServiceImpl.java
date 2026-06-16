@@ -114,7 +114,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 执行登录操作
-        StpUtil.login(user.getId());
+        // StpUtil.login(user.getId());
 
         // 更新最后登录时间和IP（UPDATE操作）
         user.setLastLoginAt(LocalDateTime.now());
@@ -372,7 +372,7 @@ public class AuthServiceImpl implements IAuthService {
                 currentTenantList.add(item);
             }
 
-            if ("ENABLED".equals(dto.getStatus())) {
+            if ("ACTIVE".equals(dto.getStatus())) {
                 validTenants.add(item);
             } else {
                 invalidTenants.add(item);
@@ -411,7 +411,7 @@ public class AuthServiceImpl implements IAuthService {
         userContext.setDeptInfo(deptGroup);
 
         // 存入Session
-        StpUtil.getSession().set(GlobalConstant.Session.USER_CONTEXT, userContext);
+        // StpUtil.getSession().set(GlobalConstant.Session.USER_CONTEXT, userContext);
 
         return ApiResponse.success("登录成功", userContext);
     }
