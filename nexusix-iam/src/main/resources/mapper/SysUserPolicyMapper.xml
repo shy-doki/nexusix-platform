@@ -29,7 +29,46 @@
             t.tenant_code AS tenantCode,
             t.tenant_name AS tenantName,
             up_role.status AS rolePolicyStatus,
-            'SELF' AS dataScope,  -- TODO: 后续从角色配置或权限策略中查询真实的数据范围
+            COALESCE(
+                (SELECT MIN(
+                    CASE pp.data_scope
+                        WHEN 'SELF' THEN 1
+                        WHEN 'DEPT' THEN 2
+                        WHEN 'DEPT_AND_SUB' THEN 3
+                        WHEN 'ALL' THEN 4
+                        ELSE 1
+                    END
+                )
+                FROM sys_perm_policy pp
+                WHERE pp.target_type = 'ROLE'
+                  AND pp.target_id = tp.id
+                  AND pp.status = 'ACTIVE'
+                  AND pp.is_deleted = 'NOT_DELETED'),
+                1
+            ) AS dataScopeRank,
+            CASE COALESCE(
+                (SELECT MIN(
+                    CASE pp.data_scope
+                        WHEN 'SELF' THEN 1
+                        WHEN 'DEPT' THEN 2
+                        WHEN 'DEPT_AND_SUB' THEN 3
+                        WHEN 'ALL' THEN 4
+                        ELSE 1
+                    END
+                )
+                FROM sys_perm_policy pp
+                WHERE pp.target_type = 'ROLE'
+                  AND pp.target_id = tp.id
+                  AND pp.status = 'ACTIVE'
+                  AND pp.is_deleted = 'NOT_DELETED'),
+                1
+            )
+                WHEN 1 THEN 'SELF'
+                WHEN 2 THEN 'DEPT'
+                WHEN 3 THEN 'DEPT_AND_SUB'
+                WHEN 4 THEN 'ALL'
+                ELSE 'SELF'
+            END AS dataScope,
             up_tenant.id AS tenantUserId
         FROM sys_user_policy up_tenant
         -- 用户加入租户（target_type='TENANT'）

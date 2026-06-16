@@ -116,60 +116,88 @@ public class AuthServiceImpl implements IAuthService {
         // 执行登录操作
         // StpUtil.login(user.getId());
 
-        // 更新最后登录时间和IP（UPDATE操作）
+        // 更新最后登录时间和IP
         user.setLastLoginAt(LocalDateTime.now());
         // user.setLastLoginIp(获取真实IP); // 从请求中获取
         sysUserMapper.updateById(user);
 
-        // 查询用户所有权限信息
+        // 提取当前租户信息
+        String currentTenantCode = currentTenant.getTenantCode();
+        String currentTenantName = currentTenant.getTenantName();
+
+        // ==================== 构建权限信息 ====================
         List<UserPermDTO> permList = sysPermPolicyMapper.queryUserAllPermInfo(user.getId());
-
-        // 构建权限信息对象
         UserContextDTO.PermissionInfo permissionInfo = new UserContextDTO.PermissionInfo();
-        Set<String> allPermCodeSet = new LinkedHashSet<>();
-        List<String> validPermCodeList = new ArrayList<>();
-        List<String> invalidPermCodeList = new ArrayList<>();
 
-        // 字段级权限映射，按操作类型分组（查询/创建/更新）
+        // 按租户分组权限
+        Map<String, List<UserContextDTO.PermItem>> permsByTenant = new LinkedHashMap<>();
+        Map<String, String> permTenantNames = new HashMap<>();
+
+        // 当前租户的启用/禁用权限
+        List<UserContextDTO.PermItem> currentEnabledPerms = new ArrayList<>();
+        List<UserContextDTO.PermItem> currentDisabledPerms = new ArrayList<>();
+
+        // 字段级权限（只保留当前租户）
         Map<String, UserContextDTO.TableFieldPermission> queryFieldMap = new HashMap<>();
         Map<String, UserContextDTO.TableFieldPermission> createFieldMap = new HashMap<>();
         Map<String, UserContextDTO.TableFieldPermission> updateFieldMap = new HashMap<>();
 
-        // 遍历所有权限记录，提取权限编码和字段级权限（优化：减少嵌套循环和重复操作）
+        // 用于去重的集合（基于 permCode + tenantCode）
+        Set<String> permDeduplicationSet = new LinkedHashSet<>();
+
+        // 用于字段权限去重（基于 tableName + fieldName + operation）
+        Set<String> fieldOpDeduplicationSet = new LinkedHashSet<>();
+
+        // 遍历所有权限记录
         for (UserPermDTO perm : permList) {
-            if (perm.getPermCode() == null) {
+            if (perm.getPermCode() == null || perm.getTenantCode() == null) {
                 continue;
             }
 
-            // 权限编码去重
-            allPermCodeSet.add(perm.getPermCode());
+            String tenantCode = perm.getTenantCode();
+            String tenantName = perm.getTenantName();
+            permTenantNames.putIfAbsent(tenantCode, tenantName);
 
-            // 根据权限策略状态分类权限编码
-            boolean isActive = "ACTIVE".equals(perm.getPermPolicyStatus());
-            if (isActive) {
-                validPermCodeList.add(perm.getPermCode());
-            } else {
-                invalidPermCodeList.add(perm.getPermCode());
+            // 构建权限项并去重
+            String deduplicationKey = perm.getPermCode() + "_" + tenantCode;
+            if (!permDeduplicationSet.contains(deduplicationKey)) {
+                permDeduplicationSet.add(deduplicationKey);
+
+                UserContextDTO.PermItem item = new UserContextDTO.PermItem();
+                item.setPermCode(perm.getPermCode());
+                item.setPermName(perm.getPermName());
+                item.setPermType(perm.getPermType());
+                item.setTenantCode(tenantCode);
+                item.setTenantName(tenantName);
+                item.setPermPolicyStatus(perm.getPermPolicyStatus());
+
+                // 按租户分组
+                permsByTenant.computeIfAbsent(tenantCode, k -> new ArrayList<>()).add(item);
+
+                // 当前租户的启用/禁用分组
+                if (currentTenantCode.equals(tenantCode)) {
+                    if ("ACTIVE".equals(perm.getPermPolicyStatus())) {
+                        currentEnabledPerms.add(item);
+                    } else {
+                        currentDisabledPerms.add(item);
+                    }
+                }
             }
 
-            // 解析字段级权限（JSON格式：{"user_name":["READ","CREATE","UPDATE"], "email":["READ","UPDATE"]}）
+            // 🔴 关键修复：字段级权限只处理当前租户
+            if (!currentTenantCode.equals(tenantCode)) {
+                continue;
+            }
+
+            // 处理字段级权限
+            boolean isActive = "ACTIVE".equals(perm.getPermPolicyStatus());
             if (perm.getFieldPermissions() != null && !perm.getFieldPermissions().isEmpty()
                 && perm.getTableName() != null) {
                 try {
-                    Map<String, List<String>> fieldMap = JSON.parseObject(
-                        perm.getFieldPermissions(),
-                        Map.class
-                    );
-
+                    Map<String, List<String>> fieldMap = JSON.parseObject(perm.getFieldPermissions(), Map.class);
                     if (fieldMap != null && !fieldMap.isEmpty()) {
                         String tableName = perm.getTableName();
 
-                        // 预先获取或创建三个操作类型的表字段权限对象，避免在循环中重复computeIfAbsent
-                        UserContextDTO.TableFieldPermission queryTablePerm = null;
-                        UserContextDTO.TableFieldPermission createTablePerm = null;
-                        UserContextDTO.TableFieldPermission updateTablePerm = null;
-
-                        // 遍历每个字段及其操作类型
                         for (Map.Entry<String, List<String>> entry : fieldMap.entrySet()) {
                             String fieldName = entry.getKey();
                             List<String> operations = entry.getValue();
@@ -178,65 +206,68 @@ public class AuthServiceImpl implements IAuthService {
                                 continue;
                             }
 
-                            // 处理READ操作，映射到查询权限
-                            if (operations.contains("READ")) {
-                                if (queryTablePerm == null) {
-                                    queryTablePerm = queryFieldMap.computeIfAbsent(tableName,
-                                        k -> new UserContextDTO.TableFieldPermission());
-                                }
+                            // 🔴 关键修复：遍历每个操作并去重
+                            for (String operation : operations) {
+                                // 使用 表名:字段名:操作 作为去重key
+                                String fieldOpKey = tableName + ":" + fieldName + ":" + operation;
 
-                                // 黑名单机制：只要有一个来源是DISABLED，字段就不可操作
-                                if (!isActive) {
-                                    if (!queryTablePerm.getInoperable().contains(fieldName)) {
-                                        queryTablePerm.getInoperable().add(fieldName);
-                                    }
-                                    queryTablePerm.getOperable().remove(fieldName);
-                                } else {
-                                    if (!queryTablePerm.getInoperable().contains(fieldName)
-                                        && !queryTablePerm.getOperable().contains(fieldName)) {
-                                        queryTablePerm.getOperable().add(fieldName);
-                                    }
+                                // 如果已经处理过这个字段+操作组合，跳过
+                                if (fieldOpDeduplicationSet.contains(fieldOpKey)) {
+                                    continue;
                                 }
-                            }
+                                fieldOpDeduplicationSet.add(fieldOpKey);
 
-                            // 处理CREATE操作，映射到创建权限
-                            if (operations.contains("CREATE")) {
-                                if (createTablePerm == null) {
-                                    createTablePerm = createFieldMap.computeIfAbsent(tableName,
-                                        k -> new UserContextDTO.TableFieldPermission());
-                                }
+                                // 处理READ操作
+                                if ("READ".equals(operation)) {
+                                    UserContextDTO.TableFieldPermission tablePerm =
+                                        queryFieldMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
 
-                                // 黑名单机制：只要有一个来源是DISABLED，字段就不可操作
-                                if (!isActive) {
-                                    if (!createTablePerm.getInoperable().contains(fieldName)) {
-                                        createTablePerm.getInoperable().add(fieldName);
-                                    }
-                                    createTablePerm.getOperable().remove(fieldName);
-                                } else {
-                                    if (!createTablePerm.getInoperable().contains(fieldName)
-                                        && !createTablePerm.getOperable().contains(fieldName)) {
-                                        createTablePerm.getOperable().add(fieldName);
+                                    if (!isActive) {
+                                        if (!tablePerm.getInoperable().contains(fieldName)) {
+                                            tablePerm.getInoperable().add(fieldName);
+                                        }
+                                        tablePerm.getOperable().remove(fieldName);
+                                    } else {
+                                        if (!tablePerm.getInoperable().contains(fieldName)
+                                            && !tablePerm.getOperable().contains(fieldName)) {
+                                            tablePerm.getOperable().add(fieldName);
+                                        }
                                     }
                                 }
-                            }
 
-                            // 处理UPDATE操作，映射到更新权限
-                            if (operations.contains("UPDATE")) {
-                                if (updateTablePerm == null) {
-                                    updateTablePerm = updateFieldMap.computeIfAbsent(tableName,
-                                        k -> new UserContextDTO.TableFieldPermission());
+                                // 处理CREATE操作
+                                if ("CREATE".equals(operation)) {
+                                    UserContextDTO.TableFieldPermission tablePerm =
+                                        createFieldMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
+
+                                    if (!isActive) {
+                                        if (!tablePerm.getInoperable().contains(fieldName)) {
+                                            tablePerm.getInoperable().add(fieldName);
+                                        }
+                                        tablePerm.getOperable().remove(fieldName);
+                                    } else {
+                                        if (!tablePerm.getInoperable().contains(fieldName)
+                                            && !tablePerm.getOperable().contains(fieldName)) {
+                                            tablePerm.getOperable().add(fieldName);
+                                        }
+                                    }
                                 }
 
-                                // 黑名单机制：只要有一个来源是DISABLED，字段就不可操作
-                                if (!isActive) {
-                                    if (!updateTablePerm.getInoperable().contains(fieldName)) {
-                                        updateTablePerm.getInoperable().add(fieldName);
-                                    }
-                                    updateTablePerm.getOperable().remove(fieldName);
-                                } else {
-                                    if (!updateTablePerm.getInoperable().contains(fieldName)
-                                        && !updateTablePerm.getOperable().contains(fieldName)) {
-                                        updateTablePerm.getOperable().add(fieldName);
+                                // 处理UPDATE操作
+                                if ("UPDATE".equals(operation)) {
+                                    UserContextDTO.TableFieldPermission tablePerm =
+                                        updateFieldMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
+
+                                    if (!isActive) {
+                                        if (!tablePerm.getInoperable().contains(fieldName)) {
+                                            tablePerm.getInoperable().add(fieldName);
+                                        }
+                                        tablePerm.getOperable().remove(fieldName);
+                                    } else {
+                                        if (!tablePerm.getInoperable().contains(fieldName)
+                                            && !tablePerm.getOperable().contains(fieldName)) {
+                                            tablePerm.getOperable().add(fieldName);
+                                        }
                                     }
                                 }
                             }
@@ -248,111 +279,289 @@ public class AuthServiceImpl implements IAuthService {
             }
         }
 
-        // 设置权限编码列表
-        permissionInfo.setAll(new ArrayList<>(allPermCodeSet));
-        permissionInfo.setValid(validPermCodeList);
-        permissionInfo.setInvalid(invalidPermCodeList);
+        // 设置current（启用/禁用分组）
+        UserContextDTO.CurrentPermissions currentPerms = new UserContextDTO.CurrentPermissions();
+        currentPerms.setEnabled(currentEnabledPerms);
+        currentPerms.setDisabled(currentDisabledPerms);
+        permissionInfo.setCurrent(currentPerms);
 
-        // 设置字段级权限
-        UserContextDTO.FieldPermission fieldPermission = new UserContextDTO.FieldPermission();
-        fieldPermission.setQuery(queryFieldMap);
-        fieldPermission.setCreate(createFieldMap);
-        fieldPermission.setUpdate(updateFieldMap);
-        permissionInfo.setFieldPermission(fieldPermission);
+        // 设置all/valid/invalid（按租户分组）
+        List<UserContextDTO.TenantPermissions> allTenantPerms = new ArrayList<>();
+        List<UserContextDTO.TenantPermissions> validTenantPerms = new ArrayList<>();
+        List<UserContextDTO.TenantPermissions> invalidTenantPerms = new ArrayList<>();
 
-        // 初始化禁用详情（初始化为空）
-        UserContextDTO.DisabledDetail disabledDetail = new UserContextDTO.DisabledDetail();
-        disabledDetail.setSystem(new ArrayList<>());
-        disabledDetail.setTenant(new ArrayList<>());
-        disabledDetail.setRole(new ArrayList<>());
-        disabledDetail.setUser(new ArrayList<>());
-        permissionInfo.setDisabledDetail(disabledDetail);
+        for (Map.Entry<String, List<UserContextDTO.PermItem>> entry : permsByTenant.entrySet()) {
+            String tenantCode = entry.getKey();
+            String tenantName = permTenantNames.get(tenantCode);
+            List<UserContextDTO.PermItem> perms = entry.getValue();
 
-        // 查询用户所有部门信息
+            // all
+            UserContextDTO.TenantPermissions allGroup = new UserContextDTO.TenantPermissions();
+            allGroup.setTenantCode(tenantCode);
+            allGroup.setTenantName(tenantName);
+            allGroup.setPermissions(new ArrayList<>(perms));
+            allTenantPerms.add(allGroup);
+
+            // valid/invalid分组
+            List<UserContextDTO.PermItem> validPerms = new ArrayList<>();
+            List<UserContextDTO.PermItem> invalidPerms = new ArrayList<>();
+            for (UserContextDTO.PermItem perm : perms) {
+                if ("ACTIVE".equals(perm.getPermPolicyStatus())) {
+                    validPerms.add(perm);
+                } else {
+                    invalidPerms.add(perm);
+                }
+            }
+
+            if (!validPerms.isEmpty()) {
+                UserContextDTO.TenantPermissions validGroup = new UserContextDTO.TenantPermissions();
+                validGroup.setTenantCode(tenantCode);
+                validGroup.setTenantName(tenantName);
+                validGroup.setPermissions(validPerms);
+                validTenantPerms.add(validGroup);
+            }
+
+            if (!invalidPerms.isEmpty()) {
+                UserContextDTO.TenantPermissions invalidGroup = new UserContextDTO.TenantPermissions();
+                invalidGroup.setTenantCode(tenantCode);
+                invalidGroup.setTenantName(tenantName);
+                invalidGroup.setPermissions(invalidPerms);
+                invalidTenantPerms.add(invalidGroup);
+            }
+        }
+
+        permissionInfo.setAll(allTenantPerms);
+        permissionInfo.setValid(validTenantPerms);
+        permissionInfo.setInvalid(invalidTenantPerms);
+
+        // 设置字段级权限（按租户分组，当前只有当前租户）
+        Map<String, UserContextDTO.FieldPermission> fieldPermByTenant = new HashMap<>();
+        UserContextDTO.FieldPermission fp = new UserContextDTO.FieldPermission();
+        fp.setQuery(queryFieldMap);
+        fp.setCreate(createFieldMap);
+        fp.setUpdate(updateFieldMap);
+        fieldPermByTenant.put(currentTenantCode, fp);
+        permissionInfo.setFieldPermissionByTenant(fieldPermByTenant);
+
+        // 初始化禁用详情（按租户分组）
+        Map<String, UserContextDTO.DisabledDetail> disabledDetailByTenant = new HashMap<>();
+        for (String tenantCode : permsByTenant.keySet()) {
+            UserContextDTO.DisabledDetail detail = new UserContextDTO.DisabledDetail();
+            detail.setSystem(new ArrayList<>());
+            detail.setTenant(new ArrayList<>());
+            detail.setRole(new ArrayList<>());
+            detail.setUser(new ArrayList<>());
+            disabledDetailByTenant.put(tenantCode, detail);
+        }
+        permissionInfo.setDisabledDetailByTenant(disabledDetailByTenant);
+
+        // ==================== 构建部门信息 ====================
         List<UserDeptDTO> deptList = sysUserPolicyMapper.queryUserAllDeptInfo(user.getId());
-
-        // 构建部门分组信息（优化：一次遍历完成所有分组）
         UserContextDTO.DeptGroup deptGroup = new UserContextDTO.DeptGroup();
-        List<UserContextDTO.DeptItem> currentDepts = new ArrayList<>();
-        List<UserContextDTO.DeptItem> allDepts = new ArrayList<>();
-        List<UserContextDTO.DeptItem> validDeptItems = new ArrayList<>();
-        List<UserContextDTO.DeptItem> invalidDeptItems = new ArrayList<>();
 
-        String currentTenantCode = currentTenant.getTenantCode();
+        // 按租户分组部门
+        Map<String, List<UserContextDTO.DeptItem>> deptsByTenant = new LinkedHashMap<>();
+        Map<String, String> deptTenantNames = new HashMap<>();
+
+        // 当前租户的启用/禁用部门
+        List<UserContextDTO.DeptItem> currentEnabledDepts = new ArrayList<>();
+        List<UserContextDTO.DeptItem> currentDisabledDepts = new ArrayList<>();
+
         for (UserDeptDTO dto : deptList) {
-            if (dto.getDeptCode() == null) {
+            if (dto.getDeptCode() == null || dto.getTenantCode() == null) {
                 continue;
             }
+
+            String tenantCode = dto.getTenantCode();
+            String tenantName = dto.getTenantName();
+            deptTenantNames.putIfAbsent(tenantCode, tenantName);
 
             UserContextDTO.DeptItem item = new UserContextDTO.DeptItem();
             item.setDeptCode(dto.getDeptCode());
             item.setDeptName(dto.getDeptName());
             item.setPath(dto.getPath());
             item.setLevel(dto.getLevel());
-            item.setTenantCode(dto.getTenantCode());
-            item.setTenantName(dto.getTenantName());
+            item.setTenantCode(tenantCode);
+            item.setTenantName(tenantName);
             item.setIsPrimary(dto.getIsPrimary());
             item.setUserPolicyStatus(dto.getUserPolicyStatus());
 
-            allDepts.add(item);
+            // 按租户分组
+            deptsByTenant.computeIfAbsent(tenantCode, k -> new ArrayList<>()).add(item);
 
-            if (currentTenantCode != null && currentTenantCode.equals(dto.getTenantCode())) {
-                currentDepts.add(item);
-            }
-
-            if ("ACTIVE".equals(dto.getUserPolicyStatus())) {
-                validDeptItems.add(item);
-            } else {
-                invalidDeptItems.add(item);
+            // 当前租户的启用/禁用分组
+            if (currentTenantCode.equals(tenantCode)) {
+                if ("ACTIVE".equals(dto.getUserPolicyStatus())) {
+                    currentEnabledDepts.add(item);
+                } else {
+                    currentDisabledDepts.add(item);
+                }
             }
         }
 
+        // 设置current
+        UserContextDTO.CurrentDepts currentDepts = new UserContextDTO.CurrentDepts();
+        currentDepts.setEnabled(currentEnabledDepts);
+        currentDepts.setDisabled(currentDisabledDepts);
         deptGroup.setCurrent(currentDepts);
-        deptGroup.setAll(allDepts);
-        deptGroup.setValid(validDeptItems);
-        deptGroup.setInvalid(invalidDeptItems);
 
-        // 查询用户所有角色信息
+        // 设置all/valid/invalid（按租户分组）
+        List<UserContextDTO.TenantDepts> allTenantDepts = new ArrayList<>();
+        List<UserContextDTO.TenantDepts> validTenantDepts = new ArrayList<>();
+        List<UserContextDTO.TenantDepts> invalidTenantDepts = new ArrayList<>();
+
+        for (Map.Entry<String, List<UserContextDTO.DeptItem>> entry : deptsByTenant.entrySet()) {
+            String tenantCode = entry.getKey();
+            String tenantName = deptTenantNames.get(tenantCode);
+            List<UserContextDTO.DeptItem> depts = entry.getValue();
+
+            // all
+            UserContextDTO.TenantDepts allGroup = new UserContextDTO.TenantDepts();
+            allGroup.setTenantCode(tenantCode);
+            allGroup.setTenantName(tenantName);
+            allGroup.setDepts(new ArrayList<>(depts));
+            allTenantDepts.add(allGroup);
+
+            // valid/invalid分组
+            List<UserContextDTO.DeptItem> validDepts = new ArrayList<>();
+            List<UserContextDTO.DeptItem> invalidDepts = new ArrayList<>();
+            for (UserContextDTO.DeptItem dept : depts) {
+                if ("ACTIVE".equals(dept.getUserPolicyStatus())) {
+                    validDepts.add(dept);
+                } else {
+                    invalidDepts.add(dept);
+                }
+            }
+
+            if (!validDepts.isEmpty()) {
+                UserContextDTO.TenantDepts validGroup = new UserContextDTO.TenantDepts();
+                validGroup.setTenantCode(tenantCode);
+                validGroup.setTenantName(tenantName);
+                validGroup.setDepts(validDepts);
+                validTenantDepts.add(validGroup);
+            }
+
+            if (!invalidDepts.isEmpty()) {
+                UserContextDTO.TenantDepts invalidGroup = new UserContextDTO.TenantDepts();
+                invalidGroup.setTenantCode(tenantCode);
+                invalidGroup.setTenantName(tenantName);
+                invalidGroup.setDepts(invalidDepts);
+                invalidTenantDepts.add(invalidGroup);
+            }
+        }
+
+        deptGroup.setAll(allTenantDepts);
+        deptGroup.setValid(validTenantDepts);
+        deptGroup.setInvalid(invalidTenantDepts);
+
+        // ==================== 构建角色信息 ====================
         List<UserRoleDTO> roleList = sysUserPolicyMapper.queryUserAllRoleInfo(user.getId());
-
-        // 构建角色分组信息（优化：一次遍历完成所有分组）
         UserContextDTO.RoleGroup roleGroup = new UserContextDTO.RoleGroup();
-        List<UserContextDTO.RoleItem> currentRoles = new ArrayList<>();
-        List<UserContextDTO.RoleItem> allRoles = new ArrayList<>();
-        List<UserContextDTO.RoleItem> validRoleItems = new ArrayList<>();
-        List<UserContextDTO.RoleItem> invalidRoleItems = new ArrayList<>();
+
+        // 按租户分组角色
+        Map<String, List<UserContextDTO.RoleItem>> rolesByTenant = new LinkedHashMap<>();
+        Map<String, String> roleTenantNames = new HashMap<>();
+        Map<String, Map<String, String>> roleStatusByTenant = new HashMap<>(); // 存储角色状态
+
+        // 当前租户的启用/禁用角色
+        List<UserContextDTO.RoleItem> currentEnabledRoles = new ArrayList<>();
+        List<UserContextDTO.RoleItem> currentDisabledRoles = new ArrayList<>();
 
         for (UserRoleDTO dto : roleList) {
-            if (dto.getRoleCode() == null) {
+            if (dto.getRoleCode() == null || dto.getTenantCode() == null) {
                 continue;
             }
 
+            String tenantCode = dto.getTenantCode();
+            String tenantName = dto.getTenantName();
+            String roleCode = dto.getRoleCode();
+            String status = dto.getRolePolicyStatus();
+
+            roleTenantNames.putIfAbsent(tenantCode, tenantName);
+
+            // 存储角色状态
+            roleStatusByTenant.computeIfAbsent(tenantCode, k -> new HashMap<>()).put(roleCode, status);
+
             UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
-            item.setRoleCode(dto.getRoleCode());
+            item.setRoleCode(roleCode);
+            item.setRoleName(dto.getRoleName());
             item.setDataScope(dto.getDataScope() != null ? dto.getDataScope() : "SELF");
-            item.setTenantCode(dto.getTenantCode());
-            item.setTenantName(dto.getTenantName());
+            item.setTenantCode(tenantCode);
+            item.setTenantName(tenantName);
 
-            allRoles.add(item);
+            // 按租户分组
+            rolesByTenant.computeIfAbsent(tenantCode, k -> new ArrayList<>()).add(item);
 
-            if (currentTenantCode != null && currentTenantCode.equals(dto.getTenantCode())) {
-                currentRoles.add(item);
-            }
-
-            if ("ACTIVE".equals(dto.getRolePolicyStatus())) {
-                validRoleItems.add(item);
-            } else {
-                invalidRoleItems.add(item);
+            // 当前租户的启用/禁用分组
+            if (currentTenantCode.equals(tenantCode)) {
+                if ("ACTIVE".equals(status)) {
+                    currentEnabledRoles.add(item);
+                } else {
+                    currentDisabledRoles.add(item);
+                }
             }
         }
 
+        // 设置current
+        UserContextDTO.CurrentRoles currentRoles = new UserContextDTO.CurrentRoles();
+        currentRoles.setEnabled(currentEnabledRoles);
+        currentRoles.setDisabled(currentDisabledRoles);
         roleGroup.setCurrent(currentRoles);
-        roleGroup.setAll(allRoles);
-        roleGroup.setValid(validRoleItems);
-        roleGroup.setInvalid(invalidRoleItems);
 
-        // 构建租户分组信息（优化：一次遍历完成所有分组）
+        // 设置all/valid/invalid（按租户分组）
+        List<UserContextDTO.TenantRoles> allTenantRoles = new ArrayList<>();
+        List<UserContextDTO.TenantRoles> validTenantRoles = new ArrayList<>();
+        List<UserContextDTO.TenantRoles> invalidTenantRoles = new ArrayList<>();
+
+        for (Map.Entry<String, List<UserContextDTO.RoleItem>> entry : rolesByTenant.entrySet()) {
+            String tenantCode = entry.getKey();
+            String tenantName = roleTenantNames.get(tenantCode);
+            List<UserContextDTO.RoleItem> roles = entry.getValue();
+            Map<String, String> statusMap = roleStatusByTenant.get(tenantCode);
+
+            // all
+            UserContextDTO.TenantRoles allGroup = new UserContextDTO.TenantRoles();
+            allGroup.setTenantCode(tenantCode);
+            allGroup.setTenantName(tenantName);
+            allGroup.setRoles(new ArrayList<>(roles));
+            allTenantRoles.add(allGroup);
+
+            // valid/invalid分组
+            List<UserContextDTO.RoleItem> validRoles = new ArrayList<>();
+            List<UserContextDTO.RoleItem> invalidRoles = new ArrayList<>();
+            for (UserContextDTO.RoleItem role : roles) {
+                String status = statusMap.get(role.getRoleCode());
+                if ("ACTIVE".equals(status)) {
+                    validRoles.add(role);
+                } else {
+                    invalidRoles.add(role);
+                }
+            }
+
+            if (!validRoles.isEmpty()) {
+                UserContextDTO.TenantRoles validGroup = new UserContextDTO.TenantRoles();
+                validGroup.setTenantCode(tenantCode);
+                validGroup.setTenantName(tenantName);
+                validGroup.setRoles(validRoles);
+                validTenantRoles.add(validGroup);
+            }
+
+            if (!invalidRoles.isEmpty()) {
+                UserContextDTO.TenantRoles invalidGroup = new UserContextDTO.TenantRoles();
+                invalidGroup.setTenantCode(tenantCode);
+                invalidGroup.setTenantName(tenantName);
+                invalidGroup.setRoles(invalidRoles);
+                invalidTenantRoles.add(invalidGroup);
+            }
+        }
+
+        roleGroup.setAll(allTenantRoles);
+        roleGroup.setValid(validTenantRoles);
+        roleGroup.setInvalid(invalidTenantRoles);
+
+        // ==================== 构建租户信息 ====================
         UserContextDTO.TenantGroup tenantGroup = new UserContextDTO.TenantGroup();
+
         List<UserContextDTO.TenantItem> currentTenantList = new ArrayList<>();
         List<UserContextDTO.TenantItem> allTenants = new ArrayList<>();
         List<UserContextDTO.TenantItem> validTenants = new ArrayList<>();
@@ -398,16 +607,10 @@ public class AuthServiceImpl implements IAuthService {
         userInfo.setAvatar(user.getAvatarUrl());
         userContext.setUserInfo(userInfo);
 
-        // 设置租户分组
+        // 设置各分组信息
         userContext.setTenantInfo(tenantGroup);
-
-        // 设置权限信息
         userContext.setPermInfo(permissionInfo);
-
-        // 设置角色分组
         userContext.setRoleInfo(roleGroup);
-
-        // 设置部门分组
         userContext.setDeptInfo(deptGroup);
 
         // 存入Session

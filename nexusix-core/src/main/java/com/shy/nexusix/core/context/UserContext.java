@@ -36,30 +36,55 @@ public class UserContext {
         // 权限信息
         UserContextDTO.PermissionInfo permissionInfo = dto.getPermInfo();
         if (permissionInfo != null) {
+            // current 现在是 CurrentPermissions 类型
+            UserContextDTO.CurrentPermissions currentPerms = permissionInfo.getCurrent();
+            if (currentPerms != null) {
+                currentPerms.setEnabled(nullToEmpty(currentPerms.getEnabled()));
+                currentPerms.setDisabled(nullToEmpty(currentPerms.getDisabled()));
+            }
+
+            // all/valid/invalid 现在是 List<TenantPermissions> 类型
             permissionInfo.setAll(nullToEmpty(permissionInfo.getAll()));
             permissionInfo.setValid(nullToEmpty(permissionInfo.getValid()));
             permissionInfo.setInvalid(nullToEmpty(permissionInfo.getInvalid()));
 
-            UserContextDTO.DisabledDetail disabledDetail = permissionInfo.getDisabledDetail();
-            if (disabledDetail != null) {
-                disabledDetail.setSystem(nullToEmpty(disabledDetail.getSystem()));
-                disabledDetail.setTenant(nullToEmpty(disabledDetail.getTenant()));
-                disabledDetail.setRole(nullToEmpty(disabledDetail.getRole()));
-                disabledDetail.setUser(nullToEmpty(disabledDetail.getUser()));
+            // disabledDetail 现在是按租户分组的 Map
+            Map<String, UserContextDTO.DisabledDetail> disabledDetailMap = permissionInfo.getDisabledDetailByTenant();
+            if (disabledDetailMap != null) {
+                for (UserContextDTO.DisabledDetail detail : disabledDetailMap.values()) {
+                    if (detail != null) {
+                        detail.setSystem(nullToEmpty(detail.getSystem()));
+                        detail.setTenant(nullToEmpty(detail.getTenant()));
+                        detail.setRole(nullToEmpty(detail.getRole()));
+                        detail.setUser(nullToEmpty(detail.getUser()));
+                    }
+                }
             }
 
-            UserContextDTO.FieldPermission fieldPermission = permissionInfo.getFieldPermission();
-            if (fieldPermission != null) {
-                ensureFieldPermMapNonNull(fieldPermission.getQuery());
-                ensureFieldPermMapNonNull(fieldPermission.getCreate());
-                ensureFieldPermMapNonNull(fieldPermission.getUpdate());
+            // fieldPermission 现在是按租户分组的 Map
+            Map<String, UserContextDTO.FieldPermission> fieldPermMap = permissionInfo.getFieldPermissionByTenant();
+            if (fieldPermMap != null) {
+                for (UserContextDTO.FieldPermission fp : fieldPermMap.values()) {
+                    if (fp != null) {
+                        ensureFieldPermMapNonNull(fp.getQuery());
+                        ensureFieldPermMapNonNull(fp.getCreate());
+                        ensureFieldPermMapNonNull(fp.getUpdate());
+                    }
+                }
             }
         }
 
         // 部门分组
         UserContextDTO.DeptGroup deptGroup = dto.getDeptInfo();
         if (deptGroup != null) {
-            deptGroup.setCurrent(nullToEmpty(deptGroup.getCurrent()));
+            // current 现在是 CurrentDepts 类型
+            UserContextDTO.CurrentDepts currentDepts = deptGroup.getCurrent();
+            if (currentDepts != null) {
+                currentDepts.setEnabled(nullToEmpty(currentDepts.getEnabled()));
+                currentDepts.setDisabled(nullToEmpty(currentDepts.getDisabled()));
+            }
+
+            // all/valid/invalid 现在是 List<TenantDepts> 类型
             deptGroup.setAll(nullToEmpty(deptGroup.getAll()));
             deptGroup.setValid(nullToEmpty(deptGroup.getValid()));
             deptGroup.setInvalid(nullToEmpty(deptGroup.getInvalid()));
@@ -68,7 +93,14 @@ public class UserContext {
         // 角色分组
         UserContextDTO.RoleGroup roleGroup = dto.getRoleInfo();
         if (roleGroup != null) {
-            roleGroup.setCurrent(nullToEmpty(roleGroup.getCurrent()));
+            // current 现在是 CurrentRoles 类型
+            UserContextDTO.CurrentRoles currentRoles = roleGroup.getCurrent();
+            if (currentRoles != null) {
+                currentRoles.setEnabled(nullToEmpty(currentRoles.getEnabled()));
+                currentRoles.setDisabled(nullToEmpty(currentRoles.getDisabled()));
+            }
+
+            // all/valid/invalid 现在是 List<TenantRoles> 类型
             roleGroup.setAll(nullToEmpty(roleGroup.getAll()));
             roleGroup.setValid(nullToEmpty(roleGroup.getValid()));
             roleGroup.setInvalid(nullToEmpty(roleGroup.getInvalid()));
@@ -183,6 +215,50 @@ public class UserContext {
     public static Set<String> getInvalidRoleUser() {
         // TODO 待实现
         return null;
+    }
+
+    /**
+     * 获取当前租户的字段权限
+     * 兼容新的按租户分组结构
+     */
+    public static UserContextDTO.FieldPermission getCurrentTenantFieldPermission() {
+        UserContextDTO userContext = getUserContext();
+        if (userContext == null || userContext.getPermInfo() == null) {
+            return null;
+        }
+
+        // 获取当前租户编码
+        String currentTenantCode = getCurrentTenantCode();
+        if (currentTenantCode == null) {
+            return null;
+        }
+
+        // 从按租户分组的字段权限中获取当前租户的权限
+        Map<String, UserContextDTO.FieldPermission> fieldPermByTenant =
+            userContext.getPermInfo().getFieldPermissionByTenant();
+
+        if (fieldPermByTenant == null) {
+            return null;
+        }
+
+        return fieldPermByTenant.get(currentTenantCode);
+    }
+
+    /**
+     * 获取当前租户编码
+     */
+    public static String getCurrentTenantCode() {
+        UserContextDTO userContext = getUserContext();
+        if (userContext == null || userContext.getTenantInfo() == null) {
+            return null;
+        }
+
+        List<UserContextDTO.TenantItem> current = userContext.getTenantInfo().getCurrent();
+        if (current == null || current.isEmpty()) {
+            return null;
+        }
+
+        return current.get(0).getTenantCode();
     }
 
 }

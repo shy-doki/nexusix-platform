@@ -3,10 +3,42 @@
 <mapper namespace="com.shy.nexusix.iam.mapper.SysPermPolicyMapper">
 
     <!-- 查询用户所有权限信息 -->
-    <!-- 包括：用户直接拥有的权限 + 用户角色拥有的权限 + 用户部门拥有的权限 -->
+    <!-- 包括：TENANT级权限 + 用户直接拥有的权限 + 用户角色拥有的权限 + 用户部门拥有的权限 -->
     <!-- 注意：所有权限都必须是有效状态（权限、角色、部门、租户、策略均需启用） -->
     <!-- 权限策略支持继承：perm_id可以指向系统权限ID，也可以指向父权限策略ID -->
     <select id="queryUserAllPermInfo" resultType="com.shy.nexusix.iam.dto.UserPermDTO">
+        -- 0. 租户级别的权限（TENANT级别）
+        SELECT
+            p.perm_code AS permCode,
+            p.perm_name AS permName,
+            p.perm_type AS permType,
+            t.tenant_code AS tenantCode,
+            t.tenant_name AS tenantName,
+            pp.status AS permPolicyStatus,
+            pp.target_type AS targetType,
+            pp.data_scope AS dataScope,
+            pp.table_name AS tableName,
+            pp.field_operation AS fieldPermissions,
+            up_tenant.id AS tenantUserId
+        FROM sys_user_policy up_tenant
+        INNER JOIN sys_tenant t ON t.id = up_tenant.target_id
+            AND up_tenant.target_type = 'TENANT'
+            AND t.status = 'ENABLED'
+            AND t.is_deleted = 'NOT_DELETED'
+        INNER JOIN sys_perm_policy pp ON pp.target_type = 'TENANT'
+            AND pp.target_id = t.id
+            AND pp.status = 'ACTIVE'
+            AND pp.is_deleted = 'NOT_DELETED'
+        LEFT JOIN sys_perm_policy pp_parent ON pp_parent.id = pp.perm_id
+        INNER JOIN sys_perm p ON p.id = COALESCE(pp_parent.perm_id, pp.perm_id)
+            AND p.status = 'ENABLED'
+            AND p.is_deleted = 'NOT_DELETED'
+        WHERE up_tenant.user_id = #{userId}
+          AND up_tenant.status = 'ACTIVE'
+          AND up_tenant.is_deleted = 'NOT_DELETED'
+
+        UNION ALL
+
         -- 1. 用户直接授予的权限（USER级别）
         SELECT
             p.perm_code AS permCode,

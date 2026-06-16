@@ -90,17 +90,53 @@ public class UserContextDTO {
     // ==================== 权限相关 ====================
 
     @Data
+    public static class PermItem {
+        /** 权限编码 */
+        private String permCode;
+        /** 权限名称 */
+        private String permName;
+        /** 权限类型：MENU, BUTTON, API, DATA */
+        private String permType;
+        /** 所属租户编码 */
+        private String tenantCode;
+        /** 所属租户名称 */
+        private String tenantName;
+        /** 权限策略状态（ACTIVE/DISABLED） */
+        private String permPolicyStatus;
+    }
+
+    @Data
     public static class PermissionInfo {
-        /** 全部权限编码（有效+无效，已去重） */
-        private List<String> all;
-        /** 有效权限编码（策略ACTIVE且未被任何级别禁用） */
-        private List<String> valid;
-        /** 无效权限编码（被系统/租户/角色/用户任一级别禁用） */
-        private List<String> invalid;
-        /** 级联禁用详情，按四级分类 */
-        private DisabledDetail disabledDetail;
-        /** 字段级权限，按操作类型分组 */
-        private FieldPermission fieldPermission;
+        /** 当前登录租户下的权限（分启用/禁用） */
+        private CurrentPermissions current = new CurrentPermissions();
+        /** 全部权限（按租户分组） */
+        private List<TenantPermissions> all = new ArrayList<>();
+        /** 有效权限（按租户分组） */
+        private List<TenantPermissions> valid = new ArrayList<>();
+        /** 无效权限（按租户分组） */
+        private List<TenantPermissions> invalid = new ArrayList<>();
+        /** 级联禁用详情（按租户分组） */
+        private Map<String, DisabledDetail> disabledDetailByTenant;
+        /** 字段级权限（按租户分组） */
+        private Map<String, FieldPermission> fieldPermissionByTenant;
+    }
+
+    @Data
+    public static class CurrentPermissions {
+        /** 当前租户启用的权限 */
+        private List<PermItem> enabled = new ArrayList<>();
+        /** 当前租户禁用的权限 */
+        private List<PermItem> disabled = new ArrayList<>();
+    }
+
+    @Data
+    public static class TenantPermissions {
+        /** 租户编码 */
+        private String tenantCode;
+        /** 租户名称 */
+        private String tenantName;
+        /** 该租户下的权限列表 */
+        private List<PermItem> permissions = new ArrayList<>();
     }
 
     @Data
@@ -139,6 +175,8 @@ public class UserContextDTO {
     public static class RoleItem {
         /** 角色编码 */
         private String roleCode;
+        /** 角色名称 */
+        private String roleName;
         /** 数据权限范围（ALL/DEPT/DEPT_AND_SUB/SELF） */
         private String dataScope;
         /** 所属租户编码 */
@@ -149,14 +187,32 @@ public class UserContextDTO {
 
     @Data
     public static class RoleGroup {
-        /** 当前登录租户下的角色列表 */
-        private List<RoleItem> current = new ArrayList<>();
-        /** 全部角色（跨所有租户，含有效+无效） */
-        private List<RoleItem> all = new ArrayList<>();
-        /** 有效角色（角色策略状态为ACTIVE） */
-        private List<RoleItem> valid = new ArrayList<>();
-        /** 无效角色（角色策略状态非ACTIVE） */
-        private List<RoleItem> invalid = new ArrayList<>();
+        /** 当前登录租户下的角色（分启用/禁用） */
+        private CurrentRoles current = new CurrentRoles();
+        /** 全部角色（按租户分组） */
+        private List<TenantRoles> all = new ArrayList<>();
+        /** 有效角色（按租户分组） */
+        private List<TenantRoles> valid = new ArrayList<>();
+        /** 无效角色（按租户分组） */
+        private List<TenantRoles> invalid = new ArrayList<>();
+    }
+
+    @Data
+    public static class CurrentRoles {
+        /** 当前租户启用的角色 */
+        private List<RoleItem> enabled = new ArrayList<>();
+        /** 当前租户禁用的角色 */
+        private List<RoleItem> disabled = new ArrayList<>();
+    }
+
+    @Data
+    public static class TenantRoles {
+        /** 租户编码 */
+        private String tenantCode;
+        /** 租户名称 */
+        private String tenantName;
+        /** 该租户下的角色列表 */
+        private List<RoleItem> roles = new ArrayList<>();
     }
 
     // ==================== 部门相关 ====================
@@ -183,14 +239,32 @@ public class UserContextDTO {
 
     @Data
     public static class DeptGroup {
-        /** 当前登录租户下的部门列表 */
-        private List<DeptItem> current = new ArrayList<>();
-        /** 全部部门（跨所有租户，含有效+无效） */
-        private List<DeptItem> all = new ArrayList<>();
-        /** 有效部门（用户策略状态为ACTIVE） */
-        private List<DeptItem> valid = new ArrayList<>();
-        /** 无效部门（用户策略状态非ACTIVE） */
-        private List<DeptItem> invalid = new ArrayList<>();
+        /** 当前登录租户下的部门（分启用/禁用） */
+        private CurrentDepts current = new CurrentDepts();
+        /** 全部部门（按租户分组） */
+        private List<TenantDepts> all = new ArrayList<>();
+        /** 有效部门（按租户分组） */
+        private List<TenantDepts> valid = new ArrayList<>();
+        /** 无效部门（按租户分组） */
+        private List<TenantDepts> invalid = new ArrayList<>();
+    }
+
+    @Data
+    public static class CurrentDepts {
+        /** 当前租户启用的部门 */
+        private List<DeptItem> enabled = new ArrayList<>();
+        /** 当前租户禁用的部门 */
+        private List<DeptItem> disabled = new ArrayList<>();
+    }
+
+    @Data
+    public static class TenantDepts {
+        /** 租户编码 */
+        private String tenantCode;
+        /** 租户名称 */
+        private String tenantName;
+        /** 该租户下的部门列表 */
+        private List<DeptItem> depts = new ArrayList<>();
     }
 
 }

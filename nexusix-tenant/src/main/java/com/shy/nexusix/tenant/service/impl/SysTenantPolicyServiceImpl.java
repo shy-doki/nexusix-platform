@@ -56,7 +56,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
         }
 
         UserContextDTO.FieldPermission fieldPerm =
-            userContext.getPermInfo().getFieldPermission();
+            com.shy.nexusix.core.context.UserContext.getCurrentTenantFieldPermission();
 
         if (fieldPerm == null || fieldPerm.getQuery() == null) {
             return null;
@@ -89,7 +89,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
             throw new BusinessException("无法获取用户上下文");
         }
 
-        UserContextDTO.FieldPermission fieldPerm = userContext.getPermInfo().getFieldPermission();
+        UserContextDTO.FieldPermission fieldPerm = com.shy.nexusix.core.context.UserContext.getCurrentTenantFieldPermission();
         if (fieldPerm == null) {
             return null;
         }
