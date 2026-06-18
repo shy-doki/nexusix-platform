@@ -3,16 +3,10 @@ package com.shy.nexusix.common.util;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * <p>
- * IP地址工具类 - 获取客户端真实IP地址
- * </p>
- * <p>
- * 支持多级代理场景下的IP解析，优先级：
- * X-Real-IP → X-Forwarded-For → Proxy-Client-IP → WL-Proxy-Client-IP → remoteAddr
- * </p>
+ * <p>IP地址工具类 - 获取客户端真实IP地址，支持多级代理</p>
+ * <p>优先级：X-Real-IP → X-Forwarded-For → Proxy-Client-IP → WL-Proxy-Client-IP → remoteAddr</p>
  *
  * @author shy
- * @since 2026-05-08
  */
 public class IpUtil {
 
@@ -25,7 +19,7 @@ public class IpUtil {
      * 获取客户端真实IP地址
      *
      * @param request HTTP请求对象
-     * @return 客户端真实IP地址，无法获取时返回 "0.0.0.0"
+     * @return 客户端真实IP地址，无法获取时返回"0.0.0.0"
      */
     public static String getClientIp(HttpServletRequest request) {
         if (request == null) {
@@ -67,6 +61,7 @@ public class IpUtil {
         return ip != null && !ip.isEmpty() && !UNKNOWN.equalsIgnoreCase(ip);
     }
 
+    /** IPv6映射的IPv4地址转换 */
     private static String convertIpv6ToIpv4(String ip) {
         if (ip != null && ip.startsWith("0:0:0:0:0:ffff:")) {
             return ip.substring("0:0:0:0:0:ffff:".length());

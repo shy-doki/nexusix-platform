@@ -7,12 +7,9 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * <p>
- * 租户分配（父子租户分配）请求对象
- * </p>
+ * <p>租户分配请求对象</p>
  *
  * @author shy
- * @since 2026-05-04
  */
 @Data
 @Schema(description = "子租户分配请求对象")

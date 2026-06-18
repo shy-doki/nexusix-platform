@@ -7,10 +7,9 @@ import com.shy.nexusix.iam.service.ISysRoleService;
 import org.springframework.stereotype.Service;
 
 /**
- * 系统角色服务实现类
+ * <p>系统角色服务实现类</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 @Service
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements ISysRoleService {

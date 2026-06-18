@@ -8,17 +8,14 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * <p>
- * 租户策略表 Mapper 接口
- * </p>
+ * <p>租户策略Mapper接口</p>
  *
  * @author shy
- * @since 2026-06-13
  */
 public interface SysTenantPolicyMapper extends BaseMapper<SysTenantPolicy> {
 
     /**
-     * <p>查询租户策略列表，关联查询源实体和目标租户的详细信息</p>
+     * <p>查询租户策略列表</p>
      *
      * @param sourceType 源实体类型
      * @param sourceId 源实体ID
@@ -32,7 +29,7 @@ public interface SysTenantPolicyMapper extends BaseMapper<SysTenantPolicy> {
                                                                @Param("status") String status);
 
     /**
-     * <p>根据策略编码查询策略详情，关联查询源实体和目标租户的详细信息</p>
+     * <p>根据策略编码查询策略详情</p>
      *
      * @param policyCode 策略编码
      * @return 租户策略VO

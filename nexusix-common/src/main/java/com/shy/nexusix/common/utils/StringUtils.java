@@ -4,46 +4,28 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * <p>
- * 字符串工具类
- * </p>
- * <p>
- * 提供字符串的判空、截取、转换、拼接等常用操作。所有方法都是线程安全的。
- * </p>
+ * <p>字符串工具类 - 判空、截取、转换、拼接等常用操作</p>
  *
  * @author shy
- * @since 2026-04-07
  */
 public final class StringUtils {
 
-    /**
-     * 空字符串
-     */
+    // 空字符串
     public static final String EMPTY = "";
 
-    /**
-     * 空格字符串
-     */
+    // 空格字符串
     public static final String SPACE = " ";
 
-    /**
-     * 逗号字符串
-     */
+    // 逗号字符串
     public static final String COMMA = ",";
 
-    /**
-     * 点字符串
-     */
+    // 点字符串
     public static final String DOT = ".";
 
-    /**
-     * 换行符
-     */
+    // 换行符
     public static final String LF = "\n";
 
-    /**
-     * 制表符
-     */
+    // 制表符
     public static final String TAB = "\t";
 
     private StringUtils() {
@@ -53,7 +35,7 @@ public final class StringUtils {
      * 判断字符串是否为null
      *
      * @param str 字符串
-     * @return true-为null，false-不为null
+     * @return true-为null
      */
     public static boolean isNull(String str) {
         return str == null;
@@ -63,7 +45,7 @@ public final class StringUtils {
      * 判断字符串是否不为null
      *
      * @param str 字符串
-     * @return true-不为null，false-为null
+     * @return true-不为null
      */
     public static boolean isNotNull(String str) {
         return str != null;
@@ -73,7 +55,7 @@ public final class StringUtils {
      * 判断字符串是否为空（null或空字符串）
      *
      * @param str 字符串
-     * @return true-为空，false-不为空
+     * @return true-为空
      */
     public static boolean isEmpty(String str) {
         return str == null || str.length() == 0;
@@ -83,7 +65,7 @@ public final class StringUtils {
      * 判断字符串是否不为空
      *
      * @param str 字符串
-     * @return true-不为空，false-为空
+     * @return true-不为空
      */
     public static boolean isNotEmpty(String str) {
         return !isEmpty(str);
@@ -93,7 +75,7 @@ public final class StringUtils {
      * 判断字符串是否为空白（null、空字符串或仅包含空白字符）
      *
      * @param str 字符串
-     * @return true-为空白，false-不为空白
+     * @return true-为空白
      */
     public static boolean isBlank(String str) {
         if (str == null || str.length() == 0) {
@@ -111,7 +93,7 @@ public final class StringUtils {
      * 判断字符串是否不为空白
      *
      * @param str 字符串
-     * @return true-不为空白，false-为空白
+     * @return true-不为空白
      */
     public static boolean isNotBlank(String str) {
         return !isBlank(str);
@@ -121,17 +103,17 @@ public final class StringUtils {
      * 去除字符串两端的空白字符
      *
      * @param str 字符串
-     * @return 去除空白后的字符串，如果str为null则返回null
+     * @return 去除空白后的字符串，str为null时返回null
      */
     public static String trim(String str) {
         return str == null ? null : str.trim();
     }
 
     /**
-     * 去除字符串两端的空白字符，如果结果为空字符串则返回null
+     * 去除空白，结果为空字符串则返回null
      *
      * @param str 字符串
-     * @return 去除空白后的字符串，如果结果为空则返回null
+     * @return 去除空白后的字符串，结果为空则返回null
      */
     public static String trimToNull(String str) {
         String ts = trim(str);
@@ -139,10 +121,10 @@ public final class StringUtils {
     }
 
     /**
-     * 去除字符串两端的空白字符，如果为null则返回空字符串
+     * 去除空白，为null则返回空字符串
      *
      * @param str 字符串
-     * @return 去除空白后的字符串，如果str为null则返回空字符串
+     * @return 去除空白后的字符串，str为null时返回空字符串
      */
     public static String trimToEmpty(String str) {
         return str == null ? EMPTY : str.trim();
@@ -153,7 +135,7 @@ public final class StringUtils {
      *
      * @param str1 字符串1
      * @param str2 字符串2
-     * @return true-相等，false-不相等
+     * @return true-相等
      */
     public static boolean equals(String str1, String str2) {
         if (str1 == null && str2 == null) {
@@ -170,7 +152,7 @@ public final class StringUtils {
      *
      * @param str1 字符串1
      * @param str2 字符串2
-     * @return true-相等，false-不相等
+     * @return true-相等
      */
     public static boolean equalsIgnoreCase(String str1, String str2) {
         if (str1 == null && str2 == null) {
@@ -183,11 +165,11 @@ public final class StringUtils {
     }
 
     /**
-     * 判断字符串是否以指定前缀开头（区分大小写）
+     * 判断是否以指定前缀开头（区分大小写）
      *
-     * @param str 字符串
+     * @param str    字符串
      * @param prefix 前缀
-     * @return true-以指定前缀开头，false-不以指定前缀开头
+     * @return true-以指定前缀开头
      */
     public static boolean startsWith(String str, String prefix) {
         if (str == null || prefix == null) {
@@ -197,11 +179,11 @@ public final class StringUtils {
     }
 
     /**
-     * 判断字符串是否以指定前缀开头（不区分大小写）
+     * 判断是否以指定前缀开头（不区分大小写）
      *
-     * @param str 字符串
+     * @param str    字符串
      * @param prefix 前缀
-     * @return true-以指定前缀开头，false-不以指定前缀开头
+     * @return true-以指定前缀开头
      */
     public static boolean startsWithIgnoreCase(String str, String prefix) {
         if (str == null || prefix == null) {
@@ -211,11 +193,11 @@ public final class StringUtils {
     }
 
     /**
-     * 判断字符串是否以指定后缀结尾（区分大小写）
+     * 判断是否以指定后缀结尾（区分大小写）
      *
-     * @param str 字符串
+     * @param str    字符串
      * @param suffix 后缀
-     * @return true-以指定后缀结尾，false-不以指定后缀结尾
+     * @return true-以指定后缀结尾
      */
     public static boolean endsWith(String str, String suffix) {
         if (str == null || suffix == null) {
@@ -225,11 +207,11 @@ public final class StringUtils {
     }
 
     /**
-     * 判断字符串是否以指定后缀结尾（不区分大小写）
+     * 判断是否以指定后缀结尾（不区分大小写）
      *
-     * @param str 字符串
+     * @param str    字符串
      * @param suffix 后缀
-     * @return true-以指定后缀结尾，false-不以指定后缀结尾
+     * @return true-以指定后缀结尾
      */
     public static boolean endsWithIgnoreCase(String str, String suffix) {
         if (str == null || suffix == null) {
@@ -239,11 +221,11 @@ public final class StringUtils {
     }
 
     /**
-     * 判断字符串是否包含指定子串（区分大小写）
+     * 判断是否包含指定子串（区分大小写）
      *
-     * @param str 字符串
+     * @param str       字符串
      * @param searchStr 子串
-     * @return true-包含，false-不包含
+     * @return true-包含
      */
     public static boolean contains(String str, String searchStr) {
         if (str == null || searchStr == null) {
@@ -253,11 +235,11 @@ public final class StringUtils {
     }
 
     /**
-     * 判断字符串是否包含指定子串（不区分大小写）
+     * 判断是否包含指定子串（不区分大小写）
      *
-     * @param str 字符串
+     * @param str       字符串
      * @param searchStr 子串
-     * @return true-包含，false-不包含
+     * @return true-包含
      */
     public static boolean containsIgnoreCase(String str, String searchStr) {
         if (str == null || searchStr == null) {
@@ -270,7 +252,7 @@ public final class StringUtils {
      * 获取字符串长度
      *
      * @param str 字符串
-     * @return 字符串长度，如果str为null则返回0
+     * @return 字符串长度，str为null时返回0
      */
     public static int length(String str) {
         return str == null ? 0 : str.length();
@@ -279,10 +261,10 @@ public final class StringUtils {
     /**
      * 截取字符串
      *
-     * @param str 字符串
+     * @param str   字符串
      * @param start 开始位置（包含）
-     * @param end 结束位置（不包含）
-     * @return 截取后的字符串，如果str为null则返回null
+     * @param end   结束位置（不包含）
+     * @return 截取后的字符串，str为null时返回null
      */
     public static String substring(String str, int start, int end) {
         if (str == null) {
@@ -312,9 +294,9 @@ public final class StringUtils {
     /**
      * 截取字符串（从开始位置到结束）
      *
-     * @param str 字符串
-     *param start 开始位置（包含）
-     * @return 截取后的字符串，如果str为null则返回null
+     * @param str   字符串
+     * @param start 开始位置（包含）
+     * @return 截取后的字符串，str为null时返回null
      */
     public static String substring(String str, int start) {
         if (str == null) {
@@ -337,7 +319,7 @@ public final class StringUtils {
      *
      * @param str 字符串
      * @param len 长度
-     * @return 截取后的字符串，如果str为null则返回null
+     * @return 截取后的字符串，str为null时返回null
      */
     public static String left(String str, int len) {
         if (str == null) {
@@ -357,7 +339,7 @@ public final class StringUtils {
      *
      * @param str 字符串
      * @param len 长度
-     * @return 截取后的字符串，如果str为null则返回null
+     * @return 截取后的字符串，str为null时返回null
      */
     public static String right(String str, int len) {
         if (str == null) {
@@ -375,10 +357,10 @@ public final class StringUtils {
     /**
      * 替换字符串中的指定子串
      *
-     * @param text 原字符串
+     * @param text         原字符串
      * @param searchString 被替换的子串
-     * @param replacement 替换字符串
-     * @return 替换后的字符串，如果text为null则返回null
+     * @param replacement  替换字符串
+     * @return 替换后的字符串，text为null时返回null
      */
     public static String replace(String text, String searchString, String replacement) {
         if (isEmpty(text) || isEmpty(searchString) || replacement == null) {
@@ -388,12 +370,12 @@ public final class StringUtils {
     }
 
     /**
-     * 替换字符串中的所有匹配子串
+     * 替换字符串中的所有匹配子串（正则）
      *
-     * @param text 原字符串
-     * @param regex 正则表达式
-     * @param replacement 替换字符串
-     * @return 替换后的字符串，如果text为null则返回null
+     * @param text         原字符串
+     * @param regex        正则表达式
+     * @param replacement  替换字符串
+     * @return 替换后的字符串，text为null时返回null
      */
     public static String replaceAll(String text, String regex, String replacement) {
         if (isEmpty(text) || isEmpty(regex) || replacement == null) {
@@ -405,9 +387,9 @@ public final class StringUtils {
     /**
      * 分割字符串
      *
-     * @param str 字符串
+     * @param str       字符串
      * @param separator 分隔符
-     * @return 分割后的字符串数组，如果str为null则返回null
+     * @return 分割后的字符串数组，str为null时返回null
      */
     public static String[] split(String str, String separator) {
         if (str == null) {
@@ -423,7 +405,7 @@ public final class StringUtils {
      * 分割字符串（使用逗号作为分隔符）
      *
      * @param str 字符串
-     * @return 分割后的字符串数组，如果str为null则返回null
+     * @return 分割后的字符串数组，str为null时返回null
      */
     public static String[] splitByComma(String str) {
         return split(str, COMMA);
@@ -432,9 +414,9 @@ public final class StringUtils {
     /**
      * 连接数组元素为字符串
      *
-     * @param array 数组
+     * @param array     数组
      * @param separator 分隔符
-     * @return 连接后的字符串，如果array为null则返回null
+     * @return 连接后的字符串，array为null时返回null
      */
     public static String join(Object[] array, String separator) {
         if (array == null) {
@@ -459,8 +441,8 @@ public final class StringUtils {
      * 连接集合元素为字符串
      *
      * @param collection 集合
-     * @param separator 分隔符
-     * @return 连接后的字符串，如果collection为null则返回null
+     * @param separator  分隔符
+     * @return 连接后的字符串，collection为null时返回null
      */
     public static String join(Collection<?> collection, String separator) {
         if (collection == null) {
@@ -487,10 +469,10 @@ public final class StringUtils {
     /**
      * 连接Map元素为字符串
      *
-     * @param map Map对象
-     * @param separator 分隔符
+     * @param map               Map对象
+     * @param separator         分隔符
      * @param keyValueSeparator 键值分隔符
-     * @return 连接后的字符串，如果map为null则返回null
+     * @return 连接后的字符串，map为null时返回null
      */
     public static String join(Map<?, ?> map, String separator, String keyValueSeparator) {
         if (map == null) {
@@ -521,7 +503,7 @@ public final class StringUtils {
      * 转换为大写
      *
      * @param str 字符串
-     * @return 大写字符串，如果str为null则返回null
+     * @return 大写字符串，str为null时返回null
      */
     public static String upperCase(String str) {
         if (str == null) {
@@ -534,7 +516,7 @@ public final class StringUtils {
      * 转换为小写
      *
      * @param str 字符串
-     * @return 小写字符串，如果str为null则返回null
+     * @return 小写字符串，str为null时返回null
      */
     public static String lowerCase(String str) {
         if (str == null) {
@@ -547,7 +529,7 @@ public final class StringUtils {
      * 首字母大写
      *
      * @param str 字符串
-     * @return 首字母大写后的字符串，如果str为null则返回null
+     * @return 首字母大写后的字符串，str为null时返回null
      */
     public static String capitalize(String str) {
         if (isEmpty(str)) {
@@ -564,7 +546,7 @@ public final class StringUtils {
      * 首字母小写
      *
      * @param str 字符串
-     * @return 首字母小写后的字符串，如果str为null则返回null
+     * @return 首字母小写后的字符串，str为null时返回null
      */
     public static String uncapitalize(String str) {
         if (isEmpty(str)) {
@@ -581,7 +563,7 @@ public final class StringUtils {
      * 反转字符串
      *
      * @param str 字符串
-     * @return 反转后的字符串，如果str为null则返回null
+     * @return 反转后的字符串，str为null时返回null
      */
     public static String reverse(String str) {
         if (str == null) {
@@ -593,9 +575,9 @@ public final class StringUtils {
     /**
      * 重复字符串
      *
-     * @param str 字符串
+     * @param str    字符串
      * @param repeat 重复次数
-     * @return 重复后的字符串，如果str为null则返回null
+     * @return 重复后的字符串，str为null时返回null
      */
     public static String repeat(String str, int repeat) {
         if (str == null) {
@@ -614,10 +596,10 @@ public final class StringUtils {
     /**
      * 左填充字符串
      *
-     * @param str 字符串
-     * @param length 目标长度
+     * @param str     字符串
+     * @param length  目标长度
      * @param padChar 填充字符
-     * @return 填充后的字符串，如果str为null则返回null
+     * @return 填充后的字符串，str为null时返回null
      */
     public static String leftPad(String str, int length, char padChar) {
         if (str == null) {
@@ -638,10 +620,10 @@ public final class StringUtils {
     /**
      * 右填充字符串
      *
-     * @param str 字符串
-     * @param length 目标长度
+     * @param str     字符串
+     * @param length  目标长度
      * @param padChar 填充字符
-     * @return 填充后的字符串，如果str为null则返回null
+     * @return 填充后的字符串，str为null时返回null
      */
     public static String rightPad(String str, int length, char padChar) {
         if (str == null) {
@@ -659,10 +641,10 @@ public final class StringUtils {
     }
 
     /**
-     * 去除字符串中的HTML标签
+     * 去除HTML标签
      *
      * @param html HTML字符串
-     * @return 去除HTML标签后的字符串，如果html为null则返回null
+     * @return 去除HTML标签后的字符串，html为null时返回null
      */
     public static String stripHtml(String html) {
         if (html == null) {
@@ -674,9 +656,9 @@ public final class StringUtils {
     /**
      * 将字符串转换为驼峰命名
      *
-     * @param str 字符串
+     * @param str       字符串
      * @param separator 分隔符
-     * @return 驼峰命名字符串，如果str为null则返回null
+     * @return 驼峰命名字符串，str为null时返回null
      */
     public static String toCamelCase(String str, String separator) {
         if (isEmpty(str) || isEmpty(separator)) {
@@ -698,7 +680,7 @@ public final class StringUtils {
      * 将驼峰命名转换为下划线命名
      *
      * @param str 字符串
-     * @return 下划线命名字符串，如果str为null则返回null
+     * @return 下划线命名字符串，str为null时返回null
      */
     public static String toUnderlineCase(String str) {
         if (isEmpty(str)) {
@@ -723,16 +705,16 @@ public final class StringUtils {
      * 将对象转换为字符串
      *
      * @param obj 对象
-     * @return 字符串，如果obj为null则返回null
+     * @return 字符串，obj为null时返回null
      */
     public static String toString(Object obj) {
         return obj == null ? null : obj.toString();
     }
 
     /**
-     * 将对象转换为字符串，如果为null则返回默认值
+     * 将对象转换为字符串，为null则返回默认值
      *
-     * @param obj 对象
+     * @param obj          对象
      * @param defaultValue 默认值
      * @return 字符串
      */
@@ -744,7 +726,7 @@ public final class StringUtils {
      * 格式化字符串
      *
      * @param format 格式字符串
-     * @param args 参数
+     * @param args   参数
      * @return 格式化后的字符串
      */
     public static String format(String format, Object... args) {

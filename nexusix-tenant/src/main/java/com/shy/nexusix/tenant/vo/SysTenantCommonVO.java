@@ -6,6 +6,11 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * <p>租户公共视图对象</p>
+ *
+ * @author shy
+ */
 @Data
 @Schema(description = "租户公共视图对象")
 public class SysTenantCommonVO {

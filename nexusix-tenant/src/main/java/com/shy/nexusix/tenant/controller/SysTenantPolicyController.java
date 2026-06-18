@@ -24,12 +24,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * <p>
- * 租户策略表 - 管理部门/角色与租户的绑定关系
- * </p>
+ * <p>租户策略管理控制器</p>
  *
  * @author shy
- * @since 2026-06-13
  */
 @RestController
 @RequestMapping("/tenant-policy")
@@ -42,12 +39,9 @@ public class SysTenantPolicyController {
 
     /**
      * <p>查询租户策略列表</p>
-     * <p>返回所有租户策略的平铺列表</p>
      *
      * @return 租户策略列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
      */
     @GetMapping("/list")
     @Operation(summary = "查询租户策略列表", description = "返回所有租户策略列表")
@@ -58,13 +52,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>分页查询租户策略列表</p>
-     * <p>返回分页后的租户策略列表</p>
      *
      * @param page 分页参数
      * @return 分页后的租户策略列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
      */
     @GetMapping("/page")
     @Operation(summary = "分页查询租户策略列表", description = "返回分页后的租户策略列表")
@@ -75,13 +66,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>条件查询租户策略列表</p>
-     * <p>返回满足条件的租户策略列表</p>
      *
      * @param queryParam 查询条件
      * @return 满足条件的租户策略列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
      */
     @PostMapping("/query")
     @Operation(summary = "条件查询租户策略列表", description = "返回满足条件的租户策略列表")
@@ -92,13 +80,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>查询租户策略详情</p>
-     * <p>返回指定租户策略的详情信息</p>
      *
      * @param policyCode 策略编码
      * @return 租户策略详情信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
      */
     @GetMapping("/detail/{policyCode}")
     @Operation(summary = "查询租户策略详情", description = "返回指定租户策略的详情信息")
@@ -109,13 +94,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>新增租户策略</p>
-     * <p>创建部门/角色与租户的绑定关系</p>
      *
      * @param addParam 新增租户策略信息
      * @return 新增结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或新增失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或新增失败时抛出
      */
     @PostMapping("/add")
     @Operation(summary = "新增租户策略", description = "新增租户策略信息")
@@ -126,13 +108,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>修改租户策略</p>
-     * <p>修改租户策略信息，仅允许修改策略名称、状态等非关键字段</p>
      *
      * @param updateParam 修改租户策略信息
      * @return 修改结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、策略不存在或修改失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、策略不存在或修改失败时抛出
      */
     @PutMapping("/update")
     @Operation(summary = "修改租户策略", description = "修改租户策略信息")
@@ -143,14 +122,11 @@ public class SysTenantPolicyController {
 
     /**
      * <p>更新租户策略状态</p>
-     * <p>更新指定租户策略的状态（激活/禁用）</p>
      *
      * @param policyCode 策略编码
      * @param status 策略状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、策略不存在或更新失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、策略不存在或更新失败时抛出
      */
     @PutMapping("/status")
     @Operation(summary = "更新租户策略状态", description = "更新指定租户策略的状态（激活/禁用）")
@@ -162,13 +138,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>删除租户策略</p>
-     * <p>逻辑删除指定租户策略</p>
      *
      * @param policyCode 策略编码
      * @return 删除结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、策略不存在或删除失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、策略不存在或删除失败时抛出
      */
     @DeleteMapping("/delete")
     @Operation(summary = "删除租户策略", description = "删除租户策略信息")
@@ -179,13 +152,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>批量新增租户策略</p>
-     * <p>批量创建部门/角色与租户的绑定关系</p>
      *
      * @param addParamList 批量新增租户策略信息集合
      * @return 成功新增的策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或新增失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或新增失败时抛出
      */
     @PostMapping("/batch")
     @Operation(summary = "批量新增租户策略", description = "批量新增租户策略信息")
@@ -196,13 +166,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>批量修改租户策略</p>
-     * <p>批量修改多个租户策略信息</p>
      *
      * @param updateParamList 批量修改租户策略信息集合
      * @return 成功修改的策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或修改失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或修改失败时抛出
      */
     @PutMapping("/batch")
     @Operation(summary = "批量修改租户策略", description = "批量修改租户策略信息")
@@ -213,14 +180,11 @@ public class SysTenantPolicyController {
 
     /**
      * <p>批量更新租户策略状态</p>
-     * <p>批量更新多个指定租户策略的状态（激活/禁用）</p>
      *
      * @param policyCodeList 策略编码集合
      * @param status 策略状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或更新失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或更新失败时抛出
      */
     @PutMapping("/status/batch")
     @Operation(summary = "批量更新租户策略状态", description = "批量更新多个指定租户策略的状态（激活/禁用）")
@@ -232,13 +196,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>批量删除租户策略</p>
-     * <p>批量逻辑删除多个指定租户策略</p>
      *
      * @param policyCodeList 策略编码集合
      * @return 删除结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或删除失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或删除失败时抛出
      */
     @DeleteMapping("/batch")
     @Operation(summary = "批量删除租户策略", description = "批量删除租户策略信息")
@@ -249,13 +210,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>批量绑定部门/角色到租户</p>
-     * <p>将多个部门或角色批量绑定到指定租户</p>
      *
      * @param bindParam 批量绑定参数
      * @return 成功绑定的策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或绑定失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或绑定失败时抛出
      */
     @PostMapping("/bind")
     @Operation(summary = "批量绑定到租户", description = "将多个部门或角色批量绑定到指定租户")
@@ -266,13 +224,10 @@ public class SysTenantPolicyController {
 
     /**
      * <p>批量解绑部门/角色与租户</p>
-     * <p>批量解除部门或角色与租户的绑定关系</p>
      *
      * @param unbindParam 批量解绑参数
      * @return 成功解绑的策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或解绑失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或解绑失败时抛出
      */
     @PostMapping("/unbind")
     @Operation(summary = "批量解绑", description = "批量解除部门或角色与租户的绑定关系")
@@ -282,14 +237,11 @@ public class SysTenantPolicyController {
     }
 
     /**
-     * <p>查询租户的所有部门绑定</p>
-     * <p>查询指定租户下所有已绑定的部门列表</p>
+     * <p>查询租户的部门绑定</p>
      *
      * @param tenantId 租户ID
      * @return 租户策略列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
      */
     @GetMapping("/tenant/{tenantId}/depts")
     @Operation(summary = "查询租户的部门绑定", description = "查询指定租户下所有已绑定的部门列表")
@@ -299,14 +251,11 @@ public class SysTenantPolicyController {
     }
 
     /**
-     * <p>查询租户的所有角色绑定</p>
-     * <p>查询指定租户下所有已绑定的角色列表</p>
+     * <p>查询租户的角色绑定</p>
      *
      * @param tenantId 租户ID
      * @return 租户策略列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
-     * @author shy
-     * @since 2026-06-13
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
      */
     @GetMapping("/tenant/{tenantId}/roles")
     @Operation(summary = "查询租户的角色绑定", description = "查询指定租户下所有已绑定的角色列表")

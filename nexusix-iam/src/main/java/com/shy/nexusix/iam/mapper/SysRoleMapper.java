@@ -5,10 +5,9 @@ import com.shy.nexusix.iam.entity.SysRole;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 系统角色Mapper接口
+ * <p>系统角色Mapper接口</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 @Mapper
 public interface SysRoleMapper extends BaseMapper<SysRole> {

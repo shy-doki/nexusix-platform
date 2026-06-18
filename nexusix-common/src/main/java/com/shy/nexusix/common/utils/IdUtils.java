@@ -6,16 +6,9 @@ import com.baomidou.mybatisplus.core.incrementer.IdentifierGenerator;
 import java.util.UUID;
 
 /**
- * <p>
- * ID生成工具类
- * </p>
- * <p>
- * 提供UUID、雪花ID等唯一标识符的生成功能。
- * 雪花ID采用MyBatis-Plus内置的雪花算法生成器实现，确保线程安全和分布式唯一性。
- * </p>
+ * <p>ID生成工具类 - UUID、雪花ID、订单号、验证码等</p>
  *
  * @author shy
- * @since 2026-04-07
  */
 public final class IdUtils {
 
@@ -27,7 +20,7 @@ public final class IdUtils {
     /**
      * 生成UUID（带连字符）
      *
-     * @return UUID字符串，格式：550e8400-e29b-41d4-a716-446655440000
+     * @return UUID字符串
      */
     public static String uuid() {
         return UUID.randomUUID().toString();
@@ -36,7 +29,7 @@ public final class IdUtils {
     /**
      * 生成UUID（不带连字符）
      *
-     * @return UUID字符串，格式：550e8400e29b41d4a716446655440000
+     * @return 32位UUID字符串
      */
     public static String uuidCompact() {
         return UUID.randomUUID().toString().replace("-", "");
@@ -64,13 +57,7 @@ public final class IdUtils {
     }
 
     /**
-     * 生成雪花ID（使用MyBatis-Plus内置雪花算法）
-     * <p>
-     * MyBatis-Plus的DefaultIdentifierGenerator会自动处理：
-     * - 时间戳回拨问题
-     * - 序列号溢出
-     * - 工作机器ID分配
-     * </p>
+     * 生成雪花ID（MyBatis-Plus内置雪花算法）
      *
      * @return 雪花ID
      */
@@ -79,7 +66,7 @@ public final class IdUtils {
     }
 
     /**
-     * 生成雪花ID字符串（使用MyBatis-Plus内置雪花算法）
+     * 生成雪花ID字符串
      *
      * @return 雪花ID字符串
      */
@@ -88,7 +75,7 @@ public final class IdUtils {
     }
 
     /**
-     * 生成订单号（时间戳 + 随机数）
+     * 生成订单号（时间戳+随机数）
      *
      * @return 订单号
      */
@@ -131,7 +118,7 @@ public final class IdUtils {
     }
 
     /**
-     * 生成随机字符串（包含大小写字母和数字）
+     * 生成随机字符串（大小写字母+数字）
      *
      * @param length 字符串长度
      * @return 随机字符串
@@ -150,7 +137,7 @@ public final class IdUtils {
     }
 
     /**
-     * 生成随机字符串（只包含小写字母和数字）
+     * 生成随机字符串（小写字母+数字）
      *
      * @param length 字符串长度
      * @return 随机字符串
@@ -169,7 +156,7 @@ public final class IdUtils {
     }
 
     /**
-     * 生成随机字符串（只包含大写字母和数字）
+     * 生成随机字符串（大写字母+数字）
      *
      * @param length 字符串长度
      * @return 随机字符串

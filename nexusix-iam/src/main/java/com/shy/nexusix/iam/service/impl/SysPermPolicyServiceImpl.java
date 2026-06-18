@@ -7,10 +7,9 @@ import com.shy.nexusix.iam.service.ISysPermPolicyService;
 import org.springframework.stereotype.Service;
 
 /**
- * 权限策略服务实现类
+ * <p>权限策略服务实现类</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 @Service
 public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, SysPermPolicy> implements ISysPermPolicyService {

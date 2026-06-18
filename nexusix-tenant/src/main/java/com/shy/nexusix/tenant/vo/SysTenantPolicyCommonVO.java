@@ -7,12 +7,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * <p>
- * 租户策略公共视图对象
- * </p>
+ * <p>租户策略公共视图对象</p>
  *
  * @author shy
- * @since 2026-06-13
  */
 @Data
 @Schema(description = "租户策略公共视图对象")

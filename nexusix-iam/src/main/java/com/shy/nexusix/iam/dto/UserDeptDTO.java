@@ -3,10 +3,9 @@ package com.shy.nexusix.iam.dto;
 import lombok.Data;
 
 /**
- * <p>用户部门关联DTO - 用于查询用户在各租户下的部门信息</p>
+ * <p>用户部门关联DTO，查询用户在各租户下的部门信息</p>
  *
  * @author shy
- * @since 2026-06-12
  */
 @Data
 public class UserDeptDTO {
@@ -35,6 +34,6 @@ public class UserDeptDTO {
     /** 用户策略状态 */
     private String userPolicyStatus;
 
-    /** 租户用户ID（用于分组） */
+    /** 租户用户ID */
     private Long tenantUserId;
 }

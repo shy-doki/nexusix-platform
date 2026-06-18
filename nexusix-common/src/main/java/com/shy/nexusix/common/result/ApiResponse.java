@@ -9,17 +9,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <p>
- * API响应包装器
- * </p>
+ * <p>API响应包装器，提供统一的响应格式</p>
  *
  * @author shy
- * @since 2026-04-07
  */
 @Data
 public class ApiResponse implements Serializable {
 
-    // 序列化版本UID，用于保证序列化/反序列化的兼容性
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -36,14 +32,15 @@ public class ApiResponse implements Serializable {
     @JSONField(serialize = false)
     private Map<String, Object> extra;
 
-    /**
-     * 构造函数
-     */
     public ApiResponse() {
     }
 
     /**
      * 构造函数
+     *
+     * @param code 状态码
+     * @param msg  消息
+     * @param data 数据
      */
     public ApiResponse(int code, String msg, Object data) {
         this.code = code;
@@ -52,63 +49,92 @@ public class ApiResponse implements Serializable {
     }
 
     /**
-     * 创建成功响应
+     * 创建成功响应（无数据）
+     *
+     * @return 成功响应
      */
     public static ApiResponse success() {
         return new ApiResponse(200, "操作成功", null);
     }
 
     /**
-     * 创建成功响应带消息
+     * 创建成功响应（带消息）
+     *
+     * @param msg 消息
+     * @return 成功响应
      */
     public static ApiResponse success(String msg) {
         return new ApiResponse(200, msg, null);
     }
 
     /**
-     * 创建成功响应带数据
+     * 创建成功响应（带数据）
+     *
+     * @param data 数据
+     * @return 成功响应
      */
     public static ApiResponse success(Object data) {
         return new ApiResponse(200, "操作成功", data);
     }
 
     /**
-     * 创建成功响应带消息和数据
+     * 创建成功响应（带消息和数据）
+     *
+     * @param msg  消息
+     * @param data 数据
+     * @return 成功响应
      */
     public static ApiResponse success(String msg, Object data) {
         return new ApiResponse(200, msg, data);
     }
 
     /**
-     * 创建失败响应
+     * 创建失败响应（默认500）
+     *
+     * @return 失败响应
      */
     public static ApiResponse error() {
         return new ApiResponse(500, "操作失败", null);
     }
 
     /**
-     * 创建失败响应带消息
+     * 创建失败响应（带消息）
+     *
+     * @param msg 消息
+     * @return 失败响应
      */
     public static ApiResponse error(String msg) {
         return new ApiResponse(500, msg, null);
     }
 
     /**
-     * 创建失败响应带状态码和消息
+     * 创建失败响应（带状态码和消息）
+     *
+     * @param code 状态码
+     * @param msg  消息
+     * @return 失败响应
      */
     public static ApiResponse error(int code, String msg) {
         return new ApiResponse(code, msg, null);
     }
 
     /**
-     * 创建失败响应带状态码、消息和数据
+     * 创建失败响应（带状态码、消息和数据）
+     *
+     * @param code 状态码
+     * @param msg  消息
+     * @param data 数据
+     * @return 失败响应
      */
     public static ApiResponse error(int code, String msg, Object data) {
         return new ApiResponse(code, msg, data);
     }
 
     /**
-     * 设置状态码
+     * 设置状态码（链式调用）
+     *
+     * @param code 状态码
+     * @return 当前实例
      */
     public ApiResponse setCode(int code) {
         this.code = code;
@@ -116,7 +142,10 @@ public class ApiResponse implements Serializable {
     }
 
     /**
-     * 设置消息
+     * 设置消息（链式调用）
+     *
+     * @param msg 消息
+     * @return 当前实例
      */
     public ApiResponse setMsg(String msg) {
         this.msg = msg;
@@ -124,7 +153,10 @@ public class ApiResponse implements Serializable {
     }
 
     /**
-     * 设置数据
+     * 设置数据（链式调用）
+     *
+     * @param data 数据
+     * @return 当前实例
      */
     public ApiResponse setData(Object data) {
         this.data = data;
@@ -132,7 +164,11 @@ public class ApiResponse implements Serializable {
     }
 
     /**
-     * 添加附加数据
+     * 添加附加数据（链式调用）
+     *
+     * @param key   键
+     * @param value 值
+     * @return 当前实例
      */
     public ApiResponse set(String key, Object value) {
         if (extra == null) {
@@ -143,7 +179,10 @@ public class ApiResponse implements Serializable {
     }
 
     /**
-     * 添加多个附加数据
+     * 批量添加附加数据（链式调用）
+     *
+     * @param map 键值对
+     * @return 当前实例
      */
     public ApiResponse set(Map<String, Object> map) {
         if (extra == null) {
@@ -155,6 +194,9 @@ public class ApiResponse implements Serializable {
 
     /**
      * 获取附加数据
+     *
+     * @param key 键
+     * @return 值
      */
     public Object get(String key) {
         return extra != null ? extra.get(key) : null;
@@ -162,6 +204,8 @@ public class ApiResponse implements Serializable {
 
     /**
      * 判断是否成功
+     *
+     * @return 是否成功
      */
     public boolean isSuccess() {
         return code == 200;
@@ -169,6 +213,8 @@ public class ApiResponse implements Serializable {
 
     /**
      * 判断是否失败
+     *
+     * @return 是否失败
      */
     public boolean isError() {
         return code != 200;

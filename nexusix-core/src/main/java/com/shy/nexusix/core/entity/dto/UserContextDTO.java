@@ -8,18 +8,7 @@ import java.util.Map;
 
 /**
  * <p>用户上下文DTO，登录时构建并存入Sa-Token Session</p>
- *
- * <pre>
- * 结构概览：
- *   userInfo          — 用户基本信息
- *   tenantInfo        — 租户分组（当前/全部/有效/无效）
- *   permInfo          — 权限汇总（全部/有效/无效 + 级联禁用详情 + 字段级权限）
- *   roleInfo          — 角色分组（当前租户/全部/有效/无效），每条角色标注所属租户
- *   deptInfo          — 部门分组（当前租户/全部/有效/无效），每条部门标注所属租户
- * </pre>
- *
  * @author shy
- * @since 2026-06-11
  */
 @Data
 public class UserContextDTO {
@@ -41,6 +30,7 @@ public class UserContextDTO {
 
     // ==================== 用户信息 ====================
 
+    /** <p>用户基本信息</p> */
     @Data
     public static class UserInfo {
         /** 用户ID */
@@ -61,6 +51,7 @@ public class UserContextDTO {
 
     // ==================== 租户相关 ====================
 
+    /** <p>租户项</p> */
     @Data
     public static class TenantItem {
         /** 租户编码 */
@@ -75,6 +66,7 @@ public class UserContextDTO {
         private Boolean isPrimary;
     }
 
+    /** <p>租户分组（当前/全部/有效/无效）</p> */
     @Data
     public static class TenantGroup {
         /** 当前登录租户 */
@@ -89,6 +81,7 @@ public class UserContextDTO {
 
     // ==================== 权限相关 ====================
 
+    /** <p>权限项</p> */
     @Data
     public static class PermItem {
         /** 权限编码 */
@@ -105,6 +98,7 @@ public class UserContextDTO {
         private String permPolicyStatus;
     }
 
+    /** <p>权限汇总信息</p> */
     @Data
     public static class PermissionInfo {
         /** 当前登录租户下的权限（分启用/禁用） */
@@ -121,6 +115,7 @@ public class UserContextDTO {
         private Map<String, FieldPermission> fieldPermissionByTenant;
     }
 
+    /** <p>当前租户权限（启用/禁用）</p> */
     @Data
     public static class CurrentPermissions {
         /** 当前租户启用的权限 */
@@ -129,6 +124,7 @@ public class UserContextDTO {
         private List<PermItem> disabled = new ArrayList<>();
     }
 
+    /** <p>按租户分组的权限列表</p> */
     @Data
     public static class TenantPermissions {
         /** 租户编码 */
@@ -139,6 +135,7 @@ public class UserContextDTO {
         private List<PermItem> permissions = new ArrayList<>();
     }
 
+    /** <p>级联禁用详情</p> */
     @Data
     public static class DisabledDetail {
         /** 系统级禁用的权限编码 */
@@ -153,6 +150,7 @@ public class UserContextDTO {
         private List<String> user;
     }
 
+    /** <p>字段级权限</p> */
     @Data
     public static class FieldPermission {
         /** 查询操作的字段权限，key=表名 */
@@ -163,6 +161,7 @@ public class UserContextDTO {
         private Map<String, TableFieldPermission> update;
     }
 
+    /** <p>表字段权限</p> */
     @Data
     public static class TableFieldPermission {
         /** 可操作字段列表（策略ACTIVE时配置） */
@@ -173,6 +172,7 @@ public class UserContextDTO {
 
     // ==================== 角色相关 ====================
 
+    /** <p>角色项</p> */
     @Data
     public static class RoleItem {
         /** 角色编码 */
@@ -187,6 +187,7 @@ public class UserContextDTO {
         private String tenantName;
     }
 
+    /** <p>角色分组（当前租户/全部/有效/无效）</p> */
     @Data
     public static class RoleGroup {
         /** 当前登录租户下的角色（分启用/禁用） */
@@ -199,6 +200,7 @@ public class UserContextDTO {
         private List<TenantRoles> invalid = new ArrayList<>();
     }
 
+    /** <p>当前租户角色（启用/禁用）</p> */
     @Data
     public static class CurrentRoles {
         /** 当前租户启用的角色 */
@@ -207,6 +209,7 @@ public class UserContextDTO {
         private List<RoleItem> disabled = new ArrayList<>();
     }
 
+    /** <p>按租户分组的角色列表</p> */
     @Data
     public static class TenantRoles {
         /** 租户编码 */
@@ -219,6 +222,7 @@ public class UserContextDTO {
 
     // ==================== 部门相关 ====================
 
+    /** <p>部门项</p> */
     @Data
     public static class DeptItem {
         /** 部门编码 */
@@ -239,6 +243,7 @@ public class UserContextDTO {
         private String userPolicyStatus;
     }
 
+    /** <p>部门分组（当前租户/全部/有效/无效）</p> */
     @Data
     public static class DeptGroup {
         /** 当前登录租户下的部门（分启用/禁用） */
@@ -251,6 +256,7 @@ public class UserContextDTO {
         private List<TenantDepts> invalid = new ArrayList<>();
     }
 
+    /** <p>当前租户部门（启用/禁用）</p> */
     @Data
     public static class CurrentDepts {
         /** 当前租户启用的部门 */
@@ -259,6 +265,7 @@ public class UserContextDTO {
         private List<DeptItem> disabled = new ArrayList<>();
     }
 
+    /** <p>按租户分组的部门列表</p> */
     @Data
     public static class TenantDepts {
         /** 租户编码 */

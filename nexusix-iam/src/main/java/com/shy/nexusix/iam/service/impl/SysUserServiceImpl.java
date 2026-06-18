@@ -7,10 +7,9 @@ import com.shy.nexusix.iam.service.ISysUserService;
 import org.springframework.stereotype.Service;
 
 /**
- * 系统用户服务实现类
+ * <p>系统用户服务实现类</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 @Service
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements ISysUserService {

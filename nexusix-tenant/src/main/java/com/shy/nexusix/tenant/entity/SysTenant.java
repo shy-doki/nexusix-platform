@@ -14,12 +14,9 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 /**
- * <p>
- * 租户信息表 - 存储租户基础信息，支持无限层级
- * </p>
+ * <p>租户信息实体，支持无限层级</p>
  *
  * @author shy
- * @since 2026-04-07
  */
 @Data
 @EqualsAndHashCode(callSuper = false)

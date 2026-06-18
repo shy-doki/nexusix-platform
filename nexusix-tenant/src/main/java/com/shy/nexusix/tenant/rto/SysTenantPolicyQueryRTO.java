@@ -7,15 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /**
- * <p>
- * 租户策略查询请求对象
- * </p>
- * <p>
- * 用于接收前端传递的租户策略查询条件，支持多条件组合查询和分页
- * </p>
+ * <p>租户策略查询请求对象</p>
  *
  * @author shy
- * @since 2026-06-13
  */
 @Data
 @Schema(description = "租户策略查询请求对象")

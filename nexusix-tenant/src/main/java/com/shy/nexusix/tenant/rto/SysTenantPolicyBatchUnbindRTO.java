@@ -7,15 +7,9 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * <p>
- * 租户策略批量解绑请求对象
- * </p>
- * <p>
- * 用于批量解除部门/角色与租户的绑定关系
- * </p>
+ * <p>租户策略批量解绑请求对象</p>
  *
  * @author shy
- * @since 2026-06-13
  */
 @Data
 @Schema(description = "租户策略批量解绑请求对象")

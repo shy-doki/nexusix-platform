@@ -5,17 +5,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>
- * 全局常量定义 (默认分页大小、状态码常量)
- * </p>
- * <p>
- * 该类定义了系统中通用的常量，包括分页参数、HTTP状态码、通用状态标记、
- * 租户相关常量以及各业务模块的状态码常量。所有常量均采用全大写字母命名，
- * 单词间用下划线分隔，符合Java编码规范。
- * </p>
+ * <p>全局常量定义 - 分页、状态码、Session键、Redis键、数据表、角色、字段权限</p>
  *
  * @author shy
- * @since 2026-04-07
  */
 public class GlobalConstant {
 
@@ -26,36 +18,20 @@ public class GlobalConstant {
      *  分页相关常量 
      */
     public static final class Page {
-        
+
         private Page() {
         }
 
-        /**
-         * 默认页码
-         * <p>取值范围：正整数，从1开始</p>
-         * <p>使用场景：分页查询时未指定页码时的默认值</p>
-         */
+        // 默认页码
         public static final int DEFAULT_PAGE_NUM = 1;
 
-        /**
-         * 默认每页大小
-         * <p>取值范围：正整数，建议10-50之间</p>
-         * <p>使用场景：分页查询时未指定每页大小时的默认值</p>
-         */
+        // 默认每页大小
         public static final int DEFAULT_PAGE_SIZE = 10;
 
-        /**
-         * 最小每页大小
-         * <p>取值范围：正整数，用于防止一次查询过多数据</p>
-         * <p>使用场景：限制分页查询时每页最大记录数，防止内存溢出</p>
-         */
+        // 最小每页大小
         public static final int MIN_PAGE_SIZE = 1;
 
-        /**
-         * 最大每页大小
-         * <p>取值范围：正整数，用于防止一次查询过多数据</p>
-         * <p>使用场景：限制分页查询时每页最大记录数，防止内存溢出</p>
-         */
+        // 最大每页大小
         public static final int MAX_PAGE_SIZE = 100;
 
     }
@@ -64,43 +40,23 @@ public class GlobalConstant {
      *  HTTP状态码常量 
      */
     public static final class HttpStatus {
-        
+
         private HttpStatus() {
         }
 
-        /**
-         * 操作成功
-         * <p>取值范围：HTTP标准状态码</p>
-         * <p>使用场景：请求处理成功时返回</p>
-         */
+        // 操作成功
         public static final int SUCCESS = 200;
 
-        /**
-         * 未授权
-         * <p>取值范围：HTTP标准状态码</p>
-         * <p>使用场景：用户未登录或Token失效时返回</p>
-         */
+        // 未授权
         public static final int UNAUTHORIZED = 401;
 
-        /**
-         * 禁止访问
-         * <p>取值范围：HTTP标准状态码</p>
-         * <p>使用场景：用户无权限访问该资源时返回</p>
-         */
+        // 禁止访问
         public static final int FORBIDDEN = 403;
 
-        /**
-         * 资源不存在
-         * <p>取值范围：HTTP标准状态码</p>
-         * <p>使用场景：请求的资源不存在时返回</p>
-         */
+        // 资源不存在
         public static final int NOT_FOUND = 404;
 
-        /**
-         * 服务器内部错误
-         * <p>取值范围：HTTP标准状态码</p>
-         * <p>使用场景：服务器处理请求时发生异常</p>
-         */
+        // 服务器内部错误
         public static final int INTERNAL_SERVER_ERROR = 500;
 
     }
@@ -113,9 +69,7 @@ public class GlobalConstant {
         private Session() {
         }
 
-        /**
-         * 用户上下文信息
-         */
+        // 用户上下文信息
         public static final String USER_CONTEXT = "userContext";
 
     }
@@ -138,14 +92,10 @@ public class GlobalConstant {
         private Table() {
         }
 
-        /**
-         * 租户表
-         */
+        // 租户表
         public static final String TENANT = "sys_tenant";
 
-        /**
-         * 租户策略表
-         */
+        // 租户策略表
         public static final String TENANT_POLICY = "sys_tenant_policy";
 
     }
@@ -158,9 +108,7 @@ public class GlobalConstant {
         private Role() {
         }
 
-        /**
-         * 租户表
-         */
+        // 超级管理员角色编码
         public static final String SUPER_ADMIN_ROLE = "SUPER_ADMIN";
 
     }
@@ -174,14 +122,8 @@ public class GlobalConstant {
         }
 
         /**
-         * 树形查询业务必需的数据库字段
-         * <p>这些字段在构建树形结构时必须从数据库查询，不受用户字段权限限制：</p>
-         * <ul>
-         *   <li>id - 构建idToCodeMap，将parentId转为tenantCode</li>
-         *   <li>tenant_code - 构建idToCodeMap和codeToTreeVOMap，O(1)查找节点</li>
-         *   <li>parent_id - 判断根节点，查找父租户关联</li>
-         *   <li>path - path前缀匹配查询子节点，排序</li>
-         * </ul>
+         * 树形查询业务必需的数据库字段（不受用户字段权限限制）
+         * <p>id/tenant_code/parent_id/path</p>
          */
         public static final Set<String> TREE_MANDATORY_FIELDS = Set.of(
                 "id", "tenant_code", "parent_id", "path"
@@ -189,8 +131,7 @@ public class GlobalConstant {
 
         /**
          * DB列名到VO字段名的映射关系
-         * <p>用于在返回前端时根据用户可见字段过滤VO数据</p>
-         * <p>一个DB列可能映射到多个VO字段（如create_by同时映射createByName和createByCode）</p>
+         * <p>用于返回前端时根据用户可见字段过滤VO数据，一个DB列可映射多个VO字段</p>
          */
         public static final Map<String, List<String>> DB_COLUMN_TO_VO_FIELDS = Map.ofEntries(
                 Map.entry("tenant_code", List.of("tenantCode")),

@@ -19,347 +19,189 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 /**
- * <p>
- * 租户信息表 - 存储租户基础信息，支持无限层级 服务类
- * </p>
+ * <p>租户信息服务接口</p>
  *
  * @author shy
- * @since 2026-04-07
  */
 public interface ISysTenantService extends IService<SysTenant> {
 
     /**
-     * <p>
-     * 查询租户列表
-     * </p>
-     * <p>
-     * 返回所有租户的平铺列表，租户编码会自动进行脱敏处理（保留前3位和后3位）。
-     * 需要登录并具备租户查看权限才能访问。
-     * </p>
+     * <p>查询租户列表</p>
      *
-     * @return 租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
-     * @author shy
-     * @since 2026-04-19
+     * @return 租户通用VO列表
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
      */
     List<SysTenantCommonVO> queryTenantList();
 
     /**
-     * <p>
-     * 分页查询租户列表
-     * </p>
-     * <p>
-     * 返回分页后的租户列表，租户编码会自动进行脱敏处理（保留前3位和后3位）。
-     * 需要登录并具备租户查看权限才能访问。
-     * </p>
+     * <p>分页查询租户列表</p>
      *
      * @param page 分页参数
-     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
-     * @author shy
-     * @since 2026-04-19
+     * @return 分页后的租户通用VO列表
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
      */
     IPage<SysTenantCommonVO> queryTenantPage(PageCommonRTO page);
 
     /**
-     * <p>
-     * 查询租户树形结构
-     * </p>
-     * <p>
-     * 返回所有租户的层级树形结构
-     * 需要登录并具备租户查看权限才能访问。
-     * </p>
+     * <p>查询租户树形结构</p>
      *
-     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
-     * @author shy
-     * @since 2026-04-19
+     * @return 租户树形VO列表
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
      */
     List<SysTenantTreeVO> queryTenantTreeList();
 
     /**
-     * <p>
-     * 分页查询租户树形结构
-     * </p>
-     * <p>
-     * 返回所有租户的层级树形结构
-     * 需要登录并具备租户查看权限才能访问。
-     * </p>
+     * <p>分页查询租户树形结构</p>
      *
      * @param page 分页参数
-     * @return 分页后的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限
-     * @author shy
-     * @since 2026-04-19
+     * @return 分页后的租户树形VO列表
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
      */
     IPage<SysTenantTreeVO> queryTenantTreePage(PageCommonRTO page);
 
     /**
-     * <p>
-     * 查询指定租户的树形结构
-     * </p>
-     * <p>
-     * 查询系统中所有租户的层级关系，并构建成树形结构返回。
-     * 返回的租户编码会自动进行脱敏处理（保留前3位和后3位，中间用星号替换）。
-     * </p>
+     * <p>查询指定租户的树形结构</p>
      *
-     * @param id 租户Id，用于定位要查询的租户节点
-     * @return 租户树形结构列表，每个节点包含租户名称、脱敏后的租户编码、父租户ID、联系人、状态等信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 当数据库查询失败或数据异常时抛出
-     * @author shy
-     * @since 2026-04-19
+     * @param id 租户ID
+     * @return 以指定租户为根的树形结构
+     * @throws com.shy.nexusix.common.exception.BusinessException 数据查询失败或数据异常时抛出
      */
     SysTenantTreeVO queryTenantTree(String id);
 
     /**
-     * <p>
-     * 条件查询\筛选租户列表
-     * </p>
-     * <p>
-     * 返回满足条件的租户列表，租户编码会自动进行脱敏处理（保留前3位和后3位）。
-     * 需要登录并具备租户条件查询权限才能访问。
-     * </p>
+     * <p>条件查询租户列表</p>
      *
      * @param queryParam 查询条件
-     * @return 满足条件的租户列表，包含租户名称、脱敏后的租户编码、联系人、状态等信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
-     * @author shy
-     * @since 2026-04-19
+     * @return 满足条件的租户分页列表
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
      */
     IPage<SysTenantCommonVO> queryTenant(SysTenantQueryRTO queryParam);
 
     /**
-     * <p>
-     * 查询租户详情
-     * </p>
-     * <p>
-     * 返回指定租户的详情信息，租户敏感会自动进行脱敏处理（保留前3位和后3位）。
-     * 需要登录并具备租户详情查询权限才能访问。
-     * </p>
+     * <p>查询租户详情</p>
      *
      * @param tenantCode 租户编码
-     * @return 租户详情信息，包含租户名称、租户编码、联系人、状态等信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或查询失败时抛出
-     * @author shy
-     * @since 2026-04-19
+     * @return 租户详情VO
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
      */
     SysTenantDetailVO queryTenantDetail(String tenantCode);
 
     /**
-     * <p>
-     * 新增租户
-     * </p>
-     * <p>
-     * 新增租户信息，需要登录并具备租户新增权限才能访问。
-     * </p>
+     * <p>新增租户</p>
      *
      * @param addParam 新增租户信息
-     * @return 新增租户的ID
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限或新增失败时抛出
-     * @author shy
-     * @since 2026-04-19
+     * @return 新增结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或新增失败时抛出
      */
     Integer addTenant(SysTenantAddRTO addParam);
 
     /**
-     * <p>
-     * 修改租户
-     * </p>
-     * <p>
-     * 修改租户信息，需要登录并具备租户修改权限才能访问。
-     * 仅允许修改指定租户的有效配置信息，不允许修改租户唯一标识。
-     * </p>
+     * <p>修改租户</p>
      *
      * @param updateParam 修改租户信息
-     * @return 修改结果：true-成功，false-失败
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或修改失败时抛出
-     * @author shy
-     * @since 2026-04-20
+     * @return 修改结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或修改失败时抛出
      */
     Integer updateTenant(SysTenantUpdateRTO updateParam);
 
     /**
-     * <p>
-     * 更新租户状态
-     * </p>
-     * <p>
-     * 更新指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
-     * 需要登录并具备租户修改权限才能访问。
-     * </p>
+     * <p>更新租户状态</p>
      *
      * @param id 租户ID
-     * @param status 租户状态（正常/冻结）
+     * @param status 租户状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
-     * @author shy
-     * @since 2026-05-05
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或更新失败时抛出
      */
     Integer updateTenantStatus(String id, String status);
 
     /**
-     * <p>
-     * 删除租户
-     * </p>
-     * <p>
-     * 删除指定租户信息，需要登录并具备租户删除权限才能访问。
-     * 删除操作不可逆，删除后租户相关数据将同步清理。
-     * </p>
+     * <p>删除租户</p>
      *
      * @param id 租户ID
-     * @return 删除结果：true-成功，false-失败
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或删除失败时抛出
-     * @author shy
-     * @since 2026-04-20
+     * @return 删除结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或删除失败时抛出
      */
     Integer deleteTenant(@Valid String id);
 
     /**
-     * <p>
-     * 批量新增租户
-     * </p>
-     * <p>
-     * 批量新增多个租户信息，需要登录并具备租户新增权限才能访问。
-     * 批量操作支持事务回滚，任一租户新增失败则全部失败。
-     * </p>
+     * <p>批量新增租户</p>
      *
      * @param addParamList 批量新增租户信息集合
-     * @return 成功新增的租户ID集合
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、参数校验失败或新增失败时抛出
-     * @author shy
-     * @since 2026-04-20
+     * @return 新增结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、参数校验失败或新增失败时抛出
      */
     Integer batchAddTenant(List<SysTenantAddRTO> addParamList);
 
     /**
-     * <p>
-     * 批量修改租户
-     * </p>
-     * <p>
-     * 批量修改多个租户信息，需要登录并具备租户修改权限才能访问。
-     * 仅允许修改指定租户的有效配置信息，不允许修改租户唯一标识。
-     * </p>
+     * <p>批量修改租户</p>
      *
      * @param updateParamList 批量修改租户信息集合
-     * @return 修改结果：true-全部成功，false-部分/全部失败
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或修改失败时抛出
-     * @author shy
-     * @since 2026-04-20
+     * @return 修改结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或修改失败时抛出
      */
     Integer batchUpdateTenant(List<SysTenantUpdateRTO> updateParamList);
 
     /**
-     * <p>
-     * 批量更新租户状态
-     * </p>
-     * <p>
-     * 批量更新多个指定租户的状态（正常/冻结），冻结后租户下所有用户无法登录。
-     * 批量操作支持事务回滚，任一租户更新失败则全部失败。
-     * 需要登录并具备租户修改权限才能访问。
-     * </p>
+     * <p>批量更新租户状态</p>
      *
      * @param ids 租户ID集合
-     * @param status 租户状态（正常/冻结）
+     * @param status 租户状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或更新失败时抛出
-     * @author shy
-     * @since 2026-05-05
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或更新失败时抛出
      */
     Integer batchUpdateTenantStatus(List<String> ids, String status);
 
     /**
-     * <p>
-     * 批量删除租户
-     * </p>
-     * <p>
-     * 批量删除多个指定租户信息，需要登录并具备租户删除权限才能访问。
-     * 删除操作不可逆，删除后租户相关数据将同步清理。
-     * </p>
+     * <p>批量删除租户</p>
      *
      * @param ids 租户ID集合
-     * @return 删除结果：true-全部成功，false-部分/全部失败
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、租户不存在或删除失败时抛出
-     * @author shy
-     * @since 2026-04-20
+     * @return 删除结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或删除失败时抛出
      */
     Integer batchDeleteTenant(List<String> ids);
 
     /**
-     * <p>
-     * 分配子租户
-     * </p>
-     * <p>
-     * 为指定父租户分配一个新的子租户，自动处理层级关系和ancestors字段更新。
-     * 需要登录并具备租户分配权限才能访问。
-     * </p>
+     * <p>分配子租户</p>
      *
      * @param assignParam 子租户分配参数
-     * @return 更新子租户行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、父租户不存在或分配失败时抛出
-     * @author shy
-     * @since 2026-05-04
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、父租户不存在或分配失败时抛出
      */
     Integer assignSubTenant(SysTenantAssignRTO assignParam);
 
     /**
-     * <p>
-     * 分配父租户
-     * </p>
-     * <p>
-     * 为指定租户分配一个新的父租户，处理层级关系调整及数据关联更新。
-     * 会进行循环层级验证，避免形成环状结构。
-     * 需要登录并具备租户分配权限才能访问。
-     * </p>
+     * <p>分配父租户</p>
      *
      * @param assignParam 父租户分配参数
-     * @return 更新子租户行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 当用户无权限、参数非法或分配失败时抛出
-     * @author shy
-     * @since 2026-05-04
+     * @return 更新结果行数
+     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、参数非法或分配失败时抛出
      */
     Integer assignParentTenant(SysTenantAssignRTO assignParam);
 
     /**
-     * <p>
-     * 租户自助注册
-     * </p>
-     * <p>
-     * 企业用户自助注册租户，注册后租户状态为PENDING（待审核），
-     * 需要平台管理员审核通过后才能正常使用。
-     * </p>
+     * <p>租户自助注册</p>
      *
      * @param registerParam 注册信息
      * @return 新增结果行数
-     * @throws BusinessException 租户编码已存在或父租户不存在时抛出业务异常
+     * @throws BusinessException 租户编码已存在或父租户不存在时抛出
      */
     Integer registerTenant(SysTenantRegisterRTO registerParam);
 
     /**
-     * <p>
-     * 审核租户注册
-     * </p>
-     * <p>
-     * 平台管理员审核租户注册申请，审核通过则状态变为ENABLED，
-     * 审核拒绝则状态变为DISABLED。
-     * </p>
+     * <p>审核租户注册</p>
      *
      * @param reviewParam 审核信息
      * @return 审核结果行数
-     * @throws BusinessException 租户不存在或状态非PENDING时抛出业务异常
+     * @throws BusinessException 租户不存在或状态非PENDING时抛出
      */
     Integer reviewTenant(SysTenantReviewRTO reviewParam);
 
     /**
-     * <p>
-     * 切换租户
-     * </p>
-     * <p>
-     * 切换当前用户的工作租户上下文，验证用户是否属于目标租户，
-     * 验证目标租户状态，重新构建权限上下文。
-     * </p>
+     * <p>切换租户</p>
      *
      * @param switchParam 切换参数
      * @return 切换后的租户信息
-     * @throws BusinessException 用户不属于目标租户或租户状态异常时抛出业务异常
+     * @throws BusinessException 用户不属于目标租户或租户状态异常时抛出
      */
     SysTenantCommonVO switchTenant(SysTenantSwitchRTO switchParam);
 

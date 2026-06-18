@@ -28,7 +28,6 @@ import java.util.*;
  * <p>认证服务实现类</p>
  *
  * @author shy
- * @since 2026-06-12
  */
 @Service
 public class AuthServiceImpl implements IAuthService {
@@ -187,7 +186,7 @@ public class AuthServiceImpl implements IAuthService {
                 }
             }
 
-            // 🔴 收集禁用权限的级别信息
+            // 收集禁用权限的级别信息
             if (!"ACTIVE".equals(perm.getPermPolicyStatus())) {
                 // 获取该租户的DisabledDetail（如果不存在则创建）
                 UserContextDTO.DisabledDetail detail = disabledDetailByTenant.get(tenantCode);

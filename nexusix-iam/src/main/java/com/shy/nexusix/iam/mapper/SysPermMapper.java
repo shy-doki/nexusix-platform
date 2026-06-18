@@ -5,10 +5,9 @@ import com.shy.nexusix.iam.entity.SysPerm;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * 系统权限Mapper接口
+ * <p>系统权限Mapper接口</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 @Mapper
 public interface SysPermMapper extends BaseMapper<SysPerm> {

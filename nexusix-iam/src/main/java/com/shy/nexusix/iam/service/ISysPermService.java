@@ -4,10 +4,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.shy.nexusix.iam.entity.SysPerm;
 
 /**
- * 系统权限服务接口
+ * <p>系统权限服务接口</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 public interface ISysPermService extends IService<SysPerm> {
 

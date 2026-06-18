@@ -14,26 +14,18 @@ import org.mapstruct.Named;
 import java.util.List;
 
 /**
- * <p>
- * 租户策略对象转换器
- * </p>
- * <p>
- * 基于MapStruct实现，Spring容器管理，负责租户策略实体与前端VO对象的转换，
- * 包含字段映射、状态码/删除标记枚举转文本描述
- * </p>
+ * <p>租户策略对象转换器，基于MapStruct实现实体与VO互转</p>
  *
  * @author shy
- * @since 2026-06-13
  */
 @Mapper(componentModel = "spring")
 public interface SysTenantPolicyConverter {
 
     /**
-     * <p>租户策略实体转换为公共VO对象</p>
-     * <p>字段重命名映射，状态码/删除标记转换为前端可读描述</p>
+     * <p>租户策略实体转公共VO</p>
      *
-     * @param entity 租户策略数据库实体
-     * @return 前端通用租户策略VO
+     * @param entity 租户策略实体
+     * @return 租户策略通用VO
      */
     @Named("toCommonVO")
     @Mapping(source = "createBy", target = "createByName")
@@ -46,8 +38,7 @@ public interface SysTenantPolicyConverter {
     SysTenantPolicyCommonVO toCommonVO(SysTenantPolicy entity);
 
     /**
-     * <p>租户策略实体列表批量转换为VO列表</p>
-     * <p>复用单对象转换规则，实现批量映射</p>
+     * <p>批量转换租户策略实体列表为VO列表</p>
      *
      * @param entityList 租户策略实体集合
      * @return 租户策略VO集合
@@ -56,10 +47,9 @@ public interface SysTenantPolicyConverter {
     List<SysTenantPolicyCommonVO> entityListToCommonVoList(List<SysTenantPolicy> entityList);
 
     /**
-     * <p>租户策略实体转换为详情VO对象</p>
-     * <p>在公共VO映射基础上，额外映射详情字段和创建/更新人编码</p>
+     * <p>租户策略实体转详情VO</p>
      *
-     * @param entity 租户策略数据库实体
+     * @param entity 租户策略实体
      * @return 租户策略详情VO
      */
     @Named("toDetailVO")
@@ -75,7 +65,7 @@ public interface SysTenantPolicyConverter {
     SysTenantPolicyDetailVO toDetailVO(SysTenantPolicy entity);
 
     /**
-     * <p>删除标记编码转换为描述文本</p>
+     * <p>删除标记编码转描述</p>
      *
      * @param code 删除标记编码
      * @return 删除状态描述
@@ -88,7 +78,7 @@ public interface SysTenantPolicyConverter {
     }
 
     /**
-     * <p>删除标记枚举转换为编码</p>
+     * <p>删除标记枚举转编码</p>
      *
      * @param del 删除标记枚举
      * @return 删除标记编码
@@ -99,11 +89,10 @@ public interface SysTenantPolicyConverter {
     }
 
     /**
-     * <p>字符串转换为Long类型</p>
-     * <p>用于RTO中String类型的编码字段转换为Entity中Long类型的ID字段</p>
+     * <p>字符串转Long</p>
      *
      * @param value 字符串值
-     * @return Long类型值，输入为空时返回null
+     * @return Long值，输入为空时返回null
      */
     @Named("stringToLong")
     default Long stringToLong(String value) {
@@ -112,11 +101,10 @@ public interface SysTenantPolicyConverter {
     }
 
     /**
-     * <p>租户策略新增RTO转换为实体对象</p>
-     * <p>字段重命名映射，枚举类型转换为编码字符串</p>
+     * <p>新增RTO转实体</p>
      *
      * @param addRTO 租户策略新增请求对象
-     * @return 租户策略数据库实体
+     * @return 租户策略实体
      */
     @Named("toEntityFromAdd")
     @Mapping(source = "createByCode", target = "createBy", qualifiedByName = "stringToLong")
@@ -129,11 +117,10 @@ public interface SysTenantPolicyConverter {
     SysTenantPolicy toEntityFromAdd(SysTenantPolicyAddRTO addRTO);
 
     /**
-     * <p>租户策略更新RTO转换为实体对象</p>
-     * <p>字段重命名映射，枚举类型转换为编码字符串</p>
+     * <p>更新RTO转实体</p>
      *
      * @param updateRTO 租户策略更新请求对象
-     * @return 租户策略数据库实体
+     * @return 租户策略实体
      */
     @Named("toEntityFromUpdate")
     @Mapping(source = "createByCode", target = "createBy", qualifiedByName = "stringToLong")
@@ -149,8 +136,7 @@ public interface SysTenantPolicyConverter {
     SysTenantPolicy toEntityFromUpdate(SysTenantPolicyUpdateRTO updateRTO);
 
     /**
-     * <p>租户策略新增RTO列表批量转换为实体列表</p>
-     * <p>复用单对象转换规则，实现批量映射</p>
+     * <p>批量新增RTO转实体列表</p>
      *
      * @param addRTOList 租户策略新增请求对象集合
      * @return 租户策略实体集合
@@ -159,8 +145,7 @@ public interface SysTenantPolicyConverter {
     List<SysTenantPolicy> addRTOListToEntityList(List<SysTenantPolicyAddRTO> addRTOList);
 
     /**
-     * <p>租户策略更新RTO列表批量转换为实体列表</p>
-     * <p>复用单对象转换规则，实现批量映射</p>
+     * <p>批量更新RTO转实体列表</p>
      *
      * @param updateRTOList 租户策略更新请求对象集合
      * @return 租户策略实体集合

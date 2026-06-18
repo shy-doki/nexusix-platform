@@ -12,15 +12,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * <p>
- * 租户策略新增请求对象
- * </p>
- * <p>
- * 用于接收前端传递的租户策略新增数据，包含完整的校验规则
- * </p>
+ * <p>租户策略新增请求对象</p>
  *
  * @author shy
- * @since 2026-06-13
  */
 @Data
 @Schema(description = "租户策略新增请求对象")

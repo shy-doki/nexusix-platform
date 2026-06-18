@@ -9,18 +9,16 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * <p>
- * 权限策略表 Mapper 接口
- * </p>
+ * <p>权限策略Mapper接口</p>
  *
  * @author shy
- * @since 2026-06-12
  */
 @Mapper
 public interface SysPermPolicyMapper extends BaseMapper<SysPermPolicy> {
 
     /**
-     * 查询用户在所有租户下的权限信息
+     * <p>查询用户在所有租户下的权限信息</p>
+     *
      * @param userId 系统用户ID
      * @return 用户权限列表
      */

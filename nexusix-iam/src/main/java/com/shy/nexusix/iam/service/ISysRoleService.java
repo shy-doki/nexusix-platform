@@ -4,10 +4,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.shy.nexusix.iam.entity.SysRole;
 
 /**
- * 系统角色服务接口
+ * <p>系统角色服务接口</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 public interface ISysRoleService extends IService<SysRole> {
 

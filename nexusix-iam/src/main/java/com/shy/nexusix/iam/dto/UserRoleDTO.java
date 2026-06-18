@@ -3,10 +3,9 @@ package com.shy.nexusix.iam.dto;
 import lombok.Data;
 
 /**
- * <p>用户角色DTO - 用于查询用户在各租户下的角色信息</p>
+ * <p>用户角色DTO，查询用户在各租户下的角色信息</p>
  *
  * @author shy
- * @since 2026-06-12
  */
 @Data
 public class UserRoleDTO {

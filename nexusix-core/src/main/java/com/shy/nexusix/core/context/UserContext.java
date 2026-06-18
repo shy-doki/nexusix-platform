@@ -7,11 +7,20 @@ import com.shy.nexusix.core.entity.dto.UserContextDTO;
 
 import java.util.*;
 
+/**
+ * <p>用户上下文工具类，提供从Sa-Token Session获取用户上下文的快捷方法</p>
+ * @author shy
+ */
 public class UserContext {
 
+    /** <p>私有构造</p> */
     private UserContext() {
     }
 
+    /**
+     * <p>获取当前用户上下文DTO</p>
+     * @return 用户上下文DTO
+     */
     public static UserContextDTO getUserContext() {
         Object obj = StpUtil.getSession().get(GlobalConstant.Session.USER_CONTEXT);
         UserContextDTO dto;
@@ -27,7 +36,8 @@ public class UserContext {
     }
 
     /**
-     * 确保 DTO 中所有 List 类型字段不为 null，防止反序列化时 null 值导致 NPE
+     * <p>确保DTO中所有List字段不为null，防止反序列化NPE</p>
+     * @param dto 用户上下文DTO
      */
     private static void ensureNonNull(UserContextDTO dto) {
         if (dto == null) {
@@ -36,19 +46,19 @@ public class UserContext {
         // 权限信息
         UserContextDTO.PermissionInfo permissionInfo = dto.getPermInfo();
         if (permissionInfo != null) {
-            // current 现在是 CurrentPermissions 类型
+            // 当前租户权限
             UserContextDTO.CurrentPermissions currentPerms = permissionInfo.getCurrent();
             if (currentPerms != null) {
                 currentPerms.setEnabled(nullToEmpty(currentPerms.getEnabled()));
                 currentPerms.setDisabled(nullToEmpty(currentPerms.getDisabled()));
             }
 
-            // all/valid/invalid 现在是 List<TenantPermissions> 类型
+            // 全部/有效/无效权限
             permissionInfo.setAll(nullToEmpty(permissionInfo.getAll()));
             permissionInfo.setValid(nullToEmpty(permissionInfo.getValid()));
             permissionInfo.setInvalid(nullToEmpty(permissionInfo.getInvalid()));
 
-            // disabledDetail 现在是按租户分组的 Map
+            // 级联禁用详情
             Map<String, UserContextDTO.DisabledDetail> disabledDetailMap = permissionInfo.getDisabledDetailByTenant();
             if (disabledDetailMap != null) {
                 for (UserContextDTO.DisabledDetail detail : disabledDetailMap.values()) {
@@ -61,7 +71,7 @@ public class UserContext {
                 }
             }
 
-            // fieldPermission 现在是按租户分组的 Map
+            // 字段级权限
             Map<String, UserContextDTO.FieldPermission> fieldPermMap = permissionInfo.getFieldPermissionByTenant();
             if (fieldPermMap != null) {
                 for (UserContextDTO.FieldPermission fp : fieldPermMap.values()) {
@@ -77,14 +87,14 @@ public class UserContext {
         // 部门分组
         UserContextDTO.DeptGroup deptGroup = dto.getDeptInfo();
         if (deptGroup != null) {
-            // current 现在是 CurrentDepts 类型
+            // 当前租户部门
             UserContextDTO.CurrentDepts currentDepts = deptGroup.getCurrent();
             if (currentDepts != null) {
                 currentDepts.setEnabled(nullToEmpty(currentDepts.getEnabled()));
                 currentDepts.setDisabled(nullToEmpty(currentDepts.getDisabled()));
             }
 
-            // all/valid/invalid 现在是 List<TenantDepts> 类型
+            // 全部/有效/无效部门
             deptGroup.setAll(nullToEmpty(deptGroup.getAll()));
             deptGroup.setValid(nullToEmpty(deptGroup.getValid()));
             deptGroup.setInvalid(nullToEmpty(deptGroup.getInvalid()));
@@ -93,14 +103,14 @@ public class UserContext {
         // 角色分组
         UserContextDTO.RoleGroup roleGroup = dto.getRoleInfo();
         if (roleGroup != null) {
-            // current 现在是 CurrentRoles 类型
+            // 当前租户角色
             UserContextDTO.CurrentRoles currentRoles = roleGroup.getCurrent();
             if (currentRoles != null) {
                 currentRoles.setEnabled(nullToEmpty(currentRoles.getEnabled()));
                 currentRoles.setDisabled(nullToEmpty(currentRoles.getDisabled()));
             }
 
-            // all/valid/invalid 现在是 List<TenantRoles> 类型
+            // 全部/有效/无效角色
             roleGroup.setAll(nullToEmpty(roleGroup.getAll()));
             roleGroup.setValid(nullToEmpty(roleGroup.getValid()));
             roleGroup.setInvalid(nullToEmpty(roleGroup.getInvalid()));
@@ -116,6 +126,10 @@ public class UserContext {
         }
     }
 
+    /**
+     * <p>确保字段权限Map中所有TableFieldPermission的List不为null</p>
+     * @param map 表字段权限Map
+     */
     private static void ensureFieldPermMapNonNull(Map<String, UserContextDTO.TableFieldPermission> map) {
         if (map == null) {
             return;
@@ -128,98 +142,171 @@ public class UserContext {
         }
     }
 
+    /**
+     * <p>null转空列表</p>
+     * @param list 原列表
+     * @return 非null列表
+     */
     private static <T> List<T> nullToEmpty(List<T> list) {
         return list != null ? list : Collections.emptyList();
     }
 
+    /**
+     * <p>获取当前用户ID</p>
+     * @return 用户ID
+     */
     public static Long getCurrentUserId() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取当前用户名</p>
+     * @return 用户名
+     */
     public static String getCurrentUserName() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>判断当前是否已登录</p>
+     * @return 是否登录
+     */
     public static boolean isLogin() {
         // TODO 待实现
         return false;
     }
 
+    /**
+     * <p>获取当前Token</p>
+     * @return Token值
+     */
     public static String getCurrentToken() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取当前用户权限编码集合</p>
+     * @return 权限编码集合
+     */
     public static Set<String> getCurrentPerm() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取系统级有效权限编码集合</p>
+     * @return 权限编码集合
+     */
     public static Set<String> getValidPermSystem() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取租户级有效权限编码集合</p>
+     * @return 权限编码集合
+     */
     public static Set<String> getValidPermTenant() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取角色级有效权限编码集合</p>
+     * @return 权限编码集合
+     */
     public static Set<String> getValidPermRole() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取用户级有效权限编码集合</p>
+     * @return 权限编码集合
+     */
     public static Set<String> getValidPermUser() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取租户级无效权限编码集合</p>
+     * @return 权限编码集合
+     */
     public static Set<String> getInvalidPermTenant() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取角色级无效权限编码集合</p>
+     * @return 权限编码集合
+     */
     public static Set<String> getInvalidPermRole() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取用户级无效权限编码集合</p>
+     * @return 权限编码集合
+     */
     public static Set<String> getInvalidPermUser() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取当前用户角色编码集合</p>
+     * @return 角色编码集合
+     */
     public static Set<String> getCurrentRoles() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取租户级有效角色编码集合</p>
+     * @return 角色编码集合
+     */
     public static Set<String> getValidRoleTenant() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取用户级有效角色编码集合</p>
+     * @return 角色编码集合
+     */
     public static Set<String> getValidRoleUser() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取租户级无效角色编码集合</p>
+     * @return 角色编码集合
+     */
     public static Set<String> getInvalidRoleTenant() {
         // TODO 待实现
         return null;
     }
 
+    /**
+     * <p>获取用户级无效角色编码集合</p>
+     * @return 角色编码集合
+     */
     public static Set<String> getInvalidRoleUser() {
         // TODO 待实现
         return null;
     }
 
     /**
-     * 获取当前租户的字段权限
-     * 兼容新的按租户分组结构
+     * <p>获取当前租户的字段权限</p>
+     * @return 字段权限，不存在时返回null
      */
     public static UserContextDTO.FieldPermission getCurrentTenantFieldPermission() {
         UserContextDTO userContext = getUserContext();
@@ -233,7 +320,7 @@ public class UserContext {
             return null;
         }
 
-        // 从按租户分组的字段权限中获取当前租户的权限
+        // 按租户编码查找字段权限
         Map<String, UserContextDTO.FieldPermission> fieldPermByTenant =
             userContext.getPermInfo().getFieldPermissionByTenant();
 
@@ -245,7 +332,8 @@ public class UserContext {
     }
 
     /**
-     * 获取当前租户编码
+     * <p>获取当前租户编码</p>
+     * @return 租户编码，不存在时返回null
      */
     public static String getCurrentTenantCode() {
         UserContextDTO userContext = getUserContext();

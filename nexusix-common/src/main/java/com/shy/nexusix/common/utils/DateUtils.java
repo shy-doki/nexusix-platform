@@ -6,89 +6,56 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 
 /**
- * <p>
- * 日期工具类
- * </p>
- * <p>
- * 提供日期的格式化、解析、计算等常用操作，全面使用Java 8及以上版本的java.time API。
- * 所有方法都是线程安全的，使用不可变的DateTimeFormatter和java.time对象确保并发安全。
- * </p>
+ * <p>日期工具类 - 格式化、解析、计算等常用操作，基于Java 8 java.time API</p>
  *
  * @author shy
- * @since 2026-04-07
  */
 public final class DateUtils {
 
-    /**
-     * 默认日期格式：yyyy-MM-dd
-     */
+    // 默认日期格式：yyyy-MM-dd
     public static final String DATE_PATTERN = "yyyy-MM-dd";
 
-    /**
-     * 默认时间格式：HH:mm:ss
-     */
+    // 默认时间格式：HH:mm:ss
     public static final String TIME_PATTERN = "HH:mm:ss";
 
-    /**
-     * 默认日期时间格式：yyyy-MM-dd HH:mm:ss
-     */
+    // 默认日期时间格式：yyyy-MM-dd HH:mm:ss
     public static final String DATETIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
-    /**
-     * 紧凑日期格式：yyyyMMdd
-     */
+    // 紧凑日期格式：yyyyMMdd
     public static final String DATE_COMPACT_PATTERN = "yyyyMMdd";
 
-    /**
-     * 紧凑日期时间格式：yyyyMMddHHmmss
-     */
+    // 紧凑日期时间格式：yyyyMMddHHmmss
     public static final String DATETIME_COMPACT_PATTERN = "yyyyMMddHHmmss";
 
-    /**
-     * ISO日期时间格式：yyyy-MM-dd'T'HH:mm:ss
-     */
+    // ISO日期时间格式：yyyy-MM-dd'T'HH:mm:ss
     public static final String DATETIME_ISO_PATTERN = "yyyy-MM-dd'T'HH:mm:ss";
 
-    /**
-     * 日期格式化器（线程安全，不可变）
-     */
+    // 日期格式化器
     public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
-    /**
-     * 时间格式化器（线程安全，不可变）
-     */
+    // 时间格式化器
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(TIME_PATTERN);
 
-    /**
-     * 日期时间格式化器（线程安全，不可变）
-     */
+    // 日期时间格式化器
     public static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_PATTERN);
 
-    /**
-     * 紧凑日期格式化器（线程安全，不可变）
-     */
+    // 紧凑日期格式化器
     public static final DateTimeFormatter DATE_COMPACT_FORMATTER = DateTimeFormatter.ofPattern(DATE_COMPACT_PATTERN);
 
-    /**
-     * 紧凑日期时间格式化器（线程安全，不可变）
-     */
+    // 紧凑日期时间格式化器
     public static final DateTimeFormatter DATETIME_COMPACT_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_COMPACT_PATTERN);
 
-    /**
-     * ISO日期时间格式化器（线程安全，不可变）
-     */
+    // ISO日期时间格式化器
     public static final DateTimeFormatter DATETIME_ISO_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_ISO_PATTERN);
 
-    /**
-     * 默认时区
-     */
+    // 默认时区
     public static final ZoneId DEFAULT_ZONE = ZoneId.systemDefault();
 
     private DateUtils() {
     }
 
     /**
-     * 获取当前日期（LocalDate）
+     * 获取当前日期
      *
      * @return 当前日期
      */
@@ -97,7 +64,7 @@ public final class DateUtils {
     }
 
     /**
-     * 获取当前日期时间（LocalDateTime）
+     * 获取当前日期时间
      *
      * @return 当前日期时间
      */
@@ -106,7 +73,7 @@ public final class DateUtils {
     }
 
     /**
-     * 获取当前时间（LocalTime）
+     * 获取当前时间
      *
      * @return 当前时间
      */
@@ -115,9 +82,9 @@ public final class DateUtils {
     }
 
     /**
-     * 获取当前时间戳（Instant）
+     * 获取当前时间戳
      *
-     * @return 当前时间戳
+     * @return 当前Instant
      */
     public static Instant nowInstant() {
         return Instant.now();
@@ -145,9 +112,9 @@ public final class DateUtils {
     /**
      * 格式化LocalDate为字符串
      *
-     * @param date 日期对象
+     * @param date    日期对象
      * @param pattern 格式模式
-     * @return 格式化后的字符串，如果date为null则返回null
+     * @return 格式化后的字符串，date为null时返回null
      */
     public static String format(LocalDate date, String pattern) {
         if (date == null) {
@@ -158,10 +125,10 @@ public final class DateUtils {
     }
 
     /**
-     * 格式化LocalDate为字符串（默认格式：yyyy-MM-dd）
+     * 格式化LocalDate（默认格式yyyy-MM-dd）
      *
      * @param date 日期对象
-     * @return 格式化后的字符串，如果date为null则返回null
+     * @return 格式化后的字符串，date为null时返回null
      */
     public static String formatDate(LocalDate date) {
         if (date == null) {
@@ -173,9 +140,9 @@ public final class DateUtils {
     /**
      * 格式化LocalTime为字符串
      *
-     * @param time 时间对象
+     * @param time    时间对象
      * @param pattern 格式模式
-     * @return 格式化后的字符串，如果time为null则返回null
+     * @return 格式化后的字符串，time为null时返回null
      */
     public static String format(LocalTime time, String pattern) {
         if (time == null) {
@@ -186,10 +153,10 @@ public final class DateUtils {
     }
 
     /**
-     * 格式化LocalTime为字符串（默认格式：HH:mm:ss）
+     * 格式化LocalTime（默认格式HH:mm:ss）
      *
      * @param time 时间对象
-     * @return 格式化后的字符串，如果time为null则返回null
+     * @return 格式化后的字符串，time为null时返回null
      */
     public static String formatTime(LocalTime time) {
         if (time == null) {
@@ -202,8 +169,8 @@ public final class DateUtils {
      * 格式化LocalDateTime为字符串
      *
      * @param dateTime 日期时间对象
-     * @param pattern 格式模式
-     * @return 格式化后的字符串，如果dateTime为null则返回null
+     * @param pattern  格式模式
+     * @return 格式化后的字符串，dateTime为null时返回null
      */
     public static String format(LocalDateTime dateTime, String pattern) {
         if (dateTime == null) {
@@ -214,10 +181,10 @@ public final class DateUtils {
     }
 
     /**
-     * 格式化LocalDateTime为字符串（默认格式：yyyy-MM-dd HH:mm:ss）
+     * 格式化LocalDateTime（默认格式yyyy-MM-dd HH:mm:ss）
      *
      * @param dateTime 日期时间对象
-     * @return 格式化后的字符串，如果dateTime为null则返回null
+     * @return 格式化后的字符串，dateTime为null时返回null
      */
     public static String formatDateTime(LocalDateTime dateTime) {
         if (dateTime == null) {
@@ -231,8 +198,8 @@ public final class DateUtils {
      *
      * @param instant 时间戳对象
      * @param pattern 格式模式
-     * @param zoneId 时区
-     * @return 格式化后的字符串，如果instant为null则返回null
+     * @param zoneId  时区
+     * @return 格式化后的字符串，instant为null时返回null
      */
     public static String format(Instant instant, String pattern, ZoneId zoneId) {
         if (instant == null) {
@@ -243,10 +210,10 @@ public final class DateUtils {
     }
 
     /**
-     * 格式化Instant为字符串（默认格式：yyyy-MM-dd HH:mm:ss，默认时区）
+     * 格式化Instant（默认格式和时区）
      *
      * @param instant 时间戳对象
-     * @return 格式化后的字符串，如果instant为null则返回null
+     * @return 格式化后的字符串，instant为null时返回null
      */
     public static String formatDateTime(Instant instant) {
         if (instant == null) {
@@ -260,7 +227,7 @@ public final class DateUtils {
      *
      * @param dateStr 日期字符串
      * @param pattern 格式模式
-     * @return LocalDate对象，如果解析失败则返回null
+     * @return LocalDate对象，解析失败返回null
      */
     public static LocalDate parseLocalDate(String dateStr, String pattern) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
@@ -275,10 +242,10 @@ public final class DateUtils {
     }
 
     /**
-     * 解析字符串为LocalDate（默认格式：yyyy-MM-dd）
+     * 解析字符串为LocalDate（默认格式yyyy-MM-dd）
      *
      * @param dateStr 日期字符串
-     * @return LocalDate对象，如果解析失败则返回null
+     * @return LocalDate对象，解析失败返回null
      */
     public static LocalDate parseLocalDate(String dateStr) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
@@ -296,7 +263,7 @@ public final class DateUtils {
      *
      * @param timeStr 时间字符串
      * @param pattern 格式模式
-     * @return LocalTime对象，如果解析失败则返回null
+     * @return LocalTime对象，解析失败返回null
      */
     public static LocalTime parseLocalTime(String timeStr, String pattern) {
         if (timeStr == null || timeStr.trim().isEmpty()) {
@@ -311,10 +278,10 @@ public final class DateUtils {
     }
 
     /**
-     * 解析字符串为LocalTime（默认格式：HH:mm:ss）
+     * 解析字符串为LocalTime（默认格式HH:mm:ss）
      *
      * @param timeStr 时间字符串
-     * @return LocalTime对象，如果解析失败则返回null
+     * @return LocalTime对象，解析失败返回null
      */
     public static LocalTime parseLocalTime(String timeStr) {
         if (timeStr == null || timeStr.trim().isEmpty()) {
@@ -332,7 +299,7 @@ public final class DateUtils {
      *
      * @param dateStr 日期时间字符串
      * @param pattern 格式模式
-     * @return LocalDateTime对象，如果解析失败则返回null
+     * @return LocalDateTime对象，解析失败返回null
      */
     public static LocalDateTime parseLocalDateTime(String dateStr, String pattern) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
@@ -347,10 +314,10 @@ public final class DateUtils {
     }
 
     /**
-     * 解析字符串为LocalDateTime（默认格式：yyyy-MM-dd HH:mm:ss）
+     * 解析字符串为LocalDateTime（默认格式yyyy-MM-dd HH:mm:ss）
      *
      * @param dateStr 日期时间字符串
-     * @return LocalDateTime对象，如果解析失败则返回null
+     * @return LocalDateTime对象，解析失败返回null
      */
     public static LocalDateTime parseLocalDateTime(String dateStr) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
@@ -368,8 +335,8 @@ public final class DateUtils {
      *
      * @param dateStr 日期时间字符串
      * @param pattern 格式模式
-     * @param zoneId 时区
-     * @return Instant对象，如果解析失败则返回null
+     * @param zoneId  时区
+     * @return Instant对象，解析失败返回null
      */
     public static Instant parseInstant(String dateStr, String pattern, ZoneId zoneId) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
@@ -384,10 +351,10 @@ public final class DateUtils {
     }
 
     /**
-     * 解析字符串为Instant（默认格式：yyyy-MM-dd HH:mm:ss，默认时区）
+     * 解析字符串为Instant（默认格式和时区）
      *
      * @param dateStr 日期时间字符串
-     * @return Instant对象，如果解析失败则返回null
+     * @return Instant对象，解析失败返回null
      */
     public static Instant parseInstant(String dateStr) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
@@ -404,7 +371,7 @@ public final class DateUtils {
      * LocalDateTime转Instant
      *
      * @param localDateTime LocalDateTime对象
-     * @return Instant对象，如果localDateTime为null则返回null
+     * @return Instant对象，localDateTime为null时返回null
      */
     public static Instant toInstant(LocalDateTime localDateTime) {
         if (localDateTime == null) {
@@ -417,8 +384,8 @@ public final class DateUtils {
      * LocalDateTime转Instant（指定时区）
      *
      * @param localDateTime LocalDateTime对象
-     * @param zoneId 时区
-     * @return Instant对象，如果localDateTime为null则返回null
+     * @param zoneId        时区
+     * @return Instant对象，localDateTime为null时返回null
      */
     public static Instant toInstant(LocalDateTime localDateTime, ZoneId zoneId) {
         if (localDateTime == null) {
@@ -431,7 +398,7 @@ public final class DateUtils {
      * LocalDate转Instant（当天开始时间）
      *
      * @param localDate LocalDate对象
-     * @return Instant对象，如果localDate为null则返回null
+     * @return Instant对象，localDate为null时返回null
      */
     public static Instant toInstant(LocalDate localDate) {
         if (localDate == null) {
@@ -444,7 +411,7 @@ public final class DateUtils {
      * Instant转LocalDateTime
      *
      * @param instant Instant对象
-     * @return LocalDateTime对象，如果instant为null则返回null
+     * @return LocalDateTime对象，instant为null时返回null
      */
     public static LocalDateTime toLocalDateTime(Instant instant) {
         if (instant == null) {
@@ -457,8 +424,8 @@ public final class DateUtils {
      * Instant转LocalDateTime（指定时区）
      *
      * @param instant Instant对象
-     * @param zoneId 时区
-     * @return LocalDateTime对象，如果instant为null则返回null
+     * @param zoneId  时区
+     * @return LocalDateTime对象，instant为null时返回null
      */
     public static LocalDateTime toLocalDateTime(Instant instant, ZoneId zoneId) {
         if (instant == null) {
@@ -471,7 +438,7 @@ public final class DateUtils {
      * Instant转LocalDate
      *
      * @param instant Instant对象
-     * @return LocalDate对象，如果instant为null则返回null
+     * @return LocalDate对象，instant为null时返回null
      */
     public static LocalDate toLocalDate(Instant instant) {
         if (instant == null) {
@@ -484,8 +451,8 @@ public final class DateUtils {
      * Instant转LocalDate（指定时区）
      *
      * @param instant Instant对象
-     * @param zoneId 时区
-     * @return LocalDate对象，如果instant为null则返回null
+     * @param zoneId  时区
+     * @return LocalDate对象，instant为null时返回null
      */
     public static LocalDate toLocalDate(Instant instant, ZoneId zoneId) {
         if (instant == null) {
@@ -498,8 +465,8 @@ public final class DateUtils {
      * 计算两个日期之间的天数
      *
      * @param startDate 开始日期
-     * @param endDate 结束日期
-     * @return 天数差，如果任一参数为null则返回0
+     * @param endDate   结束日期
+     * @return 天数差，任一参数为null时返回0
      */
     public static long daysBetween(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
@@ -512,8 +479,8 @@ public final class DateUtils {
      * 计算两个日期时间之间的天数
      *
      * @param startDateTime 开始日期时间
-     * @param endDateTime 结束日期时间
-     * @return 天数差，如果任一参数为null则返回0
+     * @param endDateTime   结束日期时间
+     * @return 天数差，任一参数为null时返回0
      */
     public static long daysBetween(LocalDateTime startDateTime, LocalDateTime endDateTime) {
         if (startDateTime == null || endDateTime == null) {
@@ -526,8 +493,8 @@ public final class DateUtils {
      * 计算两个日期时间之间的小时数
      *
      * @param startDateTime 开始日期时间
-     * @param endDateTime 结束日期时间
-     * @return 小时差，如果任一参数为null则返回0
+     * @param endDateTime   结束日期时间
+     * @return 小时差，任一参数为null时返回0
      */
     public static long hoursBetween(LocalDateTime startDateTime, LocalDateTime endDateTime) {
         if (startDateTime == null || endDateTime == null) {
@@ -540,8 +507,8 @@ public final class DateUtils {
      * 计算两个日期时间之间的分钟数
      *
      * @param startDateTime 开始日期时间
-     * @param endDateTime 结束日期时间
-     * @return 分钟差，如果任一参数为null则返回0
+     * @param endDateTime   结束日期时间
+     * @return 分钟差，任一参数为null时返回0
      */
     public static long minutesBetween(LocalDateTime startDateTime, LocalDateTime endDateTime) {
         if (startDateTime == null || endDateTime == null) {
@@ -554,8 +521,8 @@ public final class DateUtils {
      * 计算两个日期时间之间的秒数
      *
      * @param startDateTime 开始日期时间
-     * @param endDateTime 结束日期时间
-     * @return 秒数差，如果任一参数为null则返回0
+     * @param endDateTime   结束日期时间
+     * @return 秒数差，任一参数为null时返回0
      */
     public static long secondsBetween(LocalDateTime startDateTime, LocalDateTime endDateTime) {
         if (startDateTime == null || endDateTime == null) {
@@ -568,8 +535,8 @@ public final class DateUtils {
      * 计算两个Instant之间的毫秒数
      *
      * @param start 开始Instant
-     * @param end 结束Instant
-     * @return 毫秒差，如果任一参数为null则返回0
+     * @param end   结束Instant
+     * @return 毫秒差，任一参数为null时返回0
      */
     public static long millisBetween(Instant start, Instant end) {
         if (start == null || end == null) {
@@ -582,8 +549,8 @@ public final class DateUtils {
      * 日期加减天数
      *
      * @param date 日期对象
-     * @param days 天数（正数为加，负数为减）
-     * @return 计算后的日期，如果date为null则返回null
+     * @param days 天数（正数加，负数减）
+     * @return 计算后的日期，date为null时返回null
      */
     public static LocalDate plusDays(LocalDate date, long days) {
         if (date == null) {
@@ -596,8 +563,8 @@ public final class DateUtils {
      * 日期时间加减天数
      *
      * @param dateTime 日期时间对象
-     * @param days 天数（正数为加，负数为减）
-     * @return 计算后的日期时间，如果dateTime为null则返回null
+     * @param days     天数（正数加，负数减）
+     * @return 计算后的日期时间，dateTime为null时返回null
      */
     public static LocalDateTime plusDays(LocalDateTime dateTime, long days) {
         if (dateTime == null) {
@@ -609,9 +576,9 @@ public final class DateUtils {
     /**
      * 日期加减月数
      *
-     * @param date 日期对象
-     * @param months 月数（正数为加，负数为减）
-     * @return 计算后的日期，如果date为null则返回null
+     * @param date   日期对象
+     * @param months 月数（正数加，负数减）
+     * @return 计算后的日期，date为null时返回null
      */
     public static LocalDate plusMonths(LocalDate date, long months) {
         if (date == null) {
@@ -624,8 +591,8 @@ public final class DateUtils {
      * 日期时间加减月数
      *
      * @param dateTime 日期时间对象
-     * @param months 月数（正数为加，负数为减）
-     * @return 计算后的日期时间，如果dateTime为null则返回null
+     * @param months   月数（正数加，负数减）
+     * @return 计算后的日期时间，dateTime为null时返回null
      */
     public static LocalDateTime plusMonths(LocalDateTime dateTime, long months) {
         if (dateTime == null) {
@@ -637,9 +604,9 @@ public final class DateUtils {
     /**
      * 日期加减年数
      *
-     * @param date 日期对象
-     * @param years 年数（正数为加，负数为减）
-     * @return 计算后的日期，如果date为null则返回null
+     * @param date  日期对象
+     * @param years 年数（正数加，负数减）
+     * @return 计算后的日期，date为null时返回null
      */
     public static LocalDate plusYears(LocalDate date, long years) {
         if (date == null) {
@@ -652,8 +619,8 @@ public final class DateUtils {
      * 日期时间加减年数
      *
      * @param dateTime 日期时间对象
-     * @param years 年数（正数为加，负数为减）
-     * @return 计算后的日期时间，如果dateTime为null则返回null
+     * @param years    年数（正数加，负数减）
+     * @return 计算后的日期时间，dateTime为null时返回null
      */
     public static LocalDateTime plusYears(LocalDateTime dateTime, long years) {
         if (dateTime == null) {
@@ -666,8 +633,8 @@ public final class DateUtils {
      * 日期时间加减小时数
      *
      * @param dateTime 日期时间对象
-     * @param hours 小时数（正数为加，负数为减）
-     * @return 计算后的日期时间，如果dateTime为null则返回null
+     * @param hours    小时数（正数加，负数减）
+     * @return 计算后的日期时间，dateTime为null时返回null
      */
     public static LocalDateTime plusHours(LocalDateTime dateTime, long hours) {
         if (dateTime == null) {
@@ -680,8 +647,8 @@ public final class DateUtils {
      * 日期时间加减分钟数
      *
      * @param dateTime 日期时间对象
-     * @param minutes 分钟数（正数为加，负数为减）
-     * @return 计算后的日期时间，如果dateTime为null则返回null
+     * @param minutes  分钟数（正数加，负数减）
+     * @return 计算后的日期时间，dateTime为null时返回null
      */
     public static LocalDateTime plusMinutes(LocalDateTime dateTime, long minutes) {
         if (dateTime == null) {
@@ -694,7 +661,7 @@ public final class DateUtils {
      * 获取当天的开始时间（00:00:00）
      *
      * @param date 日期对象
-     * @return 当天的开始时间，如果date为null则返回null
+     * @return 当天开始时间，date为null时返回null
      */
     public static LocalDateTime getStartOfDay(LocalDate date) {
         if (date == null) {
@@ -707,7 +674,7 @@ public final class DateUtils {
      * 获取当天的开始时间（00:00:00）
      *
      * @param dateTime 日期时间对象
-     * @return 当天的开始时间，如果dateTime为null则返回null
+     * @return 当天开始时间，dateTime为null时返回null
      */
     public static LocalDateTime getStartOfDay(LocalDateTime dateTime) {
         if (dateTime == null) {
@@ -717,10 +684,10 @@ public final class DateUtils {
     }
 
     /**
-     * 获取当天的结束时间（23:59:59）
+     * 获取当天的结束时间（23:59:59.999999999）
      *
      * @param date 日期对象
-     * @return 当天的结束时间，如果date为null则返回null
+     * @return 当天结束时间，date为null时返回null
      */
     public static LocalDateTime getEndOfDay(LocalDate date) {
         if (date == null) {
@@ -730,10 +697,10 @@ public final class DateUtils {
     }
 
     /**
-     * 获取当天的结束时间（23:59:59）
+     * 获取当天的结束时间（23:59:59.999999999）
      *
      * @param dateTime 日期时间对象
-     * @return 当天的结束时间，如果dateTime为null则返回null
+     * @return 当天结束时间，dateTime为null时返回null
      */
     public static LocalDateTime getEndOfDay(LocalDateTime dateTime) {
         if (dateTime == null) {
@@ -746,7 +713,7 @@ public final class DateUtils {
      * 获取本周的第一天（周一）
      *
      * @param date 日期对象
-     * @return 本周的第一天，如果date为null则返回null
+     * @return 本周第一天，date为null时返回null
      */
     public static LocalDate getFirstDayOfWeek(LocalDate date) {
         if (date == null) {
@@ -759,7 +726,7 @@ public final class DateUtils {
      * 获取本周的最后一天（周日）
      *
      * @param date 日期对象
-     * @return 本周的最后一天，如果date为null则返回null
+     * @return 本周最后一天，date为null时返回null
      */
     public static LocalDate getLastDayOfWeek(LocalDate date) {
         if (date == null) {
@@ -772,7 +739,7 @@ public final class DateUtils {
      * 获取本月的第一天
      *
      * @param date 日期对象
-     * @return 本月的第一天，如果date为null则返回null
+     * @return 本月第一天，date为null时返回null
      */
     public static LocalDate getFirstDayOfMonth(LocalDate date) {
         if (date == null) {
@@ -785,7 +752,7 @@ public final class DateUtils {
      * 获取本月的最后一天
      *
      * @param date 日期对象
-     * @return 本月的最后一天，如果date为null则返回null
+     * @return 本月最后一天，date为null时返回null
      */
     public static LocalDate getLastDayOfMonth(LocalDate date) {
         if (date == null) {
@@ -798,7 +765,7 @@ public final class DateUtils {
      * 获取本年的第一天
      *
      * @param date 日期对象
-     * @return 本年的第一天，如果date为null则返回null
+     * @return 本年第一天，date为null时返回null
      */
     public static LocalDate getFirstDayOfYear(LocalDate date) {
         if (date == null) {
@@ -811,7 +778,7 @@ public final class DateUtils {
      * 获取本年的最后一天
      *
      * @param date 日期对象
-     * @return 本年的最后一天，如果date为null则返回null
+     * @return 本年最后一天，date为null时返回null
      */
     public static LocalDate getLastDayOfYear(LocalDate date) {
         if (date == null) {
@@ -824,7 +791,7 @@ public final class DateUtils {
      * 判断是否为今天
      *
      * @param date 日期对象
-     * @return true-是今天，false-不是今天
+     * @return true-是今天
      */
     public static boolean isToday(LocalDate date) {
         if (date == null) {
@@ -837,7 +804,7 @@ public final class DateUtils {
      * 判断是否为今天
      *
      * @param dateTime 日期时间对象
-     * @return true-是今天，false-不是今天
+     * @return true-是今天
      */
     public static boolean isToday(LocalDateTime dateTime) {
         if (dateTime == null) {
@@ -850,7 +817,7 @@ public final class DateUtils {
      * 判断是否为昨天
      *
      * @param date 日期对象
-     * @return true-是昨天，false-不是昨天
+     * @return true-是昨天
      */
     public static boolean isYesterday(LocalDate date) {
         if (date == null) {
@@ -863,7 +830,7 @@ public final class DateUtils {
      * 判断是否为明天
      *
      * @param date 日期对象
-     * @return true-是明天，false-不是明天
+     * @return true-是明天
      */
     public static boolean isTomorrow(LocalDate date) {
         if (date == null) {
@@ -876,7 +843,7 @@ public final class DateUtils {
      * 获取年龄
      *
      * @param birthDate 出生日期
-     * @return 年龄，如果birthDate为null则返回0
+     * @return 年龄，birthDate为null时返回0
      */
     public static int getAge(LocalDate birthDate) {
         if (birthDate == null) {
@@ -889,7 +856,7 @@ public final class DateUtils {
      * 获取年龄（精确到月）
      *
      * @param birthDate 出生日期
-     * @return 年龄字符串，格式：X岁Y个月，如果birthDate为null则返回空字符串
+     * @return 年龄字符串，格式：X岁Y个月
      */
     public static String getAgeWithMonth(LocalDate birthDate) {
         if (birthDate == null) {
@@ -941,7 +908,7 @@ public final class DateUtils {
      * Instant转时间戳（毫秒）
      *
      * @param instant Instant对象
-     * @return 时间戳（毫秒），如果instant为null则返回0
+     * @return 时间戳（毫秒），instant为null时返回0
      */
     public static long toTimestamp(Instant instant) {
         if (instant == null) {
@@ -954,7 +921,7 @@ public final class DateUtils {
      * LocalDateTime转时间戳（毫秒）
      *
      * @param localDateTime LocalDateTime对象
-     * @return 时间戳（毫秒），如果localDateTime为null则返回0
+     * @return 时间戳（毫秒），localDateTime为null时返回0
      */
     public static long toTimestamp(LocalDateTime localDateTime) {
         if (localDateTime == null) {
@@ -967,7 +934,7 @@ public final class DateUtils {
      * LocalDate转时间戳（毫秒，当天开始时间）
      *
      * @param localDate LocalDate对象
-     * @return 时间戳（毫秒），如果localDate为null则返回0
+     * @return 时间戳（毫秒），localDate为null时返回0
      */
     public static long toTimestamp(LocalDate localDate) {
         if (localDate == null) {
@@ -979,10 +946,10 @@ public final class DateUtils {
     /**
      * 判断日期是否在指定范围内
      *
-     * @param date 待判断的日期
+     * @param date      待判断的日期
      * @param startDate 开始日期
-     * @param endDate 结束日期
-     * @return true-在范围内，false-不在范围内
+     * @param endDate   结束日期
+     * @return true-在范围内
      */
     public static boolean isBetween(LocalDate date, LocalDate startDate, LocalDate endDate) {
         if (date == null || startDate == null || endDate == null) {
@@ -994,10 +961,10 @@ public final class DateUtils {
     /**
      * 判断日期时间是否在指定范围内
      *
-     * @param dateTime 待判断的日期时间
+     * @param dateTime      待判断的日期时间
      * @param startDateTime 开始日期时间
-     * @param endDateTime 结束日期时间
-     * @return true-在范围内，false-不在范围内
+     * @param endDateTime   结束日期时间
+     * @return true-在范围内
      */
     public static boolean isBetween(LocalDateTime dateTime, LocalDateTime startDateTime, LocalDateTime endDateTime) {
         if (dateTime == null || startDateTime == null || endDateTime == null) {
@@ -1010,9 +977,9 @@ public final class DateUtils {
      * 判断Instant是否在指定范围内
      *
      * @param instant 待判断的Instant
-     * @param start 开始Instant
-     * @param end 结束Instant
-     * @return true-在范围内，false-不在范围内
+     * @param start   开始Instant
+     * @param end     结束Instant
+     * @return true-在范围内
      */
     public static boolean isBetween(Instant instant, Instant start, Instant end) {
         if (instant == null || start == null || end == null) {
@@ -1085,7 +1052,7 @@ public final class DateUtils {
      * 判断是否为闰年
      *
      * @param year 年份
-     * @return true-是闰年，false-不是闰年
+     * @return true-是闰年
      */
     public static boolean isLeapYear(int year) {
         return Year.isLeap(year);
@@ -1095,7 +1062,7 @@ public final class DateUtils {
      * 判断指定日期所在年份是否为闰年
      *
      * @param date 日期对象
-     * @return true-是闰年，false-不是闰年
+     * @return true-是闰年
      */
     public static boolean isLeapYear(LocalDate date) {
         if (date == null) {
@@ -1107,7 +1074,7 @@ public final class DateUtils {
     /**
      * 获取指定月份的天数
      *
-     * @param year 年份
+     * @param year  年份
      * @param month 月份（1-12）
      * @return 天数
      */
@@ -1129,7 +1096,7 @@ public final class DateUtils {
      * 判断是否为工作日（周一到周五）
      *
      * @param date 日期对象
-     * @return true-是工作日，false-不是工作日
+     * @return true-是工作日
      */
     public static boolean isWeekday(LocalDate date) {
         if (date == null) {
@@ -1140,10 +1107,10 @@ public final class DateUtils {
     }
 
     /**
-     * 判断是否为周末（周六或周日）
+     * 判断是否为周末
      *
      * @param date 日期对象
-     * @return true-是周末，false-不是周末
+     * @return true-是周末
      */
     public static boolean isWeekend(LocalDate date) {
         if (date == null) {
@@ -1154,10 +1121,10 @@ public final class DateUtils {
     }
 
     /**
-     * 获取季度
+     * 获取季度（1-4）
      *
      * @param date 日期对象
-     * @return 季度（1-4），如果date为null则返回0
+     * @return 季度，date为null时返回0
      */
     public static int getQuarter(LocalDate date) {
         if (date == null) {
@@ -1170,7 +1137,7 @@ public final class DateUtils {
      * 获取指定日期所在季度的第一天
      *
      * @param date 日期对象
-     * @return 季度第一天，如果date为null则返回null
+     * @return 季度第一天，date为null时返回null
      */
     public static LocalDate getFirstDayOfQuarter(LocalDate date) {
         if (date == null) {
@@ -1185,7 +1152,7 @@ public final class DateUtils {
      * 获取指定日期所在季度的最后一天
      *
      * @param date 日期对象
-     * @return 季度最后一天，如果date为null则返回null
+     * @return 季度最后一天，date为null时返回null
      */
     public static LocalDate getLastDayOfQuarter(LocalDate date) {
         if (date == null) {

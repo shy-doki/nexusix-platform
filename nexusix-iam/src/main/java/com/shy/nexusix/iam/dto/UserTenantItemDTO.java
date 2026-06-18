@@ -5,10 +5,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * <p>用户租户关联DTO - 用于查询用户所有租户信息</p>
+ * <p>用户租户关联DTO，查询用户所有租户信息</p>
  *
  * @author shy
- * @since 2026-06-12
  */
 @Data
 public class UserTenantItemDTO {
@@ -28,7 +27,7 @@ public class UserTenantItemDTO {
     /** 服务过期时间 */
     private LocalDateTime expireTime;
 
-    /** 租户用户ID（sys_user_policy.id，当 target_type='TENANT' 时） */
+    /** 租户用户ID */
     private Long tenantUserId;
 
     /** 系统租户ID */

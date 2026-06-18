@@ -12,13 +12,9 @@ import java.time.LocalDateTime;
 import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 
 /**
- * 租户条件查询请求对象
- * <p>
- * 继承自 {@link PageCommonRTO}，用于接收前端传递的租户查询条件
- * </p>
+ * <p>租户条件查询请求对象</p>
  *
- * @author system
- * @since 2026-05-14
+ * @author shy
  */
 @Data
 @Schema(description = "租户条件查询请求对象")

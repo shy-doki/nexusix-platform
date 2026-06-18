@@ -14,19 +14,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>
- * Fastjson2 全局配置
- * </p>
+ * <p>Fastjson2全局配置，替换默认HttpMessageConverter</p>
  *
  * @author shy
- * @since 2026-04-07
  */
 @Configuration
 public class Fastjson2Config implements WebMvcConfigurer {
 
     /**
-     * 在 Spring 容器初始化完成后，替换默认的 HttpMessageConverter
-     * 由于 fastjson2-extension-spring6 已自动注册，此处为增强配置（非必须，但强烈推荐）
+     * <p>配置Fastjson2为默认消息转换器</p>
+     *
+     * @param converters 消息转换器列表
      */
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
@@ -39,9 +37,8 @@ public class Fastjson2Config implements WebMvcConfigurer {
         // 配置 Fastjson2
         FastJsonConfig config = new FastJsonConfig();
 
-        // 设置序列化特性
+        // 序列化特性
         config.setWriterFeatures(
-                // 美化输出
                 JSONWriter.Feature.PrettyFormat
                 // 空布尔值输出 false
                 // JSONWriter.Feature.WriteNullBooleanAsFalse,
@@ -55,18 +52,17 @@ public class Fastjson2Config implements WebMvcConfigurer {
                 // JSONWriter.Feature.WriteNullListAsEmpty,
         );
 
-        // 设置反序列化特性
+        // 反序列化特性
         config.setReaderFeatures(
                 // 智能匹配字段
                 JSONReader.Feature.SupportSmartMatch,
-                // 忽略输入为null的字段
+                // 忽略null值字段
                 JSONReader.Feature.IgnoreSetNullValue
         );
 
-        // 设置默认日期格式
+        // 默认日期格式
         config.setDateFormat("yyyy-MM-dd HH:mm:ss");
 
-        // 配置消息转换器
         converter.setFastJsonConfig(config);
 
         // 设置支持的媒体类型

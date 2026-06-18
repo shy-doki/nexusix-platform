@@ -7,10 +7,9 @@ import com.shy.nexusix.iam.service.ISysUserPolicyService;
 import org.springframework.stereotype.Service;
 
 /**
- * 用户策略服务实现类
+ * <p>用户策略服务实现类</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 @Service
 public class SysUserPolicyServiceImpl extends ServiceImpl<SysUserPolicyMapper, SysUserPolicy> implements ISysUserPolicyService {

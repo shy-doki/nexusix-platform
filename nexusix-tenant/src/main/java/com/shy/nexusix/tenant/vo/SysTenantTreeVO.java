@@ -8,12 +8,9 @@ import lombok.EqualsAndHashCode;
 import java.util.List;
 
 /**
- * <p>
- * 租户树形视图对象
- * </p>
+ * <p>租户树形视图对象</p>
  *
  * @author shy
- * @since 2026-04-19
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

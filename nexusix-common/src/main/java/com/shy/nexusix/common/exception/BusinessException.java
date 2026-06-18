@@ -3,12 +3,9 @@ package com.shy.nexusix.common.exception;
 import lombok.Data;
 
 /**
- * <p>
- * 业务异常类
- * </p>
+ * <p>业务异常类</p>
  *
  * @author shy
- * @since 2026-04-07
  */
 @Data
 public class BusinessException extends RuntimeException {
@@ -28,7 +25,7 @@ public class BusinessException extends RuntimeException {
     }
 
     /**
-     * 构造函数
+     * 构造函数（默认错误码500）
      *
      * @param message 错误信息
      */

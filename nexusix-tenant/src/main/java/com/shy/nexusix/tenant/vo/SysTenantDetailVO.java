@@ -8,13 +8,9 @@ import lombok.EqualsAndHashCode;
 import java.time.LocalDateTime;
 
 /**
- * 租户详情视图对象
- * <p>
- * 继承自 {@link SysTenantCommonVO}，包含租户的详细信息
- * </p>
+ * <p>租户详情视图对象</p>
  *
- * @author system
- * @since 2026-05-14
+ * @author shy
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

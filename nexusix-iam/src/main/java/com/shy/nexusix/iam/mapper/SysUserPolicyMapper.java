@@ -11,30 +11,32 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 用户策略Mapper接口
+ * <p>用户策略Mapper接口</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 @Mapper
 public interface SysUserPolicyMapper extends BaseMapper<SysUserPolicy> {
 
     /**
-     * 查询用户在所有租户下的部门信息
+     * <p>查询用户在所有租户下的部门信息</p>
+     *
      * @param userId 系统用户ID
      * @return 用户部门列表
      */
     List<UserDeptDTO> queryUserAllDeptInfo(@Param("userId") Long userId);
 
     /**
-     * 查询用户在所有租户下的角色信息
+     * <p>查询用户在所有租户下的角色信息</p>
+     *
      * @param userId 系统用户ID
      * @return 用户角色列表
      */
     List<UserRoleDTO> queryUserAllRoleInfo(@Param("userId") Long userId);
 
     /**
-     * 查询用户所有租户信息
+     * <p>查询用户所有租户信息</p>
+     *
      * @param userId 系统用户ID
      * @return 用户租户列表
      */

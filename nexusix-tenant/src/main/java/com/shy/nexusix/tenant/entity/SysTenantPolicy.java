@@ -14,12 +14,9 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 /**
- * <p>
- * 租户策略表：将系统部门/角色绑定到租户
- * </p>
+ * <p>租户策略实体，管理部门/角色与租户的绑定关系</p>
  *
  * @author shy
- * @since 2026-06-12
  */
 @Data
 @EqualsAndHashCode(callSuper = false)

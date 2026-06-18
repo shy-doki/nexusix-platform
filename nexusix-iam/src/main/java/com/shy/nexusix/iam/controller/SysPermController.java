@@ -5,10 +5,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 系统权限控制器
+ * <p>系统权限控制器</p>
  *
- * @author NexusIX
- * @since 2026-06-12
+ * @author shy
  */
 @RestController
 @RequestMapping("/api/permissions")

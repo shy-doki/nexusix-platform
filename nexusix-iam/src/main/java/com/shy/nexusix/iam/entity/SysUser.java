@@ -15,12 +15,9 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 
 /**
- * <p>
- * 用户表：系统级用户实体（全局）
- * </p>
+ * <p>用户表，系统级用户实体（全局）</p>
  *
  * @author shy
- * @since 2026-06-12
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -31,101 +28,125 @@ public class SysUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    /** 主键ID */
     @Schema(description = "主键ID（系统用户ID）", example = "1")
     @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
+    /** 用户编码 */
     @Schema(description = "用户编码", example = "U001")
     @TableField(value = "user_code")
     private String userCode;
 
+    /** 用户名（登录名） */
     @Schema(description = "用户名（登录名）", example = "admin")
     @TableField(value = "user_name")
     private String userName;
 
+    /** 昵称 */
     @Schema(description = "昵称", example = "管理员")
     @TableField(value = "nick_name")
     private String nickName;
 
+    /** 真实姓名 */
     @Schema(description = "真实姓名", example = "张三")
     @TableField(value = "real_name")
     private String realName;
 
+    /** 电子邮箱 */
     @Schema(description = "电子邮箱", example = "admin@example.com")
     @TableField(value = "email")
     private String email;
 
+    /** 手机号码 */
     @Schema(description = "手机号码", example = "13800000001")
     @TableField(value = "phone")
     private String phone;
 
+    /** 密码哈希值 */
     @Schema(description = "密码哈希值")
     @TableField(value = "password")
     private String password;
 
+    /** 头像URL */
     @Schema(description = "头像URL")
     @TableField(value = "avatar_url")
     private String avatarUrl;
 
+    /** 性别：MALE, FEMALE, UNKNOWN */
     @Schema(description = "性别：MALE, FEMALE, UNKNOWN", example = "MALE")
     @TableField(value = "gender")
     private String gender;
 
+    /** 出生日期 */
     @Schema(description = "出生日期", example = "1990-01-01")
     @TableField(value = "birthday")
     private LocalDate birthday;
 
+    /** 状态：ENABLED, DISABLED, LOCKED */
     @Schema(description = "状态：ENABLED, DISABLED, LOCKED", example = "ENABLED")
     @TableField(value = "status")
     private String status;
 
+    /** 禁用原因 */
     @Schema(description = "禁用原因")
     @TableField(value = "disable_reason")
     private String disableReason;
 
+    /** 最后登录时间 */
     @Schema(description = "最后登录时间", format = "date-time", example = "2026-06-12 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @TableField(value = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    /** 最后登录IP */
     @Schema(description = "最后登录IP")
     @TableField(value = "last_login_ip")
     private String lastLoginIp;
 
+    /** 创建时所属租户ID */
     @Schema(description = "创建时所属租户ID", example = "0")
     @TableField(value = "create_tenant")
     private Long createTenant;
 
+    /** 创建时所属部门ID */
     @Schema(description = "创建时所属部门ID", example = "0")
     @TableField(value = "create_dept")
     private Long createDept;
 
+    /** 创建时使用角色ID */
     @Schema(description = "创建时使用角色ID", example = "0")
     @TableField(value = "create_role")
     private Long createRole;
 
+    /** 创建人用户ID */
     @Schema(description = "创建人用户ID", example = "1")
     @TableField(value = "create_by")
     private Long createBy;
 
+    /** 创建时间 */
     @Schema(description = "创建时间", format = "date-time", example = "2026-06-12 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @TableField(value = "create_at")
     private LocalDateTime createAt;
 
+    /** 最后更新人用户ID */
     @Schema(description = "最后更新人用户ID", example = "1")
     @TableField(value = "update_by")
     private Long updateBy;
 
+    /** 最后更新时间 */
     @Schema(description = "最后更新时间", format = "date-time", example = "2026-06-12 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @TableField(value = "update_at")
     private LocalDateTime updateAt;
 
+    /** 逻辑删除标记 */
     @Schema(description = "逻辑删除标记", example = "NOT_DELETED")
     @TableField(value = "is_deleted")
     private String isDeleted;
 
+    /** 删除时间 */
     @Schema(description = "删除时间", format = "date-time", example = "2026-06-12 15:45:30")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @TableField(value = "deleted_at")

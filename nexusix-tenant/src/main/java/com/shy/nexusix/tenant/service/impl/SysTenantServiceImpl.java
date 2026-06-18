@@ -38,7 +38,6 @@ import java.util.*;
  * <p>租户信息服务实现类</p>
  *
  * @author shy
- * @since 2026-06-07
  */
 @Service
 public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant> implements ISysTenantService {
@@ -47,7 +46,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     private SysTenantConverter sysTenantConverter;
 
     /**
-     * 获取查询操作的可操作字段
+     * <p>获取查询操作的可操作字段</p>
      *
      * @return 可操作字段列表，null表示无限制
      */
@@ -77,10 +76,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     }
 
     /**
-     * 获取指定操作类型的字段权限
-     * <p>
-     * 从用户上下文中提取字段级权限配置，支持查询、创建、更新三种操作类型
-     * </p>
+     * <p>获取指定操作类型的字段权限</p>
      *
      * @param operationType 操作类型："query"、"create"、"update"
      * @return 可操作字段列表，null表示无权限或无限制
@@ -185,7 +181,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>查询租户树形结构</p>
-     * <p>基于path物化路径实现，利用Map进行O(n)复杂度的树构建，避免递归操作</p>
      *
      * @return 租户树形VO列表，包含完整的层级关系
      * @throws BusinessException 用户上下文为空、字段权限配置异常时抛出业务异常
@@ -257,7 +252,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>分页查询租户树形结构</p>
-     * <p>对根节点进行分页，每个根节点携带完整的子树</p>
      *
      * @param page 分页参数，包含页码和每页数量
      * @return 分页后的租户树形VO列表
@@ -376,7 +370,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>查询指定租户的树形结构</p>
-     * <p>基于path物化路径前缀匹配，一次性查询所有子节点，避免递归查询</p>
      *
      * @param id 租户ID，用于定位要查询的租户节点
      * @return 以指定租户为根的树形结构
@@ -467,7 +460,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>条件查询租户列表</p>
-     * <p>支持多条件筛选和分页，基于字段权限动态控制可见列</p>
      *
      * @param queryParam 查询条件，包含租户编码、名称、类型、状态等筛选条件
      * @return 满足条件的租户分页列表
@@ -590,7 +582,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>新增租户</p>
-     * <p>自动计算物化路径path，校验租户编码唯一性和父租户存在性</p>
      *
      * @param addParam 新增租户信息
      * @return 新增结果行数
@@ -704,7 +695,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>修改租户</p>
-     * <p>仅允许修改用户有权限的字段，租户编码不可修改</p>
      *
      * @param updateParam 修改租户信息
      * @return 修改结果行数
@@ -790,7 +780,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>更新租户状态</p>
-     * <p>冻结父租户时，通过path前缀匹配级联冻结所有子租户</p>
      *
      * @param id 租户ID
      * @param status 目标状态（ENABLED/DISABLED/EXPIRED）
@@ -878,7 +867,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>删除租户</p>
-     * <p>逻辑删除，删除前校验租户无子租户</p>
      *
      * @param id 租户ID
      * @return 删除结果行数
@@ -937,7 +925,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>批量新增租户</p>
-     * <p>事务控制，任一租户新增失败则全部回滚</p>
      *
      * @param addParamList 批量新增租户信息集合
      * @return 成功新增的租户数量
@@ -1061,7 +1048,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>批量修改租户</p>
-     * <p>事务控制，任一租户修改失败则全部回滚</p>
      *
      * @param updateParamList 批量修改租户信息集合
      * @return 成功修改的租户数量
@@ -1148,7 +1134,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>批量更新租户状态</p>
-     * <p>事务控制，任一租户状态更新失败则全部回滚</p>
      *
      * @param ids 租户ID集合
      * @param status 目标状态
@@ -1239,7 +1224,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>批量删除租户</p>
-     * <p>事务控制，任一租户删除失败则全部回滚</p>
      *
      * @param ids 租户ID集合
      * @return 删除结果行数
@@ -1305,7 +1289,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>分配子租户</p>
-     * <p>将指定的子租户分配到指定父租户下，更新parentId、parentName和path</p>
      *
      * @param assignParam 子租户分配参数，包含父租户编码和子租户编码列表
      * @return 更新子租户行数
@@ -1402,7 +1385,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>分配父租户</p>
-     * <p>将指定子租户移动到新的父租户下，利用path属性进行环状结构检测和路径更新</p>
      *
      * @param assignParam 父租户分配参数，包含新父租户编码和待移动子租户编码列表
      * @return 更新子租户行数
@@ -1513,11 +1495,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
     }
 
     /**
-     * 归一化物化路径前缀：移除末尾的"/"
-     * <p>数据库中path格式为 /1/2/3/（带前导和末尾斜杠），
-     * 后续使用 likeRight(path, prefix + "/") 查询子节点时，
-     * 如果path以"/"结尾则会产生双斜杠 /1/2/3// 导致LIKE匹配失败。
-     * 归一化后 prefix = /1/2/3，拼接后为 /1/2/3/ 可正确匹配子节点。</p>
+     * <p>归一化物化路径前缀，移除末尾的"/"</p>
      *
      * @param path 原始物化路径
      * @return 移除末尾"/"后的路径
@@ -1531,8 +1509,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>租户自助注册</p>
-     * <p>企业用户自助注册租户，注册后租户状态为PENDING（待审核），
-     * 需要平台管理员审核通过后才能正常使用。</p>
      *
      * @param registerParam 注册信息
      * @return 新增结果行数
@@ -1619,7 +1595,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>审核租户注册</p>
-     * <p>平台管理员审核租户注册申请，审核通过则状态变为ENABLED， 审核拒绝则状态变为DISABLED。</p>
      *
      * @param reviewParam 审核信息
      * @return 审核结果行数
@@ -1668,8 +1643,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
 
     /**
      * <p>切换租户</p>
-     * <p>切换当前用户的工作租户上下文，基于Session中缓存的validTenants/invalidTenants
-     * 校验用户是否属于目标租户，验证目标租户状态，更新Session中的租户上下文信息。</p>
      *
      * @param switchParam 切换参数
      * @return 切换后的租户信息

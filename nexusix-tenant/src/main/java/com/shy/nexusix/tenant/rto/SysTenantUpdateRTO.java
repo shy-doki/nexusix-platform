@@ -14,13 +14,9 @@ import static com.shy.nexusix.common.constant.RegexConstant.Code.SNOWFLAKE_ID;
 import static com.shy.nexusix.common.constant.RegexConstant.Phone.CHINA_MOBILE;
 
 /**
- * 租户更新请求对象
- * <p>
- * 用于接收前端传递的租户更新数据，包含完整的校验规则
- * </p>
+ * <p>租户更新请求对象</p>
  *
- * @author system
- * @since 2026-05-14
+ * @author shy
  */
 @Data
 @Schema(description = "租户更新请求对象")
