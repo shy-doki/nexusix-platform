@@ -28,7 +28,7 @@ public class UserContextDTO {
     /** 部门分组（当前租户/全部/有效/无效），含租户标注 */
     private DeptGroup deptInfo;
 
-    // ==================== 用户信息 ====================
+    // 用户信息
 
     /** <p>用户基本信息</p> */
     @Data
@@ -49,7 +49,7 @@ public class UserContextDTO {
         private String avatar;
     }
 
-    // ==================== 租户相关 ====================
+    // 租户相关
 
     /** <p>租户项</p> */
     @Data
@@ -79,7 +79,7 @@ public class UserContextDTO {
         private List<TenantItem> invalid;
     }
 
-    // ==================== 权限相关 ====================
+    // 权限相关
 
     /** <p>权限项</p> */
     @Data
@@ -170,7 +170,7 @@ public class UserContextDTO {
         private List<String> inoperable = new ArrayList<>();
     }
 
-    // ==================== 角色相关 ====================
+    // 角色相关
 
     /** <p>角色项</p> */
     @Data
@@ -220,7 +220,7 @@ public class UserContextDTO {
         private List<RoleItem> roles = new ArrayList<>();
     }
 
-    // ==================== 部门相关 ====================
+    // 部门相关
 
     /** <p>部门项</p> */
     @Data
