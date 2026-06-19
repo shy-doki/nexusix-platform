@@ -11,6 +11,7 @@ import com.shy.nexusix.tenant.rto.SysTenantPolicyQueryRTO;
 import com.shy.nexusix.tenant.rto.SysTenantPolicyUpdateRTO;
 import com.shy.nexusix.tenant.vo.SysTenantPolicyCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantPolicyDetailVO;
+import com.shy.nexusix.common.exception.BusinessException;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      * <p>查询租户策略列表</p>
      *
      * @return 租户策略通用VO列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     List<SysTenantPolicyCommonVO> queryPolicyList();
 
@@ -34,7 +35,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param page 分页参数
      * @return 分页后的租户策略通用VO列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
+     * @throws BusinessException 无权限时抛出
      */
     IPage<SysTenantPolicyCommonVO> queryPolicyPage(PageCommonRTO page);
 
@@ -43,7 +44,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param queryParam 查询条件
      * @return 满足条件的租户策略分页列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     IPage<SysTenantPolicyCommonVO> queryPolicy(SysTenantPolicyQueryRTO queryParam);
 
@@ -52,7 +53,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param policyCode 策略编码
      * @return 租户策略详情VO
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     SysTenantPolicyDetailVO queryPolicyDetail(String policyCode);
 
@@ -61,7 +62,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param addParam 新增租户策略信息
      * @return 新增结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或新增失败时抛出
+     * @throws BusinessException 无权限或新增失败时抛出
      */
     Integer addPolicy(SysTenantPolicyAddRTO addParam);
 
@@ -70,7 +71,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param updateParam 修改租户策略信息
      * @return 修改结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或策略不存在或修改失败时抛出
+     * @throws BusinessException 无权限或策略不存在或修改失败时抛出
      */
     Integer updatePolicy(SysTenantPolicyUpdateRTO updateParam);
 
@@ -80,7 +81,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      * @param policyCode 策略编码
      * @param status 策略状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或策略不存在或更新失败时抛出
+     * @throws BusinessException 无权限或策略不存在或更新失败时抛出
      */
     Integer updatePolicyStatus(String policyCode, String status);
 
@@ -89,7 +90,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param policyCode 策略编码
      * @return 删除结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或策略不存在或删除失败时抛出
+     * @throws BusinessException 无权限或策略不存在或删除失败时抛出
      */
     Integer deletePolicy(String policyCode);
 
@@ -98,7 +99,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param addParamList 批量新增租户策略信息集合
      * @return 成功新增的租户策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或新增失败时抛出
+     * @throws BusinessException 无权限或新增失败时抛出
      */
     Integer batchAddPolicy(List<SysTenantPolicyAddRTO> addParamList);
 
@@ -107,7 +108,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param updateParamList 批量修改租户策略信息集合
      * @return 成功修改的租户策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或修改失败时抛出
+     * @throws BusinessException 无权限或修改失败时抛出
      */
     Integer batchUpdatePolicy(List<SysTenantPolicyUpdateRTO> updateParamList);
 
@@ -117,7 +118,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      * @param policyCodeList 策略编码集合
      * @param status 策略状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或更新失败时抛出
+     * @throws BusinessException 无权限或更新失败时抛出
      */
     Integer batchUpdatePolicyStatus(List<String> policyCodeList, String status);
 
@@ -126,7 +127,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param policyCodeList 策略编码集合
      * @return 删除结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或删除失败时抛出
+     * @throws BusinessException 无权限或删除失败时抛出
      */
     Integer batchDeletePolicy(List<String> policyCodeList);
 
@@ -135,7 +136,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param bindParam 批量绑定参数
      * @return 成功绑定的策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或绑定失败时抛出
+     * @throws BusinessException 无权限或绑定失败时抛出
      */
     Integer batchBindToTenant(SysTenantPolicyBatchBindRTO bindParam);
 
@@ -144,7 +145,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param unbindParam 批量解绑参数
      * @return 成功解绑的策略数量
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或解绑失败时抛出
+     * @throws BusinessException 无权限或解绑失败时抛出
      */
     Integer batchUnbindFromTenant(SysTenantPolicyBatchUnbindRTO unbindParam);
 
@@ -153,7 +154,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param tenantId 租户ID
      * @return 租户策略列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     List<SysTenantPolicyCommonVO> queryTenantDepts(Long tenantId);
 
@@ -162,7 +163,7 @@ public interface ISysTenantPolicyService extends IService<SysTenantPolicy> {
      *
      * @param tenantId 租户ID
      * @return 租户策略列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     List<SysTenantPolicyCommonVO> queryTenantRoles(Long tenantId);
 

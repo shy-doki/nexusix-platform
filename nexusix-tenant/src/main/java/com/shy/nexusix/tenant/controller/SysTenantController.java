@@ -23,6 +23,7 @@ import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import com.shy.nexusix.common.exception.BusinessException;
 
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class SysTenantController {
      * <p>查询租户列表</p>
      *
      * @return 租户列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     @GetMapping("/list")
     @Operation(summary = "查询租户列表", description = "返回所有租户列表")
@@ -58,7 +59,7 @@ public class SysTenantController {
      *
      * @param page 分页参数
      * @return 分页后的租户列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
+     * @throws BusinessException 无权限时抛出
      */
     @GetMapping("/page")
     @Operation(summary = "分页查询租户列表", description = "返回分页后的租户列表")
@@ -71,7 +72,7 @@ public class SysTenantController {
      * <p>查询租户树形结构</p>
      *
      * @return 租户树形列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
+     * @throws BusinessException 无权限时抛出
      */
     @GetMapping("/tree/list")
     @Operation(summary = "查询租户树形结构列表", description = "返回所有租户的层级树形结构")
@@ -85,7 +86,7 @@ public class SysTenantController {
      *
      * @param page 分页参数
      * @return 分页后的租户树形列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
+     * @throws BusinessException 无权限时抛出
      */
     @GetMapping("/tree/page")
     @Operation(summary = "分页查询租户树形结构", description = "返回所有租户的层级树形结构")
@@ -99,7 +100,7 @@ public class SysTenantController {
      *
      * @param id 租户ID
      * @return 租户树形结构
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     @GetMapping("/tree/{id}")
     @Operation(summary = "查询指定租户树形结构", description = "返回所有租户的层级树形结构")
@@ -113,7 +114,7 @@ public class SysTenantController {
      *
      * @param queryParam 查询条件
      * @return 满足条件的租户分页列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     @PostMapping("/query")
     @Operation(summary = "条件查询租户列表", description = "返回满足条件的租户列表")
@@ -127,7 +128,7 @@ public class SysTenantController {
      *
      * @param tenantCode 租户编码
      * @return 租户详情信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     @GetMapping("/detail/{tenantCode}")
     @Operation(summary = "查询租户详情", description = "返回指定租户的详情信息")
@@ -141,7 +142,7 @@ public class SysTenantController {
      *
      * @param addParam 新增租户信息
      * @return 新增结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或新增失败时抛出
+     * @throws BusinessException 无权限或新增失败时抛出
      */
     @PostMapping("/add")
     @Operation(summary = "新增租户", description = "新增租户信息")
@@ -155,7 +156,7 @@ public class SysTenantController {
      *
      * @param updateParam 修改租户信息
      * @return 修改结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或修改失败时抛出
+     * @throws BusinessException 无权限、租户不存在或修改失败时抛出
      */
     @PutMapping("/update")
     @Operation(summary = "修改租户", description = "修改租户信息")
@@ -170,7 +171,7 @@ public class SysTenantController {
      * @param id 租户ID
      * @param status 租户状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或更新失败时抛出
+     * @throws BusinessException 无权限、租户不存在或更新失败时抛出
      */
     @PutMapping("/status")
     @Operation(summary = "更新租户状态", description = "更新指定租户的状态（正常/冻结）")
@@ -185,7 +186,7 @@ public class SysTenantController {
      *
      * @param id 租户ID
      * @return 删除结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或删除失败时抛出
+     * @throws BusinessException 无权限、租户不存在或删除失败时抛出
      */
     @DeleteMapping("/delete")
     @Operation(summary = "删除租户", description = "删除租户信息")
@@ -199,7 +200,7 @@ public class SysTenantController {
      *
      * @param addParamList 批量新增租户信息集合
      * @return 新增结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、参数校验失败或新增失败时抛出
+     * @throws BusinessException 无权限、参数校验失败或新增失败时抛出
      */
     @PostMapping("/batch")
     @Operation(summary = "批量新增租户", description = "批量新增租户信息")
@@ -213,7 +214,7 @@ public class SysTenantController {
      *
      * @param updateParamList 批量修改租户信息集合
      * @return 修改结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或修改失败时抛出
+     * @throws BusinessException 无权限、租户不存在或修改失败时抛出
      */
     @PutMapping("/batch")
     @Operation(summary = "批量修改租户", description = "批量修改租户信息")
@@ -228,7 +229,7 @@ public class SysTenantController {
      * @param ids 租户ID集合
      * @param status 租户状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或更新失败时抛出
+     * @throws BusinessException 无权限、租户不存在或更新失败时抛出
      */
     @PutMapping("/status/batch")
     @Operation(summary = "批量更新租户状态", description = "批量更新多个指定租户的状态（正常/冻结）")
@@ -243,7 +244,7 @@ public class SysTenantController {
      *
      * @param ids 租户ID集合
      * @return 删除结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或删除失败时抛出
+     * @throws BusinessException 无权限、租户不存在或删除失败时抛出
      */
     @DeleteMapping("/batch")
     @Operation(summary = "批量删除租户", description = "批量删除租户信息")
@@ -257,7 +258,7 @@ public class SysTenantController {
      *
      * @param assignParam 子租户分配参数
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、父租户不存在或分配失败时抛出
+     * @throws BusinessException 无权限、父租户不存在或分配失败时抛出
      */
     @PostMapping("/assign/sub")
     @Operation(summary = "分配子租户", description = "为指定父租户分配子租户，自动处理层级关系")
@@ -271,7 +272,7 @@ public class SysTenantController {
      *
      * @param assignParam 父租户分配参数
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、参数非法或分配失败时抛出
+     * @throws BusinessException 无权限、参数非法或分配失败时抛出
      */
     @PutMapping("/assign/parent")
     @Operation(summary = "分配父租户", description = "为指定租户分配父租户，处理层级调整及数据关联更新")
@@ -285,7 +286,7 @@ public class SysTenantController {
      *
      * @param registerParam 注册信息
      * @return 新增结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 注册信息不合法或租户编码已存在时抛出
+     * @throws BusinessException 注册信息不合法或租户编码已存在时抛出
      */
     @PostMapping("/register")
     @Operation(summary = "租户自助注册", description = "企业用户自助注册租户，注册后需平台审核")
@@ -299,7 +300,7 @@ public class SysTenantController {
      *
      * @param reviewParam 审核信息
      * @return 审核结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 租户不存在或状态非PENDING时抛出
+     * @throws BusinessException 租户不存在或状态非PENDING时抛出
      */
     @PutMapping("/review")
     @Operation(summary = "审核租户注册", description = "平台管理员审核租户注册申请")
@@ -313,7 +314,7 @@ public class SysTenantController {
      *
      * @param switchParam 切换参数
      * @return 切换后的租户信息
-     * @throws com.shy.nexusix.common.exception.BusinessException 用户不属于目标租户或租户状态异常时抛出
+     * @throws BusinessException 用户不属于目标租户或租户状态异常时抛出
      */
     @PostMapping("/switch")
     @Operation(summary = "切换租户", description = "切换当前用户的工作租户上下文")

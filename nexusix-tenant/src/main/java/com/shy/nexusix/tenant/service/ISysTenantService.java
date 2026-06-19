@@ -15,6 +15,7 @@ import com.shy.nexusix.tenant.vo.SysTenantCommonVO;
 import com.shy.nexusix.tenant.vo.SysTenantDetailVO;
 import com.shy.nexusix.tenant.vo.SysTenantTreeVO;
 import jakarta.validation.Valid;
+import com.shy.nexusix.common.exception.BusinessException;
 
 import java.util.List;
 
@@ -29,7 +30,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      * <p>查询租户列表</p>
      *
      * @return 租户通用VO列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     List<SysTenantCommonVO> queryTenantList();
 
@@ -38,7 +39,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param page 分页参数
      * @return 分页后的租户通用VO列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
+     * @throws BusinessException 无权限时抛出
      */
     IPage<SysTenantCommonVO> queryTenantPage(PageCommonRTO page);
 
@@ -46,7 +47,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      * <p>查询租户树形结构</p>
      *
      * @return 租户树形VO列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
+     * @throws BusinessException 无权限时抛出
      */
     List<SysTenantTreeVO> queryTenantTreeList();
 
@@ -55,7 +56,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param page 分页参数
      * @return 分页后的租户树形VO列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限时抛出
+     * @throws BusinessException 无权限时抛出
      */
     IPage<SysTenantTreeVO> queryTenantTreePage(PageCommonRTO page);
 
@@ -64,7 +65,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param id 租户ID
      * @return 以指定租户为根的树形结构
-     * @throws com.shy.nexusix.common.exception.BusinessException 数据查询失败或数据异常时抛出
+     * @throws BusinessException 数据查询失败或数据异常时抛出
      */
     SysTenantTreeVO queryTenantTree(String id);
 
@@ -73,7 +74,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param queryParam 查询条件
      * @return 满足条件的租户分页列表
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     IPage<SysTenantCommonVO> queryTenant(SysTenantQueryRTO queryParam);
 
@@ -82,7 +83,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param tenantCode 租户编码
      * @return 租户详情VO
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或查询失败时抛出
+     * @throws BusinessException 无权限或查询失败时抛出
      */
     SysTenantDetailVO queryTenantDetail(String tenantCode);
 
@@ -91,7 +92,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param addParam 新增租户信息
      * @return 新增结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限或新增失败时抛出
+     * @throws BusinessException 无权限或新增失败时抛出
      */
     Integer addTenant(SysTenantAddRTO addParam);
 
@@ -100,7 +101,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param updateParam 修改租户信息
      * @return 修改结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或修改失败时抛出
+     * @throws BusinessException 无权限、租户不存在或修改失败时抛出
      */
     Integer updateTenant(SysTenantUpdateRTO updateParam);
 
@@ -110,7 +111,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      * @param id 租户ID
      * @param status 租户状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或更新失败时抛出
+     * @throws BusinessException 无权限、租户不存在或更新失败时抛出
      */
     Integer updateTenantStatus(String id, String status);
 
@@ -119,7 +120,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param id 租户ID
      * @return 删除结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或删除失败时抛出
+     * @throws BusinessException 无权限、租户不存在或删除失败时抛出
      */
     Integer deleteTenant(@Valid String id);
 
@@ -128,7 +129,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param addParamList 批量新增租户信息集合
      * @return 新增结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、参数校验失败或新增失败时抛出
+     * @throws BusinessException 无权限、参数校验失败或新增失败时抛出
      */
     Integer batchAddTenant(List<SysTenantAddRTO> addParamList);
 
@@ -137,7 +138,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param updateParamList 批量修改租户信息集合
      * @return 修改结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或修改失败时抛出
+     * @throws BusinessException 无权限、租户不存在或修改失败时抛出
      */
     Integer batchUpdateTenant(List<SysTenantUpdateRTO> updateParamList);
 
@@ -147,7 +148,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      * @param ids 租户ID集合
      * @param status 租户状态
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或更新失败时抛出
+     * @throws BusinessException 无权限、租户不存在或更新失败时抛出
      */
     Integer batchUpdateTenantStatus(List<String> ids, String status);
 
@@ -156,7 +157,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param ids 租户ID集合
      * @return 删除结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、租户不存在或删除失败时抛出
+     * @throws BusinessException 无权限、租户不存在或删除失败时抛出
      */
     Integer batchDeleteTenant(List<String> ids);
 
@@ -165,7 +166,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param assignParam 子租户分配参数
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、父租户不存在或分配失败时抛出
+     * @throws BusinessException 无权限、父租户不存在或分配失败时抛出
      */
     Integer assignSubTenant(SysTenantAssignRTO assignParam);
 
@@ -174,7 +175,7 @@ public interface ISysTenantService extends IService<SysTenant> {
      *
      * @param assignParam 父租户分配参数
      * @return 更新结果行数
-     * @throws com.shy.nexusix.common.exception.BusinessException 无权限、参数非法或分配失败时抛出
+     * @throws BusinessException 无权限、参数非法或分配失败时抛出
      */
     Integer assignParentTenant(SysTenantAssignRTO assignParam);
 
