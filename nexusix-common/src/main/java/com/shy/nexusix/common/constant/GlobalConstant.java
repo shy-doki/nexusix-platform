@@ -98,6 +98,21 @@ public class GlobalConstant {
         // 租户策略表
         public static final String TENANT_POLICY = "sys_tenant_policy";
 
+        // 用户表
+        public static final String USER = "sys_user";
+
+        // 角色表
+        public static final String ROLE = "sys_role";
+
+        // 权限表
+        public static final String PERM = "sys_perm";
+
+        // 权限策略表
+        public static final String PERM_POLICY = "sys_perm_policy";
+
+        // 用户策略表
+        public static final String USER_POLICY = "sys_user_policy";
+
     }
 
     /**
@@ -122,11 +137,19 @@ public class GlobalConstant {
         }
 
         /**
-         * 树形查询业务必需的数据库字段（不受用户字段权限限制）
+         * 租户树形查询业务必需的数据库字段（不受用户字段权限限制）
          * <p>id/tenant_code/parent_id/path</p>
          */
         public static final Set<String> TREE_MANDATORY_FIELDS = Set.of(
                 "id", "tenant_code", "parent_id", "path"
+        );
+
+        /**
+         * 权限树形查询业务必需的数据库字段（不受用户字段权限限制）
+         * <p>id/perm_code/parent_id/path</p>
+         */
+        public static final Set<String> PERM_TREE_MANDATORY_FIELDS = Set.of(
+                "id", "perm_code", "parent_id", "path"
         );
 
         /**

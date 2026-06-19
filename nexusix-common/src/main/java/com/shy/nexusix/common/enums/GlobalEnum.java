@@ -1229,4 +1229,262 @@ public final class GlobalEnum {
         }
     }
 
+    /**
+     * 用户状态枚举
+     */
+    public enum UserStatus implements BaseEnum {
+        // 启用
+        ENABLED("ENABLED", "启用"),
+        // 禁用
+        DISABLED("DISABLED", "禁用"),
+        // 锁定
+        LOCKED("LOCKED", "锁定");
+
+        @EnumValue
+        @JSONField(value = true)
+        private final String code;
+        private final String desc;
+
+        UserStatus(String code, String desc) {
+            this.code = code;
+            this.desc = desc;
+        }
+
+        @Override
+        public String getCode() {
+            return code;
+        }
+
+        @Override
+        public String getDesc() {
+            return desc;
+        }
+
+        /**
+         * 根据编码获取枚举
+         *
+         * @param code 编码
+         * @return 枚举实例
+         */
+        public static UserStatus getByCode(String code) {
+            if (code == null || code.trim().isEmpty()) {
+                throw new BusinessException("用户状态编码不能为空");
+            }
+            String trimmedCode = code.trim();
+            for (UserStatus e : values()) {
+                if (e.getCode().equals(trimmedCode)) {
+                    return e;
+                }
+            }
+            throw new BusinessException("无效的用户状态编码");
+        }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 描述
+         * @return 枚举实例
+         */
+        public static UserStatus getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) {
+                throw new BusinessException("用户状态描述不能为空");
+            }
+            String trimmedDesc = desc.trim();
+            for (UserStatus e : values()) {
+                if (e.getDesc().equals(trimmedDesc)) {
+                    return e;
+                }
+            }
+            throw new BusinessException("无效的用户状态描述");
+        }
+
+        /**
+         * 根据枚举名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举实例
+         */
+        public static UserStatus getByName(String name) {
+            if (name == null || name.trim().isEmpty()) {
+                throw new BusinessException("用户状态枚举名称不能为空");
+            }
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException("无效的用户状态枚举名称");
+            }
+        }
+
+        /**
+         * 通用解析，依次尝试按编码、描述、名称转换
+         *
+         * @param value 值
+         * @return 枚举实例
+         */
+        public static UserStatus parse(Object value) {
+            if (value == null) {
+                throw new BusinessException("用户状态值不能为空");
+            }
+            if (value instanceof UserStatus) {
+                return (UserStatus) value;
+            }
+            String strValue = value.toString().trim();
+            if (strValue.isEmpty()) {
+                throw new BusinessException("用户状态值不能为空字符串");
+            }
+            try {
+                return getByCode(strValue);
+            } catch (BusinessException e) {
+                try {
+                    return getByDesc(strValue);
+                } catch (BusinessException ex) {
+                    return getByName(strValue);
+                }
+            }
+        }
+
+        /**
+         * 判断编码是否有效
+         *
+         * @param code 编码
+         * @return 是否有效
+         */
+        public static boolean isValidCode(String code) {
+            try {
+                getByCode(code);
+                return true;
+            } catch (BusinessException e) {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * 角色状态枚举
+     */
+    public enum RoleStatus implements BaseEnum {
+        // 启用
+        ENABLED("ENABLED", "启用"),
+        // 禁用
+        DISABLED("DISABLED", "禁用");
+
+        @EnumValue
+        @JSONField(value = true)
+        private final String code;
+        private final String desc;
+
+        RoleStatus(String code, String desc) {
+            this.code = code;
+            this.desc = desc;
+        }
+
+        @Override
+        public String getCode() {
+            return code;
+        }
+
+        @Override
+        public String getDesc() {
+            return desc;
+        }
+
+        /**
+         * 根据编码获取枚举
+         *
+         * @param code 编码
+         * @return 枚举实例
+         */
+        public static RoleStatus getByCode(String code) {
+            if (code == null || code.trim().isEmpty()) {
+                throw new BusinessException("角色状态编码不能为空");
+            }
+            String trimmedCode = code.trim();
+            for (RoleStatus e : values()) {
+                if (e.getCode().equals(trimmedCode)) {
+                    return e;
+                }
+            }
+            throw new BusinessException("无效的角色状态编码");
+        }
+
+        /**
+         * 根据描述获取枚举
+         *
+         * @param desc 描述
+         * @return 枚举实例
+         */
+        public static RoleStatus getByDesc(String desc) {
+            if (desc == null || desc.trim().isEmpty()) {
+                throw new BusinessException("角色状态描述不能为空");
+            }
+            String trimmedDesc = desc.trim();
+            for (RoleStatus e : values()) {
+                if (e.getDesc().equals(trimmedDesc)) {
+                    return e;
+                }
+            }
+            throw new BusinessException("无效的角色状态描述");
+        }
+
+        /**
+         * 根据枚举名称获取枚举
+         *
+         * @param name 枚举名称
+         * @return 枚举实例
+         */
+        public static RoleStatus getByName(String name) {
+            if (name == null || name.trim().isEmpty()) {
+                throw new BusinessException("角色状态枚举名称不能为空");
+            }
+            try {
+                return valueOf(name.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException("无效的角色状态枚举名称");
+            }
+        }
+
+        /**
+         * 通用解析，依次尝试按编码、描述、名称转换
+         *
+         * @param value 值
+         * @return 枚举实例
+         */
+        public static RoleStatus parse(Object value) {
+            if (value == null) {
+                throw new BusinessException("角色状态值不能为空");
+            }
+            if (value instanceof RoleStatus) {
+                return (RoleStatus) value;
+            }
+            String strValue = value.toString().trim();
+            if (strValue.isEmpty()) {
+                throw new BusinessException("角色状态值不能为空字符串");
+            }
+            try {
+                return getByCode(strValue);
+            } catch (BusinessException e) {
+                try {
+                    return getByDesc(strValue);
+                } catch (BusinessException ex) {
+                    return getByName(strValue);
+                }
+            }
+        }
+
+        /**
+         * 判断编码是否有效
+         *
+         * @param code 编码
+         * @return 是否有效
+         */
+        public static boolean isValidCode(String code) {
+            try {
+                getByCode(code);
+                return true;
+            } catch (BusinessException e) {
+                return false;
+            }
+        }
+    }
+
 }
