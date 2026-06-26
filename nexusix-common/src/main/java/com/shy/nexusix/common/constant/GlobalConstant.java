@@ -152,34 +152,5 @@ public class GlobalConstant {
                 "id", "perm_code", "parent_id", "path"
         );
 
-        /**
-         * DB列名到VO字段名的映射关系
-         * <p>用于返回前端时根据用户可见字段过滤VO数据，一个DB列可映射多个VO字段</p>
-         */
-        public static final Map<String, List<String>> DB_COLUMN_TO_VO_FIELDS = Map.ofEntries(
-                Map.entry("tenant_code", List.of("tenantCode")),
-                Map.entry("tenant_name", List.of("tenantName")),
-                Map.entry("tenant_type", List.of("tenantType")),
-                Map.entry("parent_name", List.of("parentName")),
-                Map.entry("contact_name", List.of("contactName")),
-                Map.entry("contact_phone", List.of("contactPhone")),
-                Map.entry("status", List.of("status")),
-                Map.entry("expire_time", List.of("expireTime")),
-                Map.entry("has_children", List.of("hasChildren")),
-                Map.entry("package_name", List.of("packageName")),
-                Map.entry("create_by", List.of("createByName", "createByCode")),
-                Map.entry("create_at", List.of("createTime")),
-                Map.entry("update_by", List.of("updateByName", "updateByCode")),
-                Map.entry("update_at", List.of("updateTime")),
-                Map.entry("is_deleted", List.of("isDeleted")),
-                Map.entry("deleted_at", List.of("deleteTime")),
-                Map.entry("tenant_desc", List.of("tenantDesc")),
-                Map.entry("tenant_logo_url", List.of("tenantLogoUrl")),
-                Map.entry("path", List.of("path")),
-                Map.entry("ext_attributes", List.of("extAttributes")),
-                Map.entry("parent_id", List.of("parentCode")),
-                Map.entry("disable_reason", List.of("disableReason"))
-        );
-
     }
 }
