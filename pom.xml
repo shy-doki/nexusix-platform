@@ -15,7 +15,7 @@
 
     <!-- 当前项目坐标 -->
     <groupId>com.shy.nexusix</groupId>
-    <artifactId>nexusix-platform</artifactId>
+    <artifactId>nexusix-platform-server</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <!-- 打包方式：pom 表示这是一个【父工程/聚合工程】，不生成 jar/war，只做依赖管理 -->
@@ -113,21 +113,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-amqp</artifactId>
                 <version>${spring-boot.version}</version>
-            </dependency>
-
-            <!-- Spring AI alibaba -->
-            <dependency>
-                <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-            </dependency>
-
-            <!-- Spring AI BOM 统一管理alibaba AI 相关依赖版本 -->
-            <dependency>
-                <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-bom</artifactId>
-                <version>1.0.0.2</version>
-                <type>pom</type>
-                <scope>import</scope>
             </dependency>
 
             <!-- MyBatis-Plus Spring Boot 3 整合依赖，简化数据库操作 -->

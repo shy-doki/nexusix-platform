@@ -6,7 +6,7 @@
 
     <parent>
         <groupId>com.shy.nexusix</groupId>
-        <artifactId>nexusix-platform</artifactId>
+        <artifactId>nexusix-platform-server</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 

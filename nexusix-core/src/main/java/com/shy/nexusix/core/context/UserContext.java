@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.shy.nexusix.common.constant.GlobalConstant;
 import com.shy.nexusix.core.entity.dto.UserContextDTO;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.FieldPermission;
 
 import java.util.*;
 
@@ -22,10 +23,13 @@ public class UserContext {
      * @return 用户上下文DTO
      */
     public static UserContextDTO getUserContext() {
-
+        return null;
     }
 
     // 获取当前权限信息
+    public static FieldPermission getCurrentTenantFieldPermission() {
+        return null;
+    }
 
     // 获取当前租户信息
 
