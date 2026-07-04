@@ -12,12 +12,18 @@ import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
 import com.shy.nexusix.iam.converter.SysRoleConverter;
+import com.shy.nexusix.iam.entity.SysPerm;
+import com.shy.nexusix.iam.entity.SysPermPolicy;
 import com.shy.nexusix.iam.entity.SysRole;
+import com.shy.nexusix.iam.mapper.SysPermMapper;
+import com.shy.nexusix.iam.mapper.SysPermPolicyMapper;
 import com.shy.nexusix.iam.mapper.SysRoleMapper;
 import com.shy.nexusix.iam.rto.SysRoleAddRTO;
+import com.shy.nexusix.iam.rto.SysRoleGrantPermRTO;
 import com.shy.nexusix.iam.rto.SysRoleQueryRTO;
 import com.shy.nexusix.iam.rto.SysRoleUpdateRTO;
 import com.shy.nexusix.iam.service.ISysRoleService;
+import com.shy.nexusix.iam.vo.SysPermCommonVO;
 import com.shy.nexusix.iam.vo.SysRoleCommonVO;
 import com.shy.nexusix.iam.vo.SysRoleDetailVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>系统角色服务实现类</p>
@@ -37,6 +44,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
     @Autowired
     private SysRoleConverter sysRoleConverter;
+
+    @Autowired
+    private SysPermPolicyMapper sysPermPolicyMapper;
+
+    @Autowired
+    private SysPermMapper sysPermMapper;
 
     /**
      * <p>获取查询操作的可操作字段</p>
@@ -77,7 +90,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysRole.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysRole.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -106,7 +119,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysRole.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysRole.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -138,7 +151,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         // 构建条件查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysRole.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysRole.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
@@ -207,7 +220,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         // 根据角色编码查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysRole.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysRole.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysRole::getRoleCode, roleCode)
                .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -279,10 +292,10 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能设置有权限的字段
-        if (!visibleFields.contains("role_name")) entity.setRoleName(null);
-        if (!visibleFields.contains("role_desc")) entity.setRoleDesc(null);
+        if (!visibleFields.contains("roleName")) entity.setRoleName(null);
+        if (!visibleFields.contains("roleDesc")) entity.setRoleDesc(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 保存角色信息
         this.save(entity);
@@ -352,10 +365,10 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
         // 根据字段权限清除不可操作的字段值 确保用户只能更新有权限的字段
         // 将不可见字段设为null MyBatis-Plus更新时将跳过null字段
-        if (!visibleFields.contains("role_name")) entity.setRoleName(null);
-        if (!visibleFields.contains("role_desc")) entity.setRoleDesc(null);
+        if (!visibleFields.contains("roleName")) entity.setRoleName(null);
+        if (!visibleFields.contains("roleDesc")) entity.setRoleDesc(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 角色编码不可修改 清除该字段
         entity.setRoleCode(null);
@@ -431,7 +444,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除角色");
         }
 
@@ -525,10 +538,10 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("role_name")) entity.setRoleName(null);
-            if (!visibleFields.contains("role_desc")) entity.setRoleDesc(null);
+            if (!visibleFields.contains("roleName")) entity.setRoleName(null);
+            if (!visibleFields.contains("roleDesc")) entity.setRoleDesc(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
         }
 
         // 批量保存所有角色
@@ -600,10 +613,10 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("role_name")) entity.setRoleName(null);
-            if (!visibleFields.contains("role_desc")) entity.setRoleDesc(null);
+            if (!visibleFields.contains("roleName")) entity.setRoleName(null);
+            if (!visibleFields.contains("roleDesc")) entity.setRoleDesc(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
             // 角色编码不可修改
             entity.setRoleCode(null);
@@ -688,7 +701,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除角色");
         }
 
@@ -715,6 +728,160 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
             totalDeleted++;
         }
         return totalDeleted;
+
+    }
+
+    /**
+     * <p>查询角色权限</p>
+     *
+     * @param roleCode 角色编码
+     * @return 角色拥有的权限通用VO列表
+     * @throws BusinessException 角色不存在时抛出
+     */
+    @Override
+    public List<SysPermCommonVO> queryRolePerms(String roleCode) {
+
+        // 通过 roleCode 查询角色获取 roleId
+        SysRole role = this.getOne(new LambdaQueryWrapper<SysRole>()
+                .eq(SysRole::getRoleCode, roleCode)
+                .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (role == null) {
+            throw new BusinessException("角色不存在");
+        }
+        Long roleId = role.getId();
+
+        // 查询 SysPermPolicy 获取 permId 列表
+        List<SysPermPolicy> policyList = sysPermPolicyMapper.selectList(new LambdaQueryWrapper<SysPermPolicy>()
+                .eq(SysPermPolicy::getTargetType, GlobalEnum.PermPolicyTargetType.ROLE.getCode())
+                .eq(SysPermPolicy::getTargetId, roleId)
+                .eq(SysPermPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+
+        // 如果 permId 列表为空，返回空列表
+        if (policyList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Long> permIdList = policyList.stream().map(SysPermPolicy::getPermId).collect(Collectors.toList());
+
+        // 查询 SysPerm
+        List<SysPerm> permList = sysPermMapper.selectList(new LambdaQueryWrapper<SysPerm>()
+                .in(SysPerm::getId, permIdList)
+                .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+
+        // 构建 SysPermCommonVO 列表返回 手动映射字段
+        return permList.stream().map(perm -> {
+            SysPermCommonVO vo = new SysPermCommonVO();
+            vo.setPermCode(perm.getPermCode());
+            vo.setPermName(perm.getPermName());
+            vo.setPermType(perm.getPermType());
+            vo.setResourceType(perm.getResourceType());
+            vo.setResourcePath(perm.getResourcePath());
+            vo.setResourceMethod(perm.getResourceMethod());
+            vo.setIcon(perm.getIcon());
+            vo.setSortOrder(perm.getSortOrder());
+            vo.setIsVisible(perm.getIsVisible());
+            vo.setStatus(perm.getStatus());
+            vo.setDisableReason(perm.getDisableReason());
+            return vo;
+        }).collect(Collectors.toList());
+
+    }
+
+    /**
+     * <p>为角色授予权限</p>
+     *
+     * @param roleCode 角色编码
+     * @param param 授权请求参数，包含权限编码列表
+     * @return 新创建的权限策略数量
+     * @throws BusinessException 角色不存在或权限编码不存在时抛出
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer grantPermissions(String roleCode, SysRoleGrantPermRTO param) {
+
+        // 通过 roleCode 查询角色获取 roleId
+        SysRole role = this.getOne(new LambdaQueryWrapper<SysRole>()
+                .eq(SysRole::getRoleCode, roleCode)
+                .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (role == null) {
+            throw new BusinessException("角色不存在");
+        }
+        Long roleId = role.getId();
+
+        // 查询权限ID列表
+        List<String> permCodeList = param.getPermCodeList();
+        List<SysPerm> permList = sysPermMapper.selectList(new LambdaQueryWrapper<SysPerm>()
+                .in(SysPerm::getPermCode, permCodeList)
+                .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+
+        // 校验权限编码是否存在 不存在则抛出业务异常
+        Set<String> foundCodes = permList.stream().map(SysPerm::getPermCode).collect(Collectors.toSet());
+        for (String permCode : permCodeList) {
+            if (!foundCodes.contains(permCode)) {
+                throw new BusinessException("权限编码 " + permCode + " 不存在");
+            }
+        }
+
+        // 遍历创建 SysPermPolicy 记录
+        int count = 0;
+        int index = 0;
+        for (SysPerm perm : permList) {
+            SysPermPolicy policy = new SysPermPolicy();
+            policy.setPolicyCode("PERM_POLICY_" + System.currentTimeMillis() + "_" + index);
+            policy.setPolicyName("角色 " + roleCode + " 权限 " + perm.getPermCode());
+            policy.setPermId(perm.getId());
+            policy.setTargetType(GlobalEnum.PermPolicyTargetType.ROLE.getCode());
+            policy.setTargetId(roleId);
+            policy.setStatus(GlobalEnum.PermPolicyStatus.ACTIVE.getCode());
+            policy.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+            sysPermPolicyMapper.insert(policy);
+            count++;
+            index++;
+        }
+        return count;
+
+    }
+
+    /**
+     * <p>撤销角色权限</p>
+     *
+     * @param roleCode 角色编码
+     * @param permCodeList 权限编码列表
+     * @return 删除的权限策略数量
+     * @throws BusinessException 角色不存在时抛出
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer revokePermissions(String roleCode, List<String> permCodeList) {
+
+        // 通过 roleCode 查询角色获取 roleId
+        SysRole role = this.getOne(new LambdaQueryWrapper<SysRole>()
+                .eq(SysRole::getRoleCode, roleCode)
+                .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (role == null) {
+            throw new BusinessException("角色不存在");
+        }
+        Long roleId = role.getId();
+
+        // 查询权限ID列表
+        List<SysPerm> permList = sysPermMapper.selectList(new LambdaQueryWrapper<SysPerm>()
+                .in(SysPerm::getPermCode, permCodeList)
+                .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        List<Long> permIdList = permList.stream().map(SysPerm::getId).collect(Collectors.toList());
+
+        if (permIdList.isEmpty()) {
+            return 0;
+        }
+
+        // 逻辑删除对应的 SysPermPolicy 记录
+        int deletedCount = sysPermPolicyMapper.update(null, new LambdaUpdateWrapper<SysPermPolicy>()
+                .eq(SysPermPolicy::getTargetType, GlobalEnum.PermPolicyTargetType.ROLE.getCode())
+                .eq(SysPermPolicy::getTargetId, roleId)
+                .in(SysPermPolicy::getPermId, permIdList)
+                .eq(SysPermPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .set(SysPermPolicy::getIsDeleted, GlobalEnum.Deleted.DELETED.getCode())
+                .set(SysPermPolicy::getDeletedAt, LocalDateTime.now()));
+        return deletedCount;
 
     }
 

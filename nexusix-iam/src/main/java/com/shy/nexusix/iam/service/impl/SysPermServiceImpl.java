@@ -80,7 +80,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysPerm.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysPerm.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -109,7 +109,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysPerm.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysPerm.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -147,7 +147,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
 
         // 查询所有未删除的权限 选择用户有权限查看的列 + 业务必要字段
         LambdaQueryWrapper<SysPerm> wrapper = new LambdaQueryWrapper<SysPerm>()
-                .select(SysPerm.class, entity -> queryFields.contains(entity.getColumn()))
+                .select(SysPerm.class, entity -> queryFields.contains(entity.getProperty()))
                 .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .orderByAsc(SysPerm::getPath);
         List<SysPerm> allPerms = this.list(wrapper);
@@ -226,7 +226,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
 
         // 分页查询根节点 选择用户有权限查看的列 + 业务必要字段
         LambdaQueryWrapper<SysPerm> rootWrapper = new LambdaQueryWrapper<SysPerm>()
-                .select(SysPerm.class, entity -> queryFields.contains(entity.getColumn()))
+                .select(SysPerm.class, entity -> queryFields.contains(entity.getProperty()))
                 .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .and(w -> w.isNull(SysPerm::getParentId).or().eq(SysPerm::getParentId, "0"))
                 .orderByAsc(SysPerm::getPath);
@@ -247,7 +247,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
         List<SysPerm> allChildren = new ArrayList<>();
         if (!rootPaths.isEmpty()) {
             LambdaQueryWrapper<SysPerm> childWrapper = new LambdaQueryWrapper<SysPerm>()
-                    .select(SysPerm.class, entity -> queryFields.contains(entity.getColumn()))
+                    .select(SysPerm.class, entity -> queryFields.contains(entity.getProperty()))
                     .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .notIn(SysPerm::getId, rootIds)
                     .and(w -> {
@@ -341,7 +341,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
 
         // 查询指定权限
         LambdaQueryWrapper<SysPerm> targetWrapper = new LambdaQueryWrapper<SysPerm>()
-                .select(SysPerm.class, entity -> queryFields.contains(entity.getColumn()))
+                .select(SysPerm.class, entity -> queryFields.contains(entity.getProperty()))
                 .eq(SysPerm::getId, id)
                 .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
         SysPerm targetPerm = this.getOne(targetWrapper);
@@ -353,7 +353,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
         // 归一化path：移除末尾"/" 避免与后续拼接的"/"产生双斜杠导致LIKE匹配失败
         String targetPathPrefix = normalizePathPrefix(targetPerm.getPath());
         LambdaQueryWrapper<SysPerm> childWrapper = new LambdaQueryWrapper<SysPerm>()
-                .select(SysPerm.class, entity -> queryFields.contains(entity.getColumn()))
+                .select(SysPerm.class, entity -> queryFields.contains(entity.getProperty()))
                 .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .and(w -> w.eq(SysPerm::getId, id)
                         .or()
@@ -419,7 +419,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
         // 构建条件查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysPerm> wrapper = new LambdaQueryWrapper<SysPerm>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysPerm.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysPerm.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
@@ -500,7 +500,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
         // 根据权限编码查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysPerm> wrapper = new LambdaQueryWrapper<SysPerm>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysPerm.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysPerm.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysPerm::getPermCode, permCode)
                .eq(SysPerm::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -603,17 +603,17 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能设置有权限的字段
-        if (!visibleFields.contains("perm_name")) entity.setPermName(null);
-        if (!visibleFields.contains("perm_desc")) entity.setPermDesc(null);
-        if (!visibleFields.contains("perm_type")) entity.setPermType(null);
-        if (!visibleFields.contains("resource_type")) entity.setResourceType(null);
-        if (!visibleFields.contains("resource_path")) entity.setResourcePath(null);
-        if (!visibleFields.contains("resource_method")) entity.setResourceMethod(null);
+        if (!visibleFields.contains("permName")) entity.setPermName(null);
+        if (!visibleFields.contains("permDesc")) entity.setPermDesc(null);
+        if (!visibleFields.contains("permType")) entity.setPermType(null);
+        if (!visibleFields.contains("resourceType")) entity.setResourceType(null);
+        if (!visibleFields.contains("resourcePath")) entity.setResourcePath(null);
+        if (!visibleFields.contains("resourceMethod")) entity.setResourceMethod(null);
         if (!visibleFields.contains("icon")) entity.setIcon(null);
-        if (!visibleFields.contains("sort_order")) entity.setSortOrder(null);
-        if (!visibleFields.contains("is_visible")) entity.setIsVisible(null);
+        if (!visibleFields.contains("sortOrder")) entity.setSortOrder(null);
+        if (!visibleFields.contains("isVisible")) entity.setIsVisible(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 保存权限信息
         this.save(entity);
@@ -683,17 +683,17 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
 
         // 根据字段权限清除不可操作的字段值 确保用户只能更新有权限的字段
         // 将不可见字段设为null MyBatis-Plus更新时将跳过null字段
-        if (!visibleFields.contains("perm_name")) entity.setPermName(null);
-        if (!visibleFields.contains("perm_desc")) entity.setPermDesc(null);
-        if (!visibleFields.contains("perm_type")) entity.setPermType(null);
-        if (!visibleFields.contains("resource_type")) entity.setResourceType(null);
-        if (!visibleFields.contains("resource_path")) entity.setResourcePath(null);
-        if (!visibleFields.contains("resource_method")) entity.setResourceMethod(null);
+        if (!visibleFields.contains("permName")) entity.setPermName(null);
+        if (!visibleFields.contains("permDesc")) entity.setPermDesc(null);
+        if (!visibleFields.contains("permType")) entity.setPermType(null);
+        if (!visibleFields.contains("resourceType")) entity.setResourceType(null);
+        if (!visibleFields.contains("resourcePath")) entity.setResourcePath(null);
+        if (!visibleFields.contains("resourceMethod")) entity.setResourceMethod(null);
         if (!visibleFields.contains("icon")) entity.setIcon(null);
-        if (!visibleFields.contains("sort_order")) entity.setSortOrder(null);
-        if (!visibleFields.contains("is_visible")) entity.setIsVisible(null);
+        if (!visibleFields.contains("sortOrder")) entity.setSortOrder(null);
+        if (!visibleFields.contains("isVisible")) entity.setIsVisible(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 权限编码和path不可修改 清除这些字段
         entity.setPermCode(null);
@@ -786,7 +786,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除权限");
         }
 
@@ -917,17 +917,17 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("perm_name")) entity.setPermName(null);
-            if (!visibleFields.contains("perm_desc")) entity.setPermDesc(null);
-            if (!visibleFields.contains("perm_type")) entity.setPermType(null);
-            if (!visibleFields.contains("resource_type")) entity.setResourceType(null);
-            if (!visibleFields.contains("resource_path")) entity.setResourcePath(null);
-            if (!visibleFields.contains("resource_method")) entity.setResourceMethod(null);
+            if (!visibleFields.contains("permName")) entity.setPermName(null);
+            if (!visibleFields.contains("permDesc")) entity.setPermDesc(null);
+            if (!visibleFields.contains("permType")) entity.setPermType(null);
+            if (!visibleFields.contains("resourceType")) entity.setResourceType(null);
+            if (!visibleFields.contains("resourcePath")) entity.setResourcePath(null);
+            if (!visibleFields.contains("resourceMethod")) entity.setResourceMethod(null);
             if (!visibleFields.contains("icon")) entity.setIcon(null);
-            if (!visibleFields.contains("sort_order")) entity.setSortOrder(null);
-            if (!visibleFields.contains("is_visible")) entity.setIsVisible(null);
+            if (!visibleFields.contains("sortOrder")) entity.setSortOrder(null);
+            if (!visibleFields.contains("isVisible")) entity.setIsVisible(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
         }
 
         // 批量保存所有权限
@@ -999,17 +999,17 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("perm_name")) entity.setPermName(null);
-            if (!visibleFields.contains("perm_desc")) entity.setPermDesc(null);
-            if (!visibleFields.contains("perm_type")) entity.setPermType(null);
-            if (!visibleFields.contains("resource_type")) entity.setResourceType(null);
-            if (!visibleFields.contains("resource_path")) entity.setResourcePath(null);
-            if (!visibleFields.contains("resource_method")) entity.setResourceMethod(null);
+            if (!visibleFields.contains("permName")) entity.setPermName(null);
+            if (!visibleFields.contains("permDesc")) entity.setPermDesc(null);
+            if (!visibleFields.contains("permType")) entity.setPermType(null);
+            if (!visibleFields.contains("resourceType")) entity.setResourceType(null);
+            if (!visibleFields.contains("resourcePath")) entity.setResourcePath(null);
+            if (!visibleFields.contains("resourceMethod")) entity.setResourceMethod(null);
             if (!visibleFields.contains("icon")) entity.setIcon(null);
-            if (!visibleFields.contains("sort_order")) entity.setSortOrder(null);
-            if (!visibleFields.contains("is_visible")) entity.setIsVisible(null);
+            if (!visibleFields.contains("sortOrder")) entity.setSortOrder(null);
+            if (!visibleFields.contains("isVisible")) entity.setIsVisible(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
             // 权限编码和path不可修改
             entity.setPermCode(null);
@@ -1107,7 +1107,7 @@ public class SysPermServiceImpl extends ServiceImpl<SysPermMapper, SysPerm> impl
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除权限");
         }
 

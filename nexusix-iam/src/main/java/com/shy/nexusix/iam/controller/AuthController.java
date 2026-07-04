@@ -33,4 +33,15 @@ public class AuthController {
         return iAuthService.login(param);
     }
 
+    /**
+     * <p>用户登出</p>
+     *
+     * @return 登出结果
+     */
+    @PostMapping("/logout")
+    @Operation(summary = "用户登出", description = "清除当前登录会话")
+    public ApiResponse logout() {
+        return iAuthService.logout();
+    }
+
 }

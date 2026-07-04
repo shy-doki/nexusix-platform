@@ -6,8 +6,11 @@ import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.iam.entity.SysUser;
 import com.shy.nexusix.iam.rto.SysUserAddRTO;
+import com.shy.nexusix.iam.rto.SysUserChangePasswordRTO;
 import com.shy.nexusix.iam.rto.SysUserQueryRTO;
+import com.shy.nexusix.iam.rto.SysUserResetPasswordRTO;
 import com.shy.nexusix.iam.rto.SysUserUpdateRTO;
+import com.shy.nexusix.iam.vo.SysRoleCommonVO;
 import com.shy.nexusix.iam.vo.SysUserCommonVO;
 import com.shy.nexusix.iam.vo.SysUserDetailVO;
 
@@ -128,5 +131,51 @@ public interface ISysUserService extends IService<SysUser> {
      * @throws BusinessException 无权限、用户不存在或删除失败时抛出
      */
     Integer batchDeleteUser(List<String> ids);
+
+    /**
+     * <p>管理员重置用户密码</p>
+     *
+     * @param param 重置密码参数，包含用户编码和新密码
+     * @return 更新结果行数
+     * @throws BusinessException 用户不存在时抛出
+     */
+    Integer resetPassword(SysUserResetPasswordRTO param);
+
+    /**
+     * <p>用户自行修改密码</p>
+     *
+     * @param param 修改密码参数，包含旧密码、新密码和确认密码
+     * @return 更新结果行数
+     * @throws BusinessException 两次密码不一致、用户不存在或旧密码不正确时抛出
+     */
+    Integer changePassword(SysUserChangePasswordRTO param);
+
+    /**
+     * <p>查询用户角色</p>
+     *
+     * @param userCode 用户编码
+     * @return 用户角色通用VO列表
+     * @throws BusinessException 用户不存在时抛出
+     */
+    List<SysRoleCommonVO> queryUserRoles(String userCode);
+
+    /**
+     * <p>为用户分配角色</p>
+     *
+     * @param userCode 用户编码
+     * @param roleCodeList 角色编码集合
+     * @return 新创建的角色策略数量
+     * @throws BusinessException 用户不存在或无法获取当前租户信息时抛出
+     */
+    Integer assignRoles(String userCode, List<String> roleCodeList);
+
+    /**
+     * <p>查询用户权限</p>
+     *
+     * @param userCode 用户编码
+     * @return 用户权限编码列表
+     * @throws BusinessException 用户不存在时抛出
+     */
+    List<String> queryUserPerms(String userCode);
 
 }

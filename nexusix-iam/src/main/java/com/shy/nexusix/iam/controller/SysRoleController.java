@@ -5,9 +5,11 @@ import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.iam.rto.SysRoleAddRTO;
+import com.shy.nexusix.iam.rto.SysRoleGrantPermRTO;
 import com.shy.nexusix.iam.rto.SysRoleQueryRTO;
 import com.shy.nexusix.iam.rto.SysRoleUpdateRTO;
 import com.shy.nexusix.iam.service.ISysRoleService;
+import com.shy.nexusix.iam.vo.SysPermCommonVO;
 import com.shy.nexusix.iam.vo.SysRoleCommonVO;
 import com.shy.nexusix.iam.vo.SysRoleDetailVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -203,6 +205,52 @@ public class SysRoleController {
     @Operation(summary = "批量删除角色", description = "批量删除角色信息")
     public ApiResponse batchDeleteRole(@NotEmpty List<String> ids) {
         Integer affectedRows = iSysRoleService.batchDeleteRole(ids);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>查询角色权限</p>
+     *
+     * @param roleCode 角色编码
+     * @return 角色权限列表
+     * @throws BusinessException 角色不存在时抛出
+     */
+    @GetMapping("/{roleCode}/permissions")
+    @Operation(summary = "查询角色权限", description = "返回指定角色拥有的权限列表")
+    public ApiResponse queryRolePerms(@NotBlank(message = "角色编码不能为空") @PathVariable String roleCode) {
+        List<SysPermCommonVO> permList = iSysRoleService.queryRolePerms(roleCode);
+        return ApiResponse.success(permList);
+    }
+
+    /**
+     * <p>为角色授予权限</p>
+     *
+     * @param roleCode 角色编码
+     * @param param 授权请求参数，包含权限编码列表
+     * @return 新创建的权限策略数量
+     * @throws BusinessException 角色不存在或权限编码不存在时抛出
+     */
+    @PostMapping("/{roleCode}/permissions")
+    @Operation(summary = "为角色授予权限", description = "为指定角色授予多个权限")
+    public ApiResponse grantPermissions(@NotBlank(message = "角色编码不能为空") @PathVariable String roleCode,
+                                         @Valid @RequestBody SysRoleGrantPermRTO param) {
+        Integer affectedRows = iSysRoleService.grantPermissions(roleCode, param);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>撤销角色权限</p>
+     *
+     * @param roleCode 角色编码
+     * @param permCodeList 权限编码列表
+     * @return 删除的权限策略数量
+     * @throws BusinessException 角色不存在时抛出
+     */
+    @DeleteMapping("/{roleCode}/permissions")
+    @Operation(summary = "撤销角色权限", description = "撤销指定角色的多个权限")
+    public ApiResponse revokePermissions(@NotBlank(message = "角色编码不能为空") @PathVariable String roleCode,
+                                          @NotEmpty(message = "权限编码列表不能为空") @RequestBody List<String> permCodeList) {
+        Integer affectedRows = iSysRoleService.revokePermissions(roleCode, permCodeList);
         return ApiResponse.success(affectedRows);
     }
 

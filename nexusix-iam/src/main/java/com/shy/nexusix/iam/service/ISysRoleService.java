@@ -6,8 +6,10 @@ import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.iam.entity.SysRole;
 import com.shy.nexusix.iam.rto.SysRoleAddRTO;
+import com.shy.nexusix.iam.rto.SysRoleGrantPermRTO;
 import com.shy.nexusix.iam.rto.SysRoleQueryRTO;
 import com.shy.nexusix.iam.rto.SysRoleUpdateRTO;
+import com.shy.nexusix.iam.vo.SysPermCommonVO;
 import com.shy.nexusix.iam.vo.SysRoleCommonVO;
 import com.shy.nexusix.iam.vo.SysRoleDetailVO;
 
@@ -128,5 +130,34 @@ public interface ISysRoleService extends IService<SysRole> {
      * @throws BusinessException 无权限、角色不存在或删除失败时抛出
      */
     Integer batchDeleteRole(List<String> ids);
+
+    /**
+     * <p>查询角色权限</p>
+     *
+     * @param roleCode 角色编码
+     * @return 角色拥有的权限通用VO列表
+     * @throws BusinessException 角色不存在时抛出
+     */
+    List<SysPermCommonVO> queryRolePerms(String roleCode);
+
+    /**
+     * <p>为角色授予权限</p>
+     *
+     * @param roleCode 角色编码
+     * @param param 授权请求参数，包含权限编码列表
+     * @return 新创建的权限策略数量
+     * @throws BusinessException 角色不存在或权限编码不存在时抛出
+     */
+    Integer grantPermissions(String roleCode, SysRoleGrantPermRTO param);
+
+    /**
+     * <p>撤销角色权限</p>
+     *
+     * @param roleCode 角色编码
+     * @param permCodeList 权限编码列表
+     * @return 删除的权限策略数量
+     * @throws BusinessException 角色不存在时抛出
+     */
+    Integer revokePermissions(String roleCode, List<String> permCodeList);
 
 }

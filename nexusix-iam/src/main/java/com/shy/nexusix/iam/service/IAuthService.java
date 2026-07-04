@@ -20,4 +20,11 @@ public interface IAuthService {
      */
     ApiResponse login(LoginRTO param);
 
+    /**
+     * <p>用户登出，清除当前登录会话</p>
+     *
+     * @return 登出结果
+     */
+    ApiResponse logout();
+
 }

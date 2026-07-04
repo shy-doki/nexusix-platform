@@ -11,13 +11,25 @@ import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
+import com.shy.nexusix.core.context.UserContext;
+import com.shy.nexusix.core.entity.dto.UserContextDTO;
 import com.shy.nexusix.iam.converter.SysUserConverter;
+import com.shy.nexusix.iam.dto.UserPermDTO;
+import com.shy.nexusix.iam.dto.UserRoleDTO;
+import com.shy.nexusix.iam.entity.SysRole;
 import com.shy.nexusix.iam.entity.SysUser;
+import com.shy.nexusix.iam.entity.SysUserPolicy;
+import com.shy.nexusix.iam.mapper.SysPermPolicyMapper;
+import com.shy.nexusix.iam.mapper.SysRoleMapper;
 import com.shy.nexusix.iam.mapper.SysUserMapper;
+import com.shy.nexusix.iam.mapper.SysUserPolicyMapper;
 import com.shy.nexusix.iam.rto.SysUserAddRTO;
+import com.shy.nexusix.iam.rto.SysUserChangePasswordRTO;
 import com.shy.nexusix.iam.rto.SysUserQueryRTO;
+import com.shy.nexusix.iam.rto.SysUserResetPasswordRTO;
 import com.shy.nexusix.iam.rto.SysUserUpdateRTO;
 import com.shy.nexusix.iam.service.ISysUserService;
+import com.shy.nexusix.iam.vo.SysRoleCommonVO;
 import com.shy.nexusix.iam.vo.SysUserCommonVO;
 import com.shy.nexusix.iam.vo.SysUserDetailVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +50,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Autowired
     private SysUserConverter sysUserConverter;
+
+    @Autowired
+    private SysUserPolicyMapper sysUserPolicyMapper;
+
+    @Autowired
+    private SysPermPolicyMapper sysPermPolicyMapper;
+
+    @Autowired
+    private SysRoleMapper sysRoleMapper;
 
     // 密码编码器 暂无Spring Security Bean配置 直接实例化
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -80,7 +101,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysUser.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysUser.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -108,7 +129,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysUser.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysUser.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -139,7 +160,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         // 构建条件查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<SysUser>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysUser.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysUser.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
@@ -252,7 +273,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         // 根据用户编码查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<SysUser>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysUser.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysUser.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysUser::getUserCode, userCode)
                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -329,16 +350,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能设置有权限的字段
-        if (!visibleFields.contains("user_name")) entity.setUserName(null);
-        if (!visibleFields.contains("nick_name")) entity.setNickName(null);
-        if (!visibleFields.contains("real_name")) entity.setRealName(null);
+        if (!visibleFields.contains("userName")) entity.setUserName(null);
+        if (!visibleFields.contains("nickName")) entity.setNickName(null);
+        if (!visibleFields.contains("realName")) entity.setRealName(null);
         if (!visibleFields.contains("email")) entity.setEmail(null);
         if (!visibleFields.contains("phone")) entity.setPhone(null);
-        if (!visibleFields.contains("avatar_url")) entity.setAvatarUrl(null);
+        if (!visibleFields.contains("avatarUrl")) entity.setAvatarUrl(null);
         if (!visibleFields.contains("gender")) entity.setGender(null);
         if (!visibleFields.contains("birthday")) entity.setBirthday(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 保存用户信息
         this.save(entity);
@@ -408,16 +429,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         // 根据字段权限清除不可操作的字段值 确保用户只能更新有权限的字段
         // 将不可见字段设为null MyBatis-Plus更新时将跳过null字段
-        if (!visibleFields.contains("user_name")) entity.setUserName(null);
-        if (!visibleFields.contains("nick_name")) entity.setNickName(null);
-        if (!visibleFields.contains("real_name")) entity.setRealName(null);
+        if (!visibleFields.contains("userName")) entity.setUserName(null);
+        if (!visibleFields.contains("nickName")) entity.setNickName(null);
+        if (!visibleFields.contains("realName")) entity.setRealName(null);
         if (!visibleFields.contains("email")) entity.setEmail(null);
         if (!visibleFields.contains("phone")) entity.setPhone(null);
-        if (!visibleFields.contains("avatar_url")) entity.setAvatarUrl(null);
+        if (!visibleFields.contains("avatarUrl")) entity.setAvatarUrl(null);
         if (!visibleFields.contains("gender")) entity.setGender(null);
         if (!visibleFields.contains("birthday")) entity.setBirthday(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 不可修改字段
         entity.setUserCode(null);
@@ -495,7 +516,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除用户");
         }
 
@@ -597,16 +618,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("user_name")) entity.setUserName(null);
-            if (!visibleFields.contains("nick_name")) entity.setNickName(null);
-            if (!visibleFields.contains("real_name")) entity.setRealName(null);
+            if (!visibleFields.contains("userName")) entity.setUserName(null);
+            if (!visibleFields.contains("nickName")) entity.setNickName(null);
+            if (!visibleFields.contains("realName")) entity.setRealName(null);
             if (!visibleFields.contains("email")) entity.setEmail(null);
             if (!visibleFields.contains("phone")) entity.setPhone(null);
-            if (!visibleFields.contains("avatar_url")) entity.setAvatarUrl(null);
+            if (!visibleFields.contains("avatarUrl")) entity.setAvatarUrl(null);
             if (!visibleFields.contains("gender")) entity.setGender(null);
             if (!visibleFields.contains("birthday")) entity.setBirthday(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
         }
 
         // 批量保存所有用户
@@ -678,16 +699,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("user_name")) entity.setUserName(null);
-            if (!visibleFields.contains("nick_name")) entity.setNickName(null);
-            if (!visibleFields.contains("real_name")) entity.setRealName(null);
+            if (!visibleFields.contains("userName")) entity.setUserName(null);
+            if (!visibleFields.contains("nickName")) entity.setNickName(null);
+            if (!visibleFields.contains("realName")) entity.setRealName(null);
             if (!visibleFields.contains("email")) entity.setEmail(null);
             if (!visibleFields.contains("phone")) entity.setPhone(null);
-            if (!visibleFields.contains("avatar_url")) entity.setAvatarUrl(null);
+            if (!visibleFields.contains("avatarUrl")) entity.setAvatarUrl(null);
             if (!visibleFields.contains("gender")) entity.setGender(null);
             if (!visibleFields.contains("birthday")) entity.setBirthday(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
             // 不可修改字段
             entity.setUserCode(null);
@@ -773,7 +794,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除用户");
         }
 
@@ -800,6 +821,238 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             totalDeleted++;
         }
         return totalDeleted;
+
+    }
+
+    /**
+     * <p>管理员重置用户密码</p>
+     *
+     * @param param 重置密码参数，包含用户编码和新密码
+     * @return 更新结果行数
+     * @throws BusinessException 用户不存在时抛出
+     */
+    @Override
+    public Integer resetPassword(SysUserResetPasswordRTO param) {
+
+        // 通过用户编码查询用户 确保用户存在且未删除
+        SysUser user = this.getOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserCode, param.getUserCode())
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        // 加密新密码并更新
+        String encodedPassword = passwordEncoder.encode(param.getNewPassword());
+        this.update(new LambdaUpdateWrapper<SysUser>()
+                .eq(SysUser::getId, user.getId())
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .set(SysUser::getPassword, encodedPassword)
+                .set(SysUser::getUpdateBy, StpUtil.getLoginIdAsLong())
+                .set(SysUser::getUpdateAt, LocalDateTime.now()));
+        return 1;
+
+    }
+
+    /**
+     * <p>用户自行修改密码</p>
+     *
+     * @param param 修改密码参数，包含旧密码、新密码和确认密码
+     * @return 更新结果行数
+     * @throws BusinessException 两次密码不一致、用户不存在或旧密码不正确时抛出
+     */
+    @Override
+    public Integer changePassword(SysUserChangePasswordRTO param) {
+
+        // 校验新密码与确认密码一致
+        if (!param.getNewPassword().equals(param.getConfirmPassword())) {
+            throw new BusinessException("两次密码不一致");
+        }
+
+        // 获取当前登录用户ID并查询用户信息
+        Long userId = StpUtil.getLoginIdAsLong();
+        SysUser user = this.getOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getId, userId)
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        // 校验旧密码
+        if (!passwordEncoder.matches(param.getOldPassword(), user.getPassword())) {
+            throw new BusinessException("旧密码不正确");
+        }
+
+        // 加密新密码并更新
+        String encodedPassword = passwordEncoder.encode(param.getNewPassword());
+        this.update(new LambdaUpdateWrapper<SysUser>()
+                .eq(SysUser::getId, userId)
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .set(SysUser::getPassword, encodedPassword)
+                .set(SysUser::getUpdateBy, userId)
+                .set(SysUser::getUpdateAt, LocalDateTime.now()));
+        return 1;
+
+    }
+
+    /**
+     * <p>查询用户角色</p>
+     *
+     * @param userCode 用户编码
+     * @return 用户角色通用VO列表
+     * @throws BusinessException 用户不存在时抛出
+     */
+    @Override
+    public List<SysRoleCommonVO> queryUserRoles(String userCode) {
+
+        // 通过用户编码查询用户 确保用户存在且未删除
+        SysUser user = this.getOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserCode, userCode)
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        // 查询用户在所有租户下的角色信息
+        List<UserRoleDTO> userRoleDTOList = sysUserPolicyMapper.queryUserAllRoleInfo(user.getId());
+        if (userRoleDTOList == null || userRoleDTOList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 提取角色编码并去重
+        Set<String> roleCodes = new LinkedHashSet<>();
+        for (UserRoleDTO dto : userRoleDTOList) {
+            if (dto.getRoleCode() != null) {
+                roleCodes.add(dto.getRoleCode());
+            }
+        }
+        if (roleCodes.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 通过角色编码批量查询角色实体
+        List<SysRole> roleList = sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>()
+                .in(SysRole::getRoleCode, roleCodes)
+                .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+
+        // 构建角色通用VO列表
+        List<SysRoleCommonVO> voList = new ArrayList<>();
+        for (SysRole role : roleList) {
+            SysRoleCommonVO vo = new SysRoleCommonVO();
+            vo.setRoleCode(role.getRoleCode());
+            vo.setRoleName(role.getRoleName());
+            vo.setRoleDesc(role.getRoleDesc());
+            vo.setStatus(role.getStatus());
+            vo.setDisableReason(role.getDisableReason());
+            vo.setCreateByName(role.getCreateBy() != null ? String.valueOf(role.getCreateBy()) : null);
+            vo.setCreateTime(role.getCreateAt());
+            vo.setUpdateByName(role.getUpdateBy() != null ? String.valueOf(role.getUpdateBy()) : null);
+            vo.setUpdateTime(role.getUpdateAt());
+            vo.setIsDeleted(role.getIsDeleted());
+            vo.setDeleteTime(role.getDeletedAt());
+            voList.add(vo);
+        }
+        return voList;
+
+    }
+
+    /**
+     * <p>为用户分配角色</p>
+     *
+     * @param userCode 用户编码
+     * @param roleCodeList 角色编码集合
+     * @return 新创建的角色策略数量
+     * @throws BusinessException 用户不存在或无法获取当前租户信息时抛出
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer assignRoles(String userCode, List<String> roleCodeList) {
+
+        // 通过用户编码查询用户 确保用户存在且未删除
+        SysUser user = this.getOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserCode, userCode)
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        // 获取当前租户信息 确保在租户上下文内操作
+        UserContextDTO.TenantItem currentTenant = UserContext.getCurrentTenantInfo();
+        if (currentTenant == null) {
+            throw new BusinessException("无法获取当前租户信息");
+        }
+
+        // 查询目标角色ID列表
+        List<SysRole> roleList = sysRoleMapper.selectList(new LambdaQueryWrapper<SysRole>()
+                .in(SysRole::getRoleCode, roleCodeList)
+                .eq(SysRole::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+
+        // 逻辑删除旧的ROLE类型用户策略
+        sysUserPolicyMapper.update(null, new LambdaUpdateWrapper<SysUserPolicy>()
+                .eq(SysUserPolicy::getUserId, user.getId())
+                .eq(SysUserPolicy::getTargetType, "ROLE")
+                .eq(SysUserPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
+                .set(SysUserPolicy::getIsDeleted, GlobalEnum.Deleted.DELETED.getCode())
+                .set(SysUserPolicy::getDeletedAt, LocalDateTime.now())
+                .set(SysUserPolicy::getUpdateBy, StpUtil.getLoginIdAsLong())
+                .set(SysUserPolicy::getUpdateAt, LocalDateTime.now()));
+
+        // 创建新的角色策略
+        Long currentUserId = StpUtil.getLoginIdAsLong();
+        int count = 0;
+        for (SysRole role : roleList) {
+            SysUserPolicy policy = new SysUserPolicy();
+            policy.setPolicyCode("UP_ROLE_" + user.getId() + "_" + role.getId());
+            policy.setPolicyName("用户角色绑定");
+            policy.setUserId(user.getId());
+            policy.setTargetType("ROLE");
+            policy.setTargetId(role.getId());
+            policy.setIsPrimary(false);
+            policy.setStatus("ACTIVE");
+            policy.setCreateBy(currentUserId);
+            policy.setCreateAt(LocalDateTime.now());
+            policy.setUpdateBy(currentUserId);
+            policy.setUpdateAt(LocalDateTime.now());
+            policy.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+            sysUserPolicyMapper.insert(policy);
+            count++;
+        }
+        return count;
+
+    }
+
+    /**
+     * <p>查询用户权限</p>
+     *
+     * @param userCode 用户编码
+     * @return 用户权限编码列表
+     * @throws BusinessException 用户不存在时抛出
+     */
+    @Override
+    public List<String> queryUserPerms(String userCode) {
+
+        // 通过用户编码查询用户 确保用户存在且未删除
+        SysUser user = this.getOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserCode, userCode)
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        // 查询用户在所有租户下的权限信息
+        List<UserPermDTO> userPermDTOList = sysPermPolicyMapper.queryUserAllPermInfo(user.getId());
+        if (userPermDTOList == null || userPermDTOList.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 提取权限编码并去重
+        Set<String> permCodes = new LinkedHashSet<>();
+        for (UserPermDTO dto : userPermDTOList) {
+            if (dto.getPermCode() != null) {
+                permCodes.add(dto.getPermCode());
+            }
+        }
+        return new ArrayList<>(permCodes);
 
     }
 

@@ -57,7 +57,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
         }
 
         FieldPermission fieldPerm =
-            UserContext.getCurrentTenantFieldPermission();
+            UserContext.getCurrentPerm();
 
         if (fieldPerm == null || fieldPerm.getQuery() == null) {
             return null;
@@ -87,7 +87,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
             throw new BusinessException("无法获取用户上下文");
         }
 
-        FieldPermission fieldPerm = UserContext.getCurrentTenantFieldPermission();
+        FieldPermission fieldPerm = UserContext.getCurrentPerm();
         if (fieldPerm == null) {
             return null;
         }
@@ -133,7 +133,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysTenantPolicy.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysTenantPolicy.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysTenantPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -162,7 +162,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysTenantPolicy.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysTenantPolicy.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysTenantPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -194,7 +194,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
         // 构建条件查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysTenantPolicy> wrapper = new LambdaQueryWrapper<SysTenantPolicy>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysTenantPolicy.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysTenantPolicy.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysTenantPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
@@ -285,7 +285,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
         // 根据策略编码查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysTenantPolicy> wrapper = new LambdaQueryWrapper<SysTenantPolicy>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysTenantPolicy.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysTenantPolicy.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysTenantPolicy::getPolicyCode, policyCode)
                .eq(SysTenantPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -377,10 +377,10 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能设置有权限的字段
-        if (!visibleFields.contains("policy_name")) entity.setPolicyName(null);
-        if (!visibleFields.contains("bind_time")) entity.setBindTime(null);
+        if (!visibleFields.contains("policyName")) entity.setPolicyName(null);
+        if (!visibleFields.contains("bindTime")) entity.setBindTime(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 保存租户策略信息
         this.save(entity);
@@ -448,10 +448,10 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能更新有权限的字段
-        if (!visibleFields.contains("policy_name")) entity.setPolicyName(null);
-        if (!visibleFields.contains("bind_time")) entity.setBindTime(null);
+        if (!visibleFields.contains("policyName")) entity.setPolicyName(null);
+        if (!visibleFields.contains("bindTime")) entity.setBindTime(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 策略编码、源实体、租户不可修改 清除这些字段
         entity.setPolicyCode(null);
@@ -529,7 +529,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除租户策略");
         }
 
@@ -641,10 +641,10 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("policy_name")) entity.setPolicyName(null);
-            if (!visibleFields.contains("bind_time")) entity.setBindTime(null);
+            if (!visibleFields.contains("policyName")) entity.setPolicyName(null);
+            if (!visibleFields.contains("bindTime")) entity.setBindTime(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
         }
 
         // 批量保存所有策略
@@ -714,10 +714,10 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("policy_name")) entity.setPolicyName(null);
-            if (!visibleFields.contains("bind_time")) entity.setBindTime(null);
+            if (!visibleFields.contains("policyName")) entity.setPolicyName(null);
+            if (!visibleFields.contains("bindTime")) entity.setBindTime(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
             // 策略编码、源实体、租户不可修改
             entity.setPolicyCode(null);
@@ -804,7 +804,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除租户策略");
         }
 
@@ -905,7 +905,7 @@ public class SysTenantPolicyServiceImpl extends ServiceImpl<SysTenantPolicyMappe
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除租户策略");
         }
 

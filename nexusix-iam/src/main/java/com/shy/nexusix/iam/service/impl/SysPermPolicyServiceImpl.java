@@ -57,7 +57,7 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
         }
 
         FieldPermission fieldPerm =
-            UserContext.getCurrentTenantFieldPermission();
+            UserContext.getCurrentPerm();
 
         if (fieldPerm == null || fieldPerm.getQuery() == null) {
             return null;
@@ -87,7 +87,7 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
             throw new BusinessException("无法获取用户上下文");
         }
 
-        FieldPermission fieldPerm = UserContext.getCurrentTenantFieldPermission();
+        FieldPermission fieldPerm = UserContext.getCurrentPerm();
         if (fieldPerm == null) {
             return null;
         }
@@ -133,7 +133,7 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysPermPolicy.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysPermPolicy.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysPermPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -162,7 +162,7 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
 
         // 如果有字段级权限限制，则只选择可操作字段
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysPermPolicy.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysPermPolicy.class, entity -> visibleFields.contains(entity.getProperty()));
         }
 
         wrapper.eq(SysPermPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -194,7 +194,7 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
         // 构建条件查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysPermPolicy> wrapper = new LambdaQueryWrapper<SysPermPolicy>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysPermPolicy.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysPermPolicy.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysPermPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
 
@@ -275,7 +275,7 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
         // 根据策略编码查询 仅选择用户有权限查看的列
         LambdaQueryWrapper<SysPermPolicy> wrapper = new LambdaQueryWrapper<SysPermPolicy>();
         if (visibleFields != null && !visibleFields.isEmpty()) {
-            wrapper.select(SysPermPolicy.class, entity -> visibleFields.contains(entity.getColumn()));
+            wrapper.select(SysPermPolicy.class, entity -> visibleFields.contains(entity.getProperty()));
         }
         wrapper.eq(SysPermPolicy::getPolicyCode, policyCode)
                .eq(SysPermPolicy::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode());
@@ -362,12 +362,12 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能设置有权限的字段
-        if (!visibleFields.contains("policy_name")) entity.setPolicyName(null);
-        if (!visibleFields.contains("data_scope")) entity.setDataScope(null);
-        if (!visibleFields.contains("table_name")) entity.setTableName(null);
-        if (!visibleFields.contains("field_permissions")) entity.setFieldPermissions(null);
+        if (!visibleFields.contains("policyName")) entity.setPolicyName(null);
+        if (!visibleFields.contains("dataScope")) entity.setDataScope(null);
+        if (!visibleFields.contains("tableName")) entity.setTableName(null);
+        if (!visibleFields.contains("fieldPermissions")) entity.setFieldPermissions(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 保存权限策略信息
         this.save(entity);
@@ -435,12 +435,12 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能更新有权限的字段
-        if (!visibleFields.contains("policy_name")) entity.setPolicyName(null);
-        if (!visibleFields.contains("data_scope")) entity.setDataScope(null);
-        if (!visibleFields.contains("table_name")) entity.setTableName(null);
-        if (!visibleFields.contains("field_permissions")) entity.setFieldPermissions(null);
+        if (!visibleFields.contains("policyName")) entity.setPolicyName(null);
+        if (!visibleFields.contains("dataScope")) entity.setDataScope(null);
+        if (!visibleFields.contains("tableName")) entity.setTableName(null);
+        if (!visibleFields.contains("fieldPermissions")) entity.setFieldPermissions(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
-        if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+        if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
         // 策略编码、权限ID、目标类型、目标ID不可修改 清除这些字段
         entity.setPolicyCode(null);
@@ -518,7 +518,7 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除权限策略");
         }
 
@@ -627,12 +627,12 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("policy_name")) entity.setPolicyName(null);
-            if (!visibleFields.contains("data_scope")) entity.setDataScope(null);
-            if (!visibleFields.contains("table_name")) entity.setTableName(null);
-            if (!visibleFields.contains("field_permissions")) entity.setFieldPermissions(null);
+            if (!visibleFields.contains("policyName")) entity.setPolicyName(null);
+            if (!visibleFields.contains("dataScope")) entity.setDataScope(null);
+            if (!visibleFields.contains("tableName")) entity.setTableName(null);
+            if (!visibleFields.contains("fieldPermissions")) entity.setFieldPermissions(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
         }
 
         // 批量保存所有策略
@@ -702,12 +702,12 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
             }
 
             // 根据字段权限清除不可操作的字段值
-            if (!visibleFields.contains("policy_name")) entity.setPolicyName(null);
-            if (!visibleFields.contains("data_scope")) entity.setDataScope(null);
-            if (!visibleFields.contains("table_name")) entity.setTableName(null);
-            if (!visibleFields.contains("field_permissions")) entity.setFieldPermissions(null);
+            if (!visibleFields.contains("policyName")) entity.setPolicyName(null);
+            if (!visibleFields.contains("dataScope")) entity.setDataScope(null);
+            if (!visibleFields.contains("tableName")) entity.setTableName(null);
+            if (!visibleFields.contains("fieldPermissions")) entity.setFieldPermissions(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
-            if (!visibleFields.contains("disable_reason")) entity.setDisableReason(null);
+            if (!visibleFields.contains("disableReason")) entity.setDisableReason(null);
 
             // 策略编码、权限ID、目标类型、目标ID不可修改
             entity.setPolicyCode(null);
@@ -794,7 +794,7 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除权限策略");
         }
 
@@ -894,7 +894,7 @@ public class SysPermPolicyServiceImpl extends ServiceImpl<SysPermPolicyMapper, S
 
         // 获取更新操作的字段权限
         List<String> visibleFields = getTableFieldPermission("update");
-        if (visibleFields == null || !visibleFields.contains("is_deleted")) {
+        if (visibleFields == null || !visibleFields.contains("isDeleted")) {
             throw new BusinessException("无权删除权限策略");
         }
 

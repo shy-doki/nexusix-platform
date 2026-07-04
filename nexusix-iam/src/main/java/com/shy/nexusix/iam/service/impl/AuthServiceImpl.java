@@ -681,4 +681,15 @@ public class AuthServiceImpl implements IAuthService {
         return ApiResponse.success("登录成功", userContext);
     }
 
+    /**
+     * <p>用户登出，清除当前登录会话</p>
+     *
+     * @return 登出结果
+     */
+    @Override
+    public ApiResponse logout() {
+        StpUtil.logout();
+        return ApiResponse.success("登出成功", null);
+    }
+
 }

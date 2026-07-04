@@ -5,9 +5,12 @@ import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.iam.rto.SysUserAddRTO;
+import com.shy.nexusix.iam.rto.SysUserChangePasswordRTO;
 import com.shy.nexusix.iam.rto.SysUserQueryRTO;
+import com.shy.nexusix.iam.rto.SysUserResetPasswordRTO;
 import com.shy.nexusix.iam.rto.SysUserUpdateRTO;
 import com.shy.nexusix.iam.service.ISysUserService;
+import com.shy.nexusix.iam.vo.SysRoleCommonVO;
 import com.shy.nexusix.iam.vo.SysUserCommonVO;
 import com.shy.nexusix.iam.vo.SysUserDetailVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -204,6 +207,78 @@ public class SysUserController {
     public ApiResponse batchDeleteUser(@NotEmpty List<String> ids) {
         Integer affectedRows = iSysUserService.batchDeleteUser(ids);
         return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>管理员重置用户密码</p>
+     *
+     * @param param 重置密码参数
+     * @return 更新结果行数
+     * @throws BusinessException 用户不存在时抛出
+     */
+    @PostMapping("/reset-password")
+    @Operation(summary = "重置用户密码", description = "管理员重置指定用户的密码")
+    public ApiResponse resetPassword(@Valid @RequestBody SysUserResetPasswordRTO param) {
+        Integer affectedRows = iSysUserService.resetPassword(param);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>用户修改密码</p>
+     *
+     * @param param 修改密码参数
+     * @return 更新结果行数
+     * @throws BusinessException 两次密码不一致、用户不存在或旧密码不正确时抛出
+     */
+    @PostMapping("/change-password")
+    @Operation(summary = "用户修改密码", description = "用户自行修改登录密码")
+    public ApiResponse changePassword(@Valid @RequestBody SysUserChangePasswordRTO param) {
+        Integer affectedRows = iSysUserService.changePassword(param);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>查询用户角色</p>
+     *
+     * @param userCode 用户编码
+     * @return 用户角色列表
+     * @throws BusinessException 用户不存在时抛出
+     */
+    @GetMapping("/{userCode}/roles")
+    @Operation(summary = "查询用户角色", description = "返回指定用户的角色列表")
+    public ApiResponse queryUserRoles(@NotBlank(message = "用户编码不能为空") @PathVariable String userCode) {
+        List<SysRoleCommonVO> roleList = iSysUserService.queryUserRoles(userCode);
+        return ApiResponse.success(roleList);
+    }
+
+    /**
+     * <p>为用户分配角色</p>
+     *
+     * @param userCode 用户编码
+     * @param roleCodeList 角色编码集合
+     * @return 新创建的角色策略数量
+     * @throws BusinessException 用户不存在或无法获取租户信息时抛出
+     */
+    @PostMapping("/{userCode}/roles")
+    @Operation(summary = "为用户分配角色", description = "为指定用户分配角色，覆盖原有角色")
+    public ApiResponse assignRoles(@NotBlank(message = "用户编码不能为空") @PathVariable String userCode,
+                                    @NotEmpty(message = "角色编码集合不能为空") @RequestBody List<String> roleCodeList) {
+        Integer affectedRows = iSysUserService.assignRoles(userCode, roleCodeList);
+        return ApiResponse.success(affectedRows);
+    }
+
+    /**
+     * <p>查询用户权限</p>
+     *
+     * @param userCode 用户编码
+     * @return 用户权限编码列表
+     * @throws BusinessException 用户不存在时抛出
+     */
+    @GetMapping("/{userCode}/permissions")
+    @Operation(summary = "查询用户权限", description = "返回指定用户的权限编码列表")
+    public ApiResponse queryUserPerms(@NotBlank(message = "用户编码不能为空") @PathVariable String userCode) {
+        List<String> permList = iSysUserService.queryUserPerms(userCode);
+        return ApiResponse.success(permList);
     }
 
 }
