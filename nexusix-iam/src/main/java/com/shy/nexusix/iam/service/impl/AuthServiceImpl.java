@@ -8,6 +8,24 @@ import com.shy.nexusix.common.enums.GlobalEnum;
 import com.shy.nexusix.common.exception.BusinessException;
 import com.shy.nexusix.common.result.ApiResponse;
 import com.shy.nexusix.core.entity.dto.UserContextDTO;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.CurrentDepts;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.CurrentPermissions;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.CurrentRoles;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.DeptGroup;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.DeptItem;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.DisabledDetail;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.FieldPermission;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.PermItem;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.PermissionInfo;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.RoleGroup;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.RoleItem;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.TableFieldPermission;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.TenantDepts;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.TenantGroup;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.TenantItem;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.TenantPermissions;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.TenantRoles;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.UserInfo;
 import com.shy.nexusix.iam.dto.UserDeptDTO;
 import com.shy.nexusix.iam.dto.UserPermDTO;
 import com.shy.nexusix.iam.dto.UserRoleDTO;
@@ -126,23 +144,23 @@ public class AuthServiceImpl implements IAuthService {
 
         // 构建权限信息
         List<UserPermDTO> permList = sysPermPolicyMapper.queryUserAllPermInfo(user.getId());
-        UserContextDTO.PermissionInfo permissionInfo = new UserContextDTO.PermissionInfo();
+        PermissionInfo permissionInfo = new PermissionInfo();
 
         // 按租户分组权限
-        Map<String, List<UserContextDTO.PermItem>> permsByTenant = new LinkedHashMap<>();
+        Map<String, List<PermItem>> permsByTenant = new LinkedHashMap<>();
         Map<String, String> permTenantNames = new HashMap<>();
 
         // 当前租户的启用/禁用权限
-        List<UserContextDTO.PermItem> currentEnabledPerms = new ArrayList<>();
-        List<UserContextDTO.PermItem> currentDisabledPerms = new ArrayList<>();
+        List<PermItem> currentEnabledPerms = new ArrayList<>();
+        List<PermItem> currentDisabledPerms = new ArrayList<>();
 
         // 字段级权限（按租户分组）
-        Map<String, Map<String, UserContextDTO.TableFieldPermission>> queryFieldMapByTenant = new HashMap<>();
-        Map<String, Map<String, UserContextDTO.TableFieldPermission>> createFieldMapByTenant = new HashMap<>();
-        Map<String, Map<String, UserContextDTO.TableFieldPermission>> updateFieldMapByTenant = new HashMap<>();
+        Map<String, Map<String, TableFieldPermission>> queryFieldMapByTenant = new HashMap<>();
+        Map<String, Map<String, TableFieldPermission>> createFieldMapByTenant = new HashMap<>();
+        Map<String, Map<String, TableFieldPermission>> updateFieldMapByTenant = new HashMap<>();
 
         // 禁用权限详情（按租户分组）
-        Map<String, UserContextDTO.DisabledDetail> disabledDetailByTenant = new HashMap<>();
+        Map<String, DisabledDetail> disabledDetailByTenant = new HashMap<>();
 
         // 用于去重的集合（基于 permCode + tenantCode）
         Set<String> permDeduplicationSet = new LinkedHashSet<>();
@@ -165,7 +183,7 @@ public class AuthServiceImpl implements IAuthService {
             if (!permDeduplicationSet.contains(deduplicationKey)) {
                 permDeduplicationSet.add(deduplicationKey);
 
-                UserContextDTO.PermItem item = new UserContextDTO.PermItem();
+                PermItem item = new PermItem();
                 item.setPermCode(perm.getPermCode());
                 item.setPermName(perm.getPermName());
                 item.setPermType(perm.getPermType());
@@ -189,9 +207,9 @@ public class AuthServiceImpl implements IAuthService {
             // 收集禁用权限的级别信息
             if (!"ACTIVE".equals(perm.getPermPolicyStatus())) {
                 // 获取该租户的DisabledDetail（如果不存在则创建）
-                UserContextDTO.DisabledDetail detail = disabledDetailByTenant.get(tenantCode);
+                DisabledDetail detail = disabledDetailByTenant.get(tenantCode);
                 if (detail == null) {
-                    detail = new UserContextDTO.DisabledDetail();
+                    detail = new DisabledDetail();
                     detail.setSystem(new ArrayList<>());
                     detail.setTenant(new ArrayList<>());
                     detail.setDept(new ArrayList<>());
@@ -253,10 +271,10 @@ public class AuthServiceImpl implements IAuthService {
 
                                 // 处理READ操作
                                 if ("READ".equals(operation)) {
-                                    Map<String, UserContextDTO.TableFieldPermission> queryFieldMap =
+                                    Map<String, TableFieldPermission> queryFieldMap =
                                         queryFieldMapByTenant.computeIfAbsent(tenantCode, k -> new HashMap<>());
-                                    UserContextDTO.TableFieldPermission tablePerm =
-                                        queryFieldMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
+                                    TableFieldPermission tablePerm =
+                                        queryFieldMap.computeIfAbsent(tableName, k -> new TableFieldPermission());
 
                                     if (!isActive) {
                                         if (!tablePerm.getInoperable().contains(fieldName)) {
@@ -273,10 +291,10 @@ public class AuthServiceImpl implements IAuthService {
 
                                 // 处理CREATE操作
                                 if ("CREATE".equals(operation)) {
-                                    Map<String, UserContextDTO.TableFieldPermission> createFieldMap =
+                                    Map<String, TableFieldPermission> createFieldMap =
                                         createFieldMapByTenant.computeIfAbsent(tenantCode, k -> new HashMap<>());
-                                    UserContextDTO.TableFieldPermission tablePerm =
-                                        createFieldMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
+                                    TableFieldPermission tablePerm =
+                                        createFieldMap.computeIfAbsent(tableName, k -> new TableFieldPermission());
 
                                     if (!isActive) {
                                         if (!tablePerm.getInoperable().contains(fieldName)) {
@@ -293,10 +311,10 @@ public class AuthServiceImpl implements IAuthService {
 
                                 // 处理UPDATE操作
                                 if ("UPDATE".equals(operation)) {
-                                    Map<String, UserContextDTO.TableFieldPermission> updateFieldMap =
+                                    Map<String, TableFieldPermission> updateFieldMap =
                                         updateFieldMapByTenant.computeIfAbsent(tenantCode, k -> new HashMap<>());
-                                    UserContextDTO.TableFieldPermission tablePerm =
-                                        updateFieldMap.computeIfAbsent(tableName, k -> new UserContextDTO.TableFieldPermission());
+                                    TableFieldPermission tablePerm =
+                                        updateFieldMap.computeIfAbsent(tableName, k -> new TableFieldPermission());
 
                                     if (!isActive) {
                                         if (!tablePerm.getInoperable().contains(fieldName)) {
@@ -320,32 +338,32 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 设置current（启用/禁用分组）
-        UserContextDTO.CurrentPermissions currentPerms = new UserContextDTO.CurrentPermissions();
+        CurrentPermissions currentPerms = new CurrentPermissions();
         currentPerms.setEnabled(currentEnabledPerms);
         currentPerms.setDisabled(currentDisabledPerms);
         permissionInfo.setCurrent(currentPerms);
 
         // 设置所有/有效/无效（按租户分组）
-        List<UserContextDTO.TenantPermissions> allTenantPerms = new ArrayList<>();
-        List<UserContextDTO.TenantPermissions> validTenantPerms = new ArrayList<>();
-        List<UserContextDTO.TenantPermissions> invalidTenantPerms = new ArrayList<>();
+        List<TenantPermissions> allTenantPerms = new ArrayList<>();
+        List<TenantPermissions> validTenantPerms = new ArrayList<>();
+        List<TenantPermissions> invalidTenantPerms = new ArrayList<>();
 
-        for (Map.Entry<String, List<UserContextDTO.PermItem>> entry : permsByTenant.entrySet()) {
+        for (Map.Entry<String, List<PermItem>> entry : permsByTenant.entrySet()) {
             String tenantCode = entry.getKey();
             String tenantName = permTenantNames.get(tenantCode);
-            List<UserContextDTO.PermItem> perms = entry.getValue();
+            List<PermItem> perms = entry.getValue();
 
             // 所有
-            UserContextDTO.TenantPermissions allGroup = new UserContextDTO.TenantPermissions();
+            TenantPermissions allGroup = new TenantPermissions();
             allGroup.setTenantCode(tenantCode);
             allGroup.setTenantName(tenantName);
             allGroup.setPermissions(new ArrayList<>(perms));
             allTenantPerms.add(allGroup);
 
             // 有效/无效分组
-            List<UserContextDTO.PermItem> validPerms = new ArrayList<>();
-            List<UserContextDTO.PermItem> invalidPerms = new ArrayList<>();
-            for (UserContextDTO.PermItem perm : perms) {
+            List<PermItem> validPerms = new ArrayList<>();
+            List<PermItem> invalidPerms = new ArrayList<>();
+            for (PermItem perm : perms) {
                 if ("ACTIVE".equals(perm.getPermPolicyStatus())) {
                     validPerms.add(perm);
                 } else {
@@ -354,7 +372,7 @@ public class AuthServiceImpl implements IAuthService {
             }
 
             if (!validPerms.isEmpty()) {
-                UserContextDTO.TenantPermissions validGroup = new UserContextDTO.TenantPermissions();
+                TenantPermissions validGroup = new TenantPermissions();
                 validGroup.setTenantCode(tenantCode);
                 validGroup.setTenantName(tenantName);
                 validGroup.setPermissions(validPerms);
@@ -362,7 +380,7 @@ public class AuthServiceImpl implements IAuthService {
             }
 
             if (!invalidPerms.isEmpty()) {
-                UserContextDTO.TenantPermissions invalidGroup = new UserContextDTO.TenantPermissions();
+                TenantPermissions invalidGroup = new TenantPermissions();
                 invalidGroup.setTenantCode(tenantCode);
                 invalidGroup.setTenantName(tenantName);
                 invalidGroup.setPermissions(invalidPerms);
@@ -375,9 +393,9 @@ public class AuthServiceImpl implements IAuthService {
         permissionInfo.setInvalid(invalidTenantPerms);
 
         // 设置字段级权限（按租户分组，包含所有租户）
-        Map<String, UserContextDTO.FieldPermission> fieldPermByTenant = new HashMap<>();
+        Map<String, FieldPermission> fieldPermByTenant = new HashMap<>();
         for (String tenantCode : permsByTenant.keySet()) {
-            UserContextDTO.FieldPermission fp = new UserContextDTO.FieldPermission();
+            FieldPermission fp = new FieldPermission();
             fp.setQuery(queryFieldMapByTenant.getOrDefault(tenantCode, new HashMap<>()));
             fp.setCreate(createFieldMapByTenant.getOrDefault(tenantCode, new HashMap<>()));
             fp.setUpdate(updateFieldMapByTenant.getOrDefault(tenantCode, new HashMap<>()));
@@ -388,7 +406,7 @@ public class AuthServiceImpl implements IAuthService {
         // 设置禁用详情（确保所有租户都有完整结构）
         for (String tenantCode : permsByTenant.keySet()) {
             if (!disabledDetailByTenant.containsKey(tenantCode)) {
-                UserContextDTO.DisabledDetail detail = new UserContextDTO.DisabledDetail();
+                DisabledDetail detail = new DisabledDetail();
                 detail.setSystem(new ArrayList<>());
                 detail.setTenant(new ArrayList<>());
                 detail.setDept(new ArrayList<>());
@@ -401,15 +419,15 @@ public class AuthServiceImpl implements IAuthService {
 
         // 构建部门信息
         List<UserDeptDTO> deptList = sysUserPolicyMapper.queryUserAllDeptInfo(user.getId());
-        UserContextDTO.DeptGroup deptGroup = new UserContextDTO.DeptGroup();
+        DeptGroup deptGroup = new DeptGroup();
 
         // 按租户分组部门
-        Map<String, List<UserContextDTO.DeptItem>> deptsByTenant = new LinkedHashMap<>();
+        Map<String, List<DeptItem>> deptsByTenant = new LinkedHashMap<>();
         Map<String, String> deptTenantNames = new HashMap<>();
 
         // 当前租户的启用/禁用部门
-        List<UserContextDTO.DeptItem> currentEnabledDepts = new ArrayList<>();
-        List<UserContextDTO.DeptItem> currentDisabledDepts = new ArrayList<>();
+        List<DeptItem> currentEnabledDepts = new ArrayList<>();
+        List<DeptItem> currentDisabledDepts = new ArrayList<>();
 
         for (UserDeptDTO dto : deptList) {
             if (dto.getDeptCode() == null || dto.getTenantCode() == null) {
@@ -420,7 +438,7 @@ public class AuthServiceImpl implements IAuthService {
             String tenantName = dto.getTenantName();
             deptTenantNames.putIfAbsent(tenantCode, tenantName);
 
-            UserContextDTO.DeptItem item = new UserContextDTO.DeptItem();
+            DeptItem item = new DeptItem();
             item.setDeptCode(dto.getDeptCode());
             item.setDeptName(dto.getDeptName());
             item.setPath(dto.getPath());
@@ -444,32 +462,32 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 设置current
-        UserContextDTO.CurrentDepts currentDepts = new UserContextDTO.CurrentDepts();
+        CurrentDepts currentDepts = new CurrentDepts();
         currentDepts.setEnabled(currentEnabledDepts);
         currentDepts.setDisabled(currentDisabledDepts);
         deptGroup.setCurrent(currentDepts);
 
         // 设置所有/有效/无效（按租户分组）
-        List<UserContextDTO.TenantDepts> allTenantDepts = new ArrayList<>();
-        List<UserContextDTO.TenantDepts> validTenantDepts = new ArrayList<>();
-        List<UserContextDTO.TenantDepts> invalidTenantDepts = new ArrayList<>();
+        List<TenantDepts> allTenantDepts = new ArrayList<>();
+        List<TenantDepts> validTenantDepts = new ArrayList<>();
+        List<TenantDepts> invalidTenantDepts = new ArrayList<>();
 
-        for (Map.Entry<String, List<UserContextDTO.DeptItem>> entry : deptsByTenant.entrySet()) {
+        for (Map.Entry<String, List<DeptItem>> entry : deptsByTenant.entrySet()) {
             String tenantCode = entry.getKey();
             String tenantName = deptTenantNames.get(tenantCode);
-            List<UserContextDTO.DeptItem> depts = entry.getValue();
+            List<DeptItem> depts = entry.getValue();
 
             // 所有
-            UserContextDTO.TenantDepts allGroup = new UserContextDTO.TenantDepts();
+            TenantDepts allGroup = new TenantDepts();
             allGroup.setTenantCode(tenantCode);
             allGroup.setTenantName(tenantName);
             allGroup.setDepts(new ArrayList<>(depts));
             allTenantDepts.add(allGroup);
 
             // 有效/无效分组
-            List<UserContextDTO.DeptItem> validDepts = new ArrayList<>();
-            List<UserContextDTO.DeptItem> invalidDepts = new ArrayList<>();
-            for (UserContextDTO.DeptItem dept : depts) {
+            List<DeptItem> validDepts = new ArrayList<>();
+            List<DeptItem> invalidDepts = new ArrayList<>();
+            for (DeptItem dept : depts) {
                 if ("ACTIVE".equals(dept.getUserPolicyStatus())) {
                     validDepts.add(dept);
                 } else {
@@ -478,7 +496,7 @@ public class AuthServiceImpl implements IAuthService {
             }
 
             if (!validDepts.isEmpty()) {
-                UserContextDTO.TenantDepts validGroup = new UserContextDTO.TenantDepts();
+                TenantDepts validGroup = new TenantDepts();
                 validGroup.setTenantCode(tenantCode);
                 validGroup.setTenantName(tenantName);
                 validGroup.setDepts(validDepts);
@@ -486,7 +504,7 @@ public class AuthServiceImpl implements IAuthService {
             }
 
             if (!invalidDepts.isEmpty()) {
-                UserContextDTO.TenantDepts invalidGroup = new UserContextDTO.TenantDepts();
+                TenantDepts invalidGroup = new TenantDepts();
                 invalidGroup.setTenantCode(tenantCode);
                 invalidGroup.setTenantName(tenantName);
                 invalidGroup.setDepts(invalidDepts);
@@ -500,16 +518,16 @@ public class AuthServiceImpl implements IAuthService {
 
         // 构建角色信息
         List<UserRoleDTO> roleList = sysUserPolicyMapper.queryUserAllRoleInfo(user.getId());
-        UserContextDTO.RoleGroup roleGroup = new UserContextDTO.RoleGroup();
+        RoleGroup roleGroup = new RoleGroup();
 
         // 按租户分组角色
-        Map<String, List<UserContextDTO.RoleItem>> rolesByTenant = new LinkedHashMap<>();
+        Map<String, List<RoleItem>> rolesByTenant = new LinkedHashMap<>();
         Map<String, String> roleTenantNames = new HashMap<>();
         Map<String, Map<String, String>> roleStatusByTenant = new HashMap<>();
 
         // 当前租户的启用/禁用角色
-        List<UserContextDTO.RoleItem> currentEnabledRoles = new ArrayList<>();
-        List<UserContextDTO.RoleItem> currentDisabledRoles = new ArrayList<>();
+        List<RoleItem> currentEnabledRoles = new ArrayList<>();
+        List<RoleItem> currentDisabledRoles = new ArrayList<>();
 
         for (UserRoleDTO dto : roleList) {
             if (dto.getRoleCode() == null || dto.getTenantCode() == null) {
@@ -526,7 +544,7 @@ public class AuthServiceImpl implements IAuthService {
             // 存储角色状态
             roleStatusByTenant.computeIfAbsent(tenantCode, k -> new HashMap<>()).put(roleCode, status);
 
-            UserContextDTO.RoleItem item = new UserContextDTO.RoleItem();
+            RoleItem item = new RoleItem();
             item.setRoleCode(roleCode);
             item.setRoleName(dto.getRoleName());
             item.setDataScope(dto.getDataScope() != null ? dto.getDataScope() : "SELF");
@@ -547,33 +565,33 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         // 设置current
-        UserContextDTO.CurrentRoles currentRoles = new UserContextDTO.CurrentRoles();
+        CurrentRoles currentRoles = new CurrentRoles();
         currentRoles.setEnabled(currentEnabledRoles);
         currentRoles.setDisabled(currentDisabledRoles);
         roleGroup.setCurrent(currentRoles);
 
         // 设置所有/有效/无效（按租户分组）
-        List<UserContextDTO.TenantRoles> allTenantRoles = new ArrayList<>();
-        List<UserContextDTO.TenantRoles> validTenantRoles = new ArrayList<>();
-        List<UserContextDTO.TenantRoles> invalidTenantRoles = new ArrayList<>();
+        List<TenantRoles> allTenantRoles = new ArrayList<>();
+        List<TenantRoles> validTenantRoles = new ArrayList<>();
+        List<TenantRoles> invalidTenantRoles = new ArrayList<>();
 
-        for (Map.Entry<String, List<UserContextDTO.RoleItem>> entry : rolesByTenant.entrySet()) {
+        for (Map.Entry<String, List<RoleItem>> entry : rolesByTenant.entrySet()) {
             String tenantCode = entry.getKey();
             String tenantName = roleTenantNames.get(tenantCode);
-            List<UserContextDTO.RoleItem> roles = entry.getValue();
+            List<RoleItem> roles = entry.getValue();
             Map<String, String> statusMap = roleStatusByTenant.get(tenantCode);
 
             // 所有
-            UserContextDTO.TenantRoles allGroup = new UserContextDTO.TenantRoles();
+            TenantRoles allGroup = new TenantRoles();
             allGroup.setTenantCode(tenantCode);
             allGroup.setTenantName(tenantName);
             allGroup.setRoles(new ArrayList<>(roles));
             allTenantRoles.add(allGroup);
 
             // 有效/无效分组
-            List<UserContextDTO.RoleItem> validRoles = new ArrayList<>();
-            List<UserContextDTO.RoleItem> invalidRoles = new ArrayList<>();
-            for (UserContextDTO.RoleItem role : roles) {
+            List<RoleItem> validRoles = new ArrayList<>();
+            List<RoleItem> invalidRoles = new ArrayList<>();
+            for (RoleItem role : roles) {
                 String status = statusMap.get(role.getRoleCode());
                 if ("ACTIVE".equals(status)) {
                     validRoles.add(role);
@@ -583,7 +601,7 @@ public class AuthServiceImpl implements IAuthService {
             }
 
             if (!validRoles.isEmpty()) {
-                UserContextDTO.TenantRoles validGroup = new UserContextDTO.TenantRoles();
+                TenantRoles validGroup = new TenantRoles();
                 validGroup.setTenantCode(tenantCode);
                 validGroup.setTenantName(tenantName);
                 validGroup.setRoles(validRoles);
@@ -591,7 +609,7 @@ public class AuthServiceImpl implements IAuthService {
             }
 
             if (!invalidRoles.isEmpty()) {
-                UserContextDTO.TenantRoles invalidGroup = new UserContextDTO.TenantRoles();
+                TenantRoles invalidGroup = new TenantRoles();
                 invalidGroup.setTenantCode(tenantCode);
                 invalidGroup.setTenantName(tenantName);
                 invalidGroup.setRoles(invalidRoles);
@@ -604,15 +622,15 @@ public class AuthServiceImpl implements IAuthService {
         roleGroup.setInvalid(invalidTenantRoles);
 
         // 构建租户信息
-        UserContextDTO.TenantGroup tenantGroup = new UserContextDTO.TenantGroup();
+        TenantGroup tenantGroup = new TenantGroup();
 
-        List<UserContextDTO.TenantItem> currentTenantList = new ArrayList<>();
-        List<UserContextDTO.TenantItem> allTenants = new ArrayList<>();
-        List<UserContextDTO.TenantItem> validTenants = new ArrayList<>();
-        List<UserContextDTO.TenantItem> invalidTenants = new ArrayList<>();
+        List<TenantItem> currentTenantList = new ArrayList<>();
+        List<TenantItem> allTenants = new ArrayList<>();
+        List<TenantItem> validTenants = new ArrayList<>();
+        List<TenantItem> invalidTenants = new ArrayList<>();
 
         for (UserTenantItemDTO dto : tenantList) {
-            UserContextDTO.TenantItem item = new UserContextDTO.TenantItem();
+            TenantItem item = new TenantItem();
             item.setTenantCode(dto.getTenantCode());
             item.setTenantName(dto.getTenantName());
             item.setStatus(dto.getStatus());
@@ -641,7 +659,7 @@ public class AuthServiceImpl implements IAuthService {
         UserContextDTO userContext = new UserContextDTO();
 
         // 设置用户基本信息
-        UserContextDTO.UserInfo userInfo = new UserContextDTO.UserInfo();
+        UserInfo userInfo = new UserInfo();
         userInfo.setUserId(user.getId());
         userInfo.setUserCode(user.getUserCode());
         userInfo.setUserName(user.getUserName());

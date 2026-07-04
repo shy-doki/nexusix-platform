@@ -12,6 +12,9 @@ import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
 import com.shy.nexusix.core.context.UserContext;
 import com.shy.nexusix.core.entity.dto.UserContextDTO;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.FieldPermission;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.TableFieldPermission;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.TenantItem;
 import com.shy.nexusix.tenant.converter.SysTenantConverter;
 import com.shy.nexusix.tenant.entity.SysTenant;
 import com.shy.nexusix.tenant.mapper.SysTenantMapper;
@@ -57,14 +60,14 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             return null;
         }
 
-        UserContextDTO.FieldPermission fieldPerm =
-            com.shy.nexusix.core.context.UserContext.getCurrentTenantFieldPermission();
+        FieldPermission fieldPerm =
+            UserContext.getCurrentTenantFieldPermission();
 
         if (fieldPerm == null || fieldPerm.getQuery() == null) {
             return null;
         }
 
-        UserContextDTO.TableFieldPermission tableFieldPerm =
+        TableFieldPermission tableFieldPerm =
             fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
 
         if (tableFieldPerm == null || tableFieldPerm.getOperable() == null
@@ -88,12 +91,12 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             throw new BusinessException("无法获取用户上下文");
         }
 
-        UserContextDTO.FieldPermission fieldPerm = com.shy.nexusix.core.context.UserContext.getCurrentTenantFieldPermission();
+        FieldPermission fieldPerm = UserContext.getCurrentTenantFieldPermission();
         if (fieldPerm == null) {
             return null;
         }
 
-        UserContextDTO.TableFieldPermission tableFieldPerm = null;
+        TableFieldPermission tableFieldPerm = null;
         if ("query".equalsIgnoreCase(operationType)) {
             if (fieldPerm.getQuery() != null) {
                 tableFieldPerm = fieldPerm.getQuery().get(GlobalConstant.Table.TENANT);
@@ -1657,9 +1660,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 从缓存的有效租户列表中查找目标租户
-        UserContextDTO.TenantItem targetTenantItem = null;
+        TenantItem targetTenantItem = null;
         if (userContext.getTenantInfo().getValid() != null) {
-            for (UserContextDTO.TenantItem item : userContext.getTenantInfo().getValid()) {
+            for (TenantItem item : userContext.getTenantInfo().getValid()) {
                 if (switchParam.getTargetTenantCode().equals(item.getTenantCode())) {
                     targetTenantItem = item;
                     break;
@@ -1670,7 +1673,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 目标租户不在有效租户列表中，检查是否在无效租户列表中
         if (targetTenantItem == null) {
             if (userContext.getTenantInfo().getInvalid() != null) {
-                for (UserContextDTO.TenantItem item : userContext.getTenantInfo().getInvalid()) {
+                for (TenantItem item : userContext.getTenantInfo().getInvalid()) {
                     if (switchParam.getTargetTenantCode().equals(item.getTenantCode())) {
                         // 目标租户在无效租户列表中，根据状态给出具体提示
                         String status = item.getStatus();
@@ -1692,8 +1695,8 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         }
 
         // 更新Session中的当前租户信息
-        List<UserContextDTO.TenantItem> currentTenantList = new ArrayList<>();
-        UserContextDTO.TenantItem currentTenantItem = new UserContextDTO.TenantItem();
+        List<TenantItem> currentTenantList = new ArrayList<>();
+        TenantItem currentTenantItem = new TenantItem();
         currentTenantItem.setTenantCode(targetTenantItem.getTenantCode());
         currentTenantItem.setTenantName(targetTenantItem.getTenantName());
         currentTenantItem.setStatus(targetTenantItem.getStatus());

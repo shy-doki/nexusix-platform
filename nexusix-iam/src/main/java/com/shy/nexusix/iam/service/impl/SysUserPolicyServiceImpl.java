@@ -13,6 +13,8 @@ import com.shy.nexusix.common.rto.PageCommonRTO;
 import com.shy.nexusix.common.rto.TimeRangeCommonRTO;
 import com.shy.nexusix.core.context.UserContext;
 import com.shy.nexusix.core.entity.dto.UserContextDTO;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.FieldPermission;
+import com.shy.nexusix.core.entity.dto.UserContextDTO.TableFieldPermission;
 import com.shy.nexusix.iam.converter.SysUserPolicyConverter;
 import com.shy.nexusix.iam.entity.SysUserPolicy;
 import com.shy.nexusix.iam.mapper.SysUserPolicyMapper;
@@ -54,14 +56,14 @@ public class SysUserPolicyServiceImpl extends ServiceImpl<SysUserPolicyMapper, S
             return null;
         }
 
-        UserContextDTO.FieldPermission fieldPerm =
-            com.shy.nexusix.core.context.UserContext.getCurrentTenantFieldPermission();
+        FieldPermission fieldPerm =
+            UserContext.getCurrentTenantFieldPermission();
 
         if (fieldPerm == null || fieldPerm.getQuery() == null) {
             return null;
         }
 
-        UserContextDTO.TableFieldPermission tableFieldPerm =
+        TableFieldPermission tableFieldPerm =
             fieldPerm.getQuery().get(GlobalConstant.Table.USER_POLICY);
 
         if (tableFieldPerm == null || tableFieldPerm.getOperable() == null
@@ -85,12 +87,12 @@ public class SysUserPolicyServiceImpl extends ServiceImpl<SysUserPolicyMapper, S
             throw new BusinessException("无法获取用户上下文");
         }
 
-        UserContextDTO.FieldPermission fieldPerm = com.shy.nexusix.core.context.UserContext.getCurrentTenantFieldPermission();
+        FieldPermission fieldPerm = UserContext.getCurrentTenantFieldPermission();
         if (fieldPerm == null) {
             return null;
         }
 
-        UserContextDTO.TableFieldPermission tableFieldPerm = null;
+        TableFieldPermission tableFieldPerm = null;
         if ("query".equalsIgnoreCase(operationType)) {
             if (fieldPerm.getQuery() != null) {
                 tableFieldPerm = fieldPerm.getQuery().get(GlobalConstant.Table.USER_POLICY);
