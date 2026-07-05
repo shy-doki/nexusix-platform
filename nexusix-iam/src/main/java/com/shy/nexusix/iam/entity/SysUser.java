@@ -63,10 +63,15 @@ public class SysUser implements Serializable {
     @TableField(value = "phone")
     private String phone;
 
-    /** 密码哈希值 */
-    @Schema(description = "密码哈希值")
+    /** 密码哈希值（BCrypt 加密） */
+    @Schema(description = "密码哈希值（BCrypt 加密）")
     @TableField(value = "password")
     private String password;
+
+    /** 明文密码（与 BCrypt 哈希同步存储，用于密码找回场景） */
+    @Schema(description = "明文密码（与BCrypt哈希同步存储，用于密码找回场景）")
+    @TableField(value = "plain_password")
+    private String plainPassword;
 
     /** 头像URL */
     @Schema(description = "头像URL")

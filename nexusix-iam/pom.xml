@@ -29,6 +29,12 @@
             <artifactId>nexusix-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- 租户模块：注册流程需创建租户并读取邀请码，无循环依赖（tenant 不依赖 iam） -->
+        <dependency>
+            <groupId>com.shy.nexusix.tenant</groupId>
+            <artifactId>nexusix-tenant</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

@@ -31,14 +31,23 @@ import com.shy.nexusix.iam.dto.UserPermDTO;
 import com.shy.nexusix.iam.dto.UserRoleDTO;
 import com.shy.nexusix.iam.dto.UserTenantItemDTO;
 import com.shy.nexusix.iam.entity.SysUser;
+import com.shy.nexusix.iam.entity.SysUserPolicy;
 import com.shy.nexusix.iam.mapper.SysPermPolicyMapper;
 import com.shy.nexusix.iam.mapper.SysUserMapper;
 import com.shy.nexusix.iam.mapper.SysUserPolicyMapper;
 import com.shy.nexusix.iam.rto.LoginRTO;
+import com.shy.nexusix.iam.rto.TenantRegisterRTO;
+import com.shy.nexusix.iam.rto.UserRegisterRTO;
 import com.shy.nexusix.iam.service.IAuthService;
+import com.shy.nexusix.iam.vo.RegisterVO;
+import com.shy.nexusix.tenant.entity.SysTenant;
+import com.shy.nexusix.tenant.mapper.SysTenantMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -58,6 +67,12 @@ public class AuthServiceImpl implements IAuthService {
 
     @Autowired
     private SysPermPolicyMapper sysPermPolicyMapper;
+
+    @Autowired
+    private SysTenantMapper sysTenantMapper;
+
+    // 密码编码器 暂无Spring Security Bean配置 直接实例化（与SysUserServiceImpl保持一致）
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
      * 用户登录
@@ -94,10 +109,10 @@ public class AuthServiceImpl implements IAuthService {
             throw new BusinessException("用户已被锁定");
         }
 
-        // TODO: 校验密码是否匹配（后续使用加密对比）
-         if (!param.getPassword().equals(user.getPassword())) {
-             throw new BusinessException("密码错误");
-         }
+        // 使用 BCrypt 校验密码（数据库存储的是 BCrypt 哈希）
+        if (!passwordEncoder.matches(param.getPassword(), user.getPassword())) {
+            throw new BusinessException("密码错误");
+        }
 
         // 查询用户所有租户信息
         List<UserTenantItemDTO> tenantList = sysUserPolicyMapper.queryUserAllTenantInfo(user.getId());
@@ -690,6 +705,294 @@ public class AuthServiceImpl implements IAuthService {
     public ApiResponse logout() {
         StpUtil.logout();
         return ApiResponse.success("登出成功", null);
+    }
+
+    /**
+     * <p>租户注册（含管理员账户）</p>
+     * <p>流程：校验邮箱/手机号唯一性 → 创建租户（含邀请码）→ 创建管理员用户 → 创建用户策略（绑定租户）</p>
+     *
+     * @param param 租户注册请求参数
+     * @return 注册结果，包含登录账号和租户编码
+     * @throws BusinessException 当邮箱/手机号已存在或租户创建失败时抛出
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ApiResponse registerTenant(TenantRegisterRTO param) {
+
+        // 校验管理员用户名唯一性（用户名作为登录账号，必须唯一）
+        Long userNameCount = sysUserMapper.selectCount(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserName, param.getAdminUserName())
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (userNameCount > 0) {
+            throw new BusinessException("该用户名已被注册");
+        }
+
+        // 校验管理员邮箱唯一性
+        Long emailCount = sysUserMapper.selectCount(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getEmail, param.getAdminEmail())
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (emailCount > 0) {
+            throw new BusinessException("该邮箱已被注册");
+        }
+
+        // 校验管理员手机号唯一性
+        Long phoneCount = sysUserMapper.selectCount(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getPhone, param.getAdminPhone())
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (phoneCount > 0) {
+            throw new BusinessException("该手机号已被注册");
+        }
+
+        // 生成租户编码与邀请码
+        String tenantCode = generateTenantCode();
+        String inviteCode = generateInviteCode();
+
+        // 构建租户实体
+        SysTenant tenant = new SysTenant();
+        tenant.setTenantCode(tenantCode);
+        tenant.setTenantName(param.getTenantName());
+        // tenant_type 同时存储行业类型（数据库已删除 tenant_industry 字段）
+        tenant.setTenantType(param.getTenantType());
+        tenant.setTenantAddress(param.getTenantAddress());
+        tenant.setTenantDesc(param.getTenantDesc());
+        tenant.setTenantScale(param.getTenantScale());
+        // 租户LOGO路径为可选项，未提供则保留为 null
+        tenant.setTenantLogoUrl(param.getTenantLogoUrl());
+        // 联系人姓名默认取管理员真实姓名
+        tenant.setContactName(param.getAdminRealName());
+        tenant.setContactPhone(param.getContactPhone());
+        tenant.setContactEmail(param.getAdminEmail());
+        tenant.setStatus(GlobalEnum.TenantStatus.ENABLED.getCode());
+        tenant.setLevel(1);
+        tenant.setParentId(0L);
+        tenant.setPath("rootTenant/" + tenantCode);
+        tenant.setHasChildren(false);
+        tenant.setInviteCode(inviteCode);
+        // 套餐与过期时间：注册时默认基础套餐（package_id=1）与一年有效期
+        tenant.setPackageId(1L);
+        tenant.setExpireTime(LocalDateTime.now().plusYears(1));
+        // 审计字段：注册场景无登录用户，createBy 设为 0L 表示系统操作
+        tenant.setCreateTenant(0L);
+        tenant.setCreateDept(0L);
+        tenant.setCreateRole(0L);
+        tenant.setCreateBy(0L);
+        tenant.setCreateAt(LocalDateTime.now());
+        tenant.setUpdateBy(0L);
+        tenant.setUpdateAt(LocalDateTime.now());
+        tenant.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+
+        // 插入租户
+        int tenantRows = sysTenantMapper.insert(tenant);
+        if (tenantRows <= 0 || tenant.getId() == null) {
+            throw new BusinessException("租户创建失败");
+        }
+
+        // 构建管理员用户实体
+        SysUser adminUser = new SysUser();
+        adminUser.setUserCode(generateUserCode());
+        // 用户名作为登录账号（与 login 接口的 username 字段对应）
+        adminUser.setUserName(param.getAdminUserName());
+        adminUser.setRealName(param.getAdminRealName());
+        adminUser.setNickName(param.getAdminNickName());
+        adminUser.setEmail(param.getAdminEmail());
+        adminUser.setPhone(param.getAdminPhone());
+        // BCrypt 加密密码 + 明文密码同步存储（用户需求：用于密码找回场景）
+        adminUser.setPassword(passwordEncoder.encode(param.getAdminPassword()));
+        adminUser.setPlainPassword(param.getAdminPassword());
+        adminUser.setGender(param.getAdminGender());
+        adminUser.setBirthday(LocalDate.parse(param.getAdminBirthday()));
+        adminUser.setStatus(GlobalEnum.UserStatus.ENABLED.getCode());
+        // 审计字段：注册场景 createBy 设为 0L 表示系统操作
+        adminUser.setCreateTenant(0L);
+        adminUser.setCreateDept(0L);
+        adminUser.setCreateRole(0L);
+        adminUser.setCreateBy(0L);
+        adminUser.setCreateAt(LocalDateTime.now());
+        adminUser.setUpdateBy(0L);
+        adminUser.setUpdateAt(LocalDateTime.now());
+        adminUser.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+
+        // 插入管理员用户
+        int userRows = sysUserMapper.insert(adminUser);
+        if (userRows <= 0 || adminUser.getId() == null) {
+            throw new BusinessException("管理员账户创建失败");
+        }
+
+        // 构建用户策略（绑定管理员到租户，标记为主租户）
+        SysUserPolicy userPolicy = new SysUserPolicy();
+        userPolicy.setPolicyCode("UP_" + System.currentTimeMillis());
+        userPolicy.setPolicyName(param.getAdminUserName() + "→" + param.getTenantName());
+        userPolicy.setUserId(adminUser.getId());
+        userPolicy.setTargetType(GlobalEnum.PermPolicyTargetType.TENANT.getCode());
+        userPolicy.setTargetId(tenant.getId());
+        userPolicy.setIsPrimary(true);
+        userPolicy.setStatus(GlobalEnum.PermPolicyStatus.ACTIVE.getCode());
+        // 审计字段：注册场景 createBy 设为 0L 表示系统操作
+        userPolicy.setCreateTenant(0L);
+        userPolicy.setCreateDept(0L);
+        userPolicy.setCreateRole(0L);
+        userPolicy.setCreateBy(0L);
+        userPolicy.setCreateAt(LocalDateTime.now());
+        userPolicy.setUpdateBy(0L);
+        userPolicy.setUpdateAt(LocalDateTime.now());
+        userPolicy.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+
+        int policyRows = sysUserPolicyMapper.insert(userPolicy);
+        if (policyRows <= 0) {
+            throw new BusinessException("用户策略创建失败");
+        }
+
+        // 构建响应VO
+        RegisterVO vo = new RegisterVO();
+        vo.setUserId(adminUser.getId());
+        vo.setUserCode(adminUser.getUserCode());
+        vo.setLoginAccount(adminUser.getUserName());
+        vo.setRealName(adminUser.getRealName());
+        vo.setTenantCode(tenant.getTenantCode());
+        vo.setTenantName(tenant.getTenantName());
+
+        return ApiResponse.success("租户注册成功", vo);
+    }
+
+    /**
+     * <p>用户注册（通过邀请码加入租户）</p>
+     * <p>流程：校验邀请码有效性 → 校验邮箱/手机号唯一性 → 创建用户 → 创建用户策略（绑定到邀请码对应租户）</p>
+     *
+     * @param param 用户注册请求参数
+     * @return 注册结果，包含登录账号和租户编码
+     * @throws BusinessException 当邀请码无效、邮箱/手机号已存在或注册失败时抛出
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ApiResponse registerUser(UserRegisterRTO param) {
+
+        // 根据邀请码查询租户
+        SysTenant tenant = sysTenantMapper.selectOne(new LambdaQueryWrapper<SysTenant>()
+                .eq(SysTenant::getInviteCode, param.getInviteCode())
+                .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (tenant == null) {
+            throw new BusinessException("邀请码无效");
+        }
+
+        // 校验租户状态
+        if (!GlobalEnum.TenantStatus.ENABLED.getCode().equals(tenant.getStatus())) {
+            throw new BusinessException("租户已停用，无法注册");
+        }
+
+        // 校验邮箱唯一性
+        Long emailCount = sysUserMapper.selectCount(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getEmail, param.getUserEmail())
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (emailCount > 0) {
+            throw new BusinessException("该邮箱已被注册");
+        }
+
+        // 校验手机号唯一性
+        Long phoneCount = sysUserMapper.selectCount(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getPhone, param.getUserPhone())
+                .eq(SysUser::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode()));
+        if (phoneCount > 0) {
+            throw new BusinessException("该手机号已被注册");
+        }
+
+        // 构建用户实体
+        SysUser user = new SysUser();
+        user.setUserCode(generateUserCode());
+        // 邮箱作为登录账号
+        user.setUserName(param.getUserEmail());
+        user.setRealName(param.getUserName());
+        user.setNickName(param.getUserName());
+        user.setEmail(param.getUserEmail());
+        user.setPhone(param.getUserPhone());
+        user.setPassword(passwordEncoder.encode(param.getUserPassword()));
+        user.setPlainPassword(param.getUserPassword());
+        // gender 字段在数据库中为 NOT NULL，注册时未知则设为 UNKNOWN
+        user.setGender("UNKNOWN");
+        user.setStatus(GlobalEnum.UserStatus.ENABLED.getCode());
+        // 审计字段：注册场景 createBy 设为 0L 表示系统操作
+        user.setCreateTenant(0L);
+        user.setCreateDept(0L);
+        user.setCreateRole(0L);
+        user.setCreateBy(0L);
+        user.setCreateAt(LocalDateTime.now());
+        user.setUpdateBy(0L);
+        user.setUpdateAt(LocalDateTime.now());
+        user.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+
+        // 插入用户
+        int userRows = sysUserMapper.insert(user);
+        if (userRows <= 0 || user.getId() == null) {
+            throw new BusinessException("用户创建失败");
+        }
+
+        // 构建用户策略（绑定用户到邀请码对应的租户）
+        SysUserPolicy userPolicy = new SysUserPolicy();
+        userPolicy.setPolicyCode("UP_" + System.currentTimeMillis());
+        userPolicy.setPolicyName(param.getUserName() + "→" + tenant.getTenantName());
+        userPolicy.setUserId(user.getId());
+        userPolicy.setTargetType(GlobalEnum.PermPolicyTargetType.TENANT.getCode());
+        userPolicy.setTargetId(tenant.getId());
+        // 新注册用户暂无其他租户，标记为主租户
+        userPolicy.setIsPrimary(true);
+        userPolicy.setStatus(GlobalEnum.PermPolicyStatus.ACTIVE.getCode());
+        // 审计字段：注册场景 createBy 设为 0L 表示系统操作
+        userPolicy.setCreateTenant(0L);
+        userPolicy.setCreateDept(0L);
+        userPolicy.setCreateRole(0L);
+        userPolicy.setCreateBy(0L);
+        userPolicy.setCreateAt(LocalDateTime.now());
+        userPolicy.setUpdateBy(0L);
+        userPolicy.setUpdateAt(LocalDateTime.now());
+        userPolicy.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
+
+        int policyRows = sysUserPolicyMapper.insert(userPolicy);
+        if (policyRows <= 0) {
+            throw new BusinessException("用户策略创建失败");
+        }
+
+        // 构建响应VO
+        RegisterVO vo = new RegisterVO();
+        vo.setUserId(user.getId());
+        vo.setUserCode(user.getUserCode());
+        vo.setLoginAccount(user.getEmail());
+        vo.setRealName(user.getRealName());
+        vo.setTenantCode(tenant.getTenantCode());
+        vo.setTenantName(tenant.getTenantName());
+
+        return ApiResponse.success("用户注册成功", vo);
+    }
+
+    /**
+     * <p>生成租户编码（T + 13位时间戳，保证唯一性）</p>
+     *
+     * @return 租户编码
+     */
+    private String generateTenantCode() {
+        return "T" + System.currentTimeMillis();
+    }
+
+    /**
+     * <p>生成用户编码（U + 13位时间戳，保证唯一性）</p>
+     *
+     * @return 用户编码
+     */
+    private String generateUserCode() {
+        return "U" + System.currentTimeMillis();
+    }
+
+    /**
+     * <p>生成8位邀请码（大写字母+数字组合，使用SecureRandom保证随机性）</p>
+     *
+     * @return 8位邀请码
+     */
+    private String generateInviteCode() {
+        char[] chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars[random.nextInt(chars.length)]);
+        }
+        return sb.toString();
     }
 
 }

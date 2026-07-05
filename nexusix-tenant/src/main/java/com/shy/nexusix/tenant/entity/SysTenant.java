@@ -39,25 +39,29 @@ public class SysTenant implements Serializable {
     @TableField(value = "tenant_name")
     private String tenantName;
 
-    @Schema(description = "租户类型", example = "餐饮、互联网")
+    @Schema(description = "租户类型（同时存储行业类型）", example = "internet")
     @TableField(value = "tenant_type")
     private String tenantType;
 
-    @Schema(description = "租户描述", example = "这是...类型公司")
+    @Schema(description = "租户地址", example = "浙江省杭州市上城区万象大厦18层")
+    @TableField(value = "tenant_address")
+    private String tenantAddress;
+
+    @Schema(description = "租户描述", example = "综合性企业集团")
     @TableField(value = "tenant_desc")
     private String tenantDesc;
 
-    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    @Schema(description = "租户企业规模", example = "1-50")
+    @TableField(value = "tenant_scale")
+    private String tenantScale;
+
+    @Schema(description = "租户LOGO路径", example = "https://logo.example.com/xxx.png")
     @TableField(value = "tenant_logo_url")
     private String tenantLogoUrl;
 
     @Schema(description = "父租户ID", example = "1")
     @TableField(value = "parent_id")
     private Long parentId;
-
-    @Schema(description = "父租户名称", example = "阿里云")
-    @TableField(value = "parent_name")
-    private String parentName;
 
     @Schema(description = "祖级列表", example = "rootTenant/GROUP001/EAST001")
     @TableField(value = "path")
@@ -92,21 +96,17 @@ public class SysTenant implements Serializable {
     @TableField(value = "expire_time")
     private LocalDateTime expireTime;
 
-    @Schema(description = "当前主套餐ID", example = "PKG_PREMIUM")
+    @Schema(description = "当前主套餐ID", example = "1")
     @TableField(value = "package_id")
     private Long packageId;
-
-    @Schema(description = "当前主套餐名称", example = "标准版")
-    @TableField(value = "package_name")
-    private String packageName;
-
-    @Schema(description = "最大用户数限制", example = "1000")
-    @TableField(value = "max_users")
-    private Integer maxUsers;
 
     @Schema(description = "扩展属性(JSONB，存储行业特定配置)", example = "{\"industry\": \"tech\", \"quota\": 100}")
     @TableField(value = "ext_attributes")
     private String extAttributes;
+
+    @Schema(description = "租户邀请码（8位字符，用户注册时凭此码加入租户）", example = "AB12CD34")
+    @TableField(value = "invite_code")
+    private String inviteCode;
 
     @Schema(description = "是否有子租户", example = "false")
     @TableField(value = "has_children")

@@ -680,7 +680,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         if (!visibleFields.contains("status")) entity.setStatus(null);
         if (!visibleFields.contains("expireTime")) entity.setExpireTime(null);
         if (!visibleFields.contains("packageId")) entity.setPackageId(null);
-        if (!visibleFields.contains("packageName")) entity.setPackageName(null);
         if (!visibleFields.contains("extAttributes")) entity.setExtAttributes(null);
 
         // 保存租户信息
@@ -767,7 +766,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         if (!visibleFields.contains("status")) entity.setStatus(null);
         if (!visibleFields.contains("expireTime")) entity.setExpireTime(null);
         if (!visibleFields.contains("packageId")) entity.setPackageId(null);
-        if (!visibleFields.contains("packageName")) entity.setPackageName(null);
         if (!visibleFields.contains("extAttributes")) entity.setExtAttributes(null);
 
         // 租户编码和path不可修改 清除这些字段
@@ -1039,7 +1037,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             if (!visibleFields.contains("status")) entity.setStatus(null);
             if (!visibleFields.contains("expireTime")) entity.setExpireTime(null);
             if (!visibleFields.contains("packageId")) entity.setPackageId(null);
-            if (!visibleFields.contains("packageName")) entity.setPackageName(null);
             if (!visibleFields.contains("extAttributes")) entity.setExtAttributes(null);
         }
 
@@ -1121,7 +1118,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             if (!visibleFields.contains("status")) entity.setStatus(null);
             if (!visibleFields.contains("expireTime")) entity.setExpireTime(null);
             if (!visibleFields.contains("packageId")) entity.setPackageId(null);
-            if (!visibleFields.contains("packageName")) entity.setPackageName(null);
             if (!visibleFields.contains("extAttributes")) entity.setExtAttributes(null);
 
             // 租户编码和path不可修改
@@ -1354,7 +1350,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             this.update(new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, subTenant.getId())
                     .set(SysTenant::getParentId, parentTenant.getId())
-                    .set(SysTenant::getParentName, parentTenant.getTenantName())
                     .set(SysTenant::getPath, newPath)
                     .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
@@ -1453,7 +1448,6 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             this.update(new LambdaUpdateWrapper<SysTenant>()
                     .eq(SysTenant::getId, subTenant.getId())
                     .set(SysTenant::getParentId, newParent.getId())
-                    .set(SysTenant::getParentName, newParent.getTenantName())
                     .set(SysTenant::getPath, newPath)
                     .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
@@ -1567,11 +1561,9 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 设置父租户信息
         if (parentTenant != null) {
             entity.setParentId(parentTenant.getId());
-            entity.setParentName(parentTenant.getTenantName());
             entity.setPath(parentTenant.getPath() + "/" + tenantCode);
         } else {
             entity.setParentId(0L);
-            entity.setParentName(null);
             entity.setPath(tenantCode);
         }
 
