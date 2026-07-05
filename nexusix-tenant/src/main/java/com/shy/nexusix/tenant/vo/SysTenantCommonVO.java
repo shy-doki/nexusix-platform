@@ -28,16 +28,52 @@ public class SysTenantCommonVO {
     private String tenantName;
 
     /**
-     * 租户类型
+     * 租户类型（同时存储行业类型）
      */
-    @Schema(description = "租户类型", example = "餐饮、互联网")
+    @Schema(description = "租户类型（同时存储行业类型）", example = "internet")
     private String tenantType;
 
     /**
-     * 父租户名称
+     * 租户地址
      */
-    @Schema(description = "父租户名称", example = "阿里云")
-    private String parentName;
+    @Schema(description = "租户地址", example = "浙江省杭州市上城区万象大厦18层")
+    private String tenantAddress;
+
+    /**
+     * 租户描述
+     */
+    @Schema(description = "租户描述", example = "专注软件开发与技术服务")
+    private String tenantDesc;
+
+    /**
+     * 租户企业规模
+     */
+    @Schema(description = "租户企业规模", example = "51-200")
+    private String tenantScale;
+
+    /**
+     * 租户logo路径
+     */
+    @Schema(description = "租户logo路径", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    private String tenantLogoUrl;
+
+    /**
+     * 租户邀请码
+     */
+    @Schema(description = "租户邀请码", example = "AB12CD34")
+    private String inviteCode;
+
+    /**
+     * 父租户ID
+     */
+    @Schema(description = "父租户ID", example = "0")
+    private Long parentId;
+
+    /**
+     * 层级深度
+     */
+    @Schema(description = "层级深度", example = "1")
+    private Integer level;
 
     /**
      * 联系人姓名
@@ -50,6 +86,12 @@ public class SysTenantCommonVO {
      */
     @Schema(description = "联系人电话", example = "13800138000")
     private String contactPhone;
+
+    /**
+     * 联系人邮箱
+     */
+    @Schema(description = "联系人邮箱", example = "zhangsan@example.com")
+    private String contactEmail;
 
     /**
      * 状态
@@ -71,16 +113,16 @@ public class SysTenantCommonVO {
     private LocalDateTime expireTime;
 
     /**
+     * 套餐ID
+     */
+    @Schema(description = "套餐ID", example = "1")
+    private Long packageId;
+
+    /**
      * 是否有子租户
      */
     @Schema(description = "是否有子租户", example = "true")
     private Boolean hasChildren;
-
-    /**
-     * 当前主套餐
-     */
-    @Schema(description = "当前主套餐", example = "1001")
-    private String packageName;
 
     /**
      * 创建人姓名

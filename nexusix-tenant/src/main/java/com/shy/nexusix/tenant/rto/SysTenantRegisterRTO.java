@@ -1,6 +1,7 @@
 package com.shy.nexusix.tenant.rto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -26,12 +27,42 @@ public class SysTenantRegisterRTO {
     private String tenantName;
 
     /**
-     * 租户类型/行业
+     * 租户类型（同时存储行业类型）
      */
     @NotBlank(message = "租户类型不能为空")
     @Size(min = 2, max = 50, message = "租户类型必须在2-50字符之间")
-    @Schema(description = "租户类型/行业", example = "互联网")
+    @Schema(description = "租户类型（同时存储行业类型）", example = "internet")
     private String tenantType;
+
+    /**
+     * 租户地址
+     */
+    @NotBlank(message = "租户地址不能为空")
+    @Size(max = 500, message = "租户地址不能超过500字符")
+    @Schema(description = "租户地址", example = "浙江省杭州市上城区万象大厦18层")
+    private String tenantAddress;
+
+    /**
+     * 租户描述
+     */
+    @NotBlank(message = "租户描述不能为空")
+    @Size(max = 500, message = "租户描述不能超过500字符")
+    @Schema(description = "租户描述", example = "专注软件开发与技术服务")
+    private String tenantDesc;
+
+    /**
+     * 租户企业规模
+     */
+    @NotBlank(message = "租户企业规模不能为空")
+    @Size(max = 50, message = "租户企业规模不能超过50字符")
+    @Schema(description = "租户企业规模", example = "51-200")
+    private String tenantScale;
+
+    /**
+     * 租户logo路径
+     */
+    @Schema(description = "租户logo路径（可选）", example = "/upload/tenant/logo/2026/05/13/xxx.png")
+    private String tenantLogoUrl;
 
     /**
      * 联系人姓名
@@ -48,6 +79,14 @@ public class SysTenantRegisterRTO {
     @Pattern(regexp = CHINA_MOBILE, message = "联系人电话格式不正确")
     @Schema(description = "联系人电话", example = "13812348000")
     private String contactPhone;
+
+    /**
+     * 联系人邮箱
+     */
+    @Email(message = "联系人邮箱格式不正确")
+    @Size(max = 100, message = "联系人邮箱不能超过100字符")
+    @Schema(description = "联系人邮箱", example = "zhangsan@example.com")
+    private String contactEmail;
 
     /**
      * 父租户编码

@@ -38,19 +38,36 @@ public class SysTenantAddRTO {
     private String tenantName;
 
     /**
-     * 租户类型
+     * 租户类型（同时存储行业类型）
      */
     @NotBlank(message = "租户类型不能为空")
     @Size(min = 2, max = 50, message = "租户类型必须在2-50字符之间")
-    @Schema(description = "租户类型", example = "餐饮、互联网")
+    @Schema(description = "租户类型（同时存储行业类型）", example = "internet")
     private String tenantType;
+
+    /**
+     * 租户地址
+     */
+    @NotBlank(message = "租户地址不能为空")
+    @Size(max = 500, message = "租户地址不能超过500字符")
+    @Schema(description = "租户地址", example = "浙江省杭州市上城区万象大厦18层")
+    private String tenantAddress;
 
     /**
      * 租户描述
      */
+    @NotBlank(message = "租户描述不能为空")
     @Size(max = 500, message = "租户描述不能超过500字符")
-    @Schema(description = "租户描述", example = "这是...类型公司")
+    @Schema(description = "租户描述", example = "专注软件开发与技术服务")
     private String tenantDesc;
+
+    /**
+     * 租户企业规模
+     */
+    @NotBlank(message = "租户企业规模不能为空")
+    @Size(max = 50, message = "租户企业规模不能超过50字符")
+    @Schema(description = "租户企业规模", example = "51-200")
+    private String tenantScale;
 
     /**
      * 租户logo路径
@@ -64,14 +81,6 @@ public class SysTenantAddRTO {
     @NotNull(message = "父租户编码不能为空")
     @Schema(description = "父租户编码", example = "1987654321098765432")
     private String parentCode;
-
-    /**
-     * 父租户名称
-     */
-    @NotBlank(message = "父租户名称不能为空")
-    @Size(min = 2, max = 100, message = "父租户名称必须在2-100字符之间")
-    @Schema(description = "父租户名称", example = "阿里云")
-    private String parentName;
 
     /**
      * 祖级路径
@@ -97,6 +106,14 @@ public class SysTenantAddRTO {
     private String contactPhone;
 
     /**
+     * 联系人邮箱
+     */
+    @Email(message = "联系人邮箱格式不正确")
+    @Size(max = 100, message = "联系人邮箱不能超过100字符")
+    @Schema(description = "联系人邮箱", example = "zhangsan@example.com")
+    private String contactEmail;
+
+    /**
      * 状态
      */
     @NotNull(message = "状态不能为空")
@@ -120,14 +137,6 @@ public class SysTenantAddRTO {
     @NotNull(message = "套餐编码不能为空")
     @Schema(description = "套餐编码", example = "1001")
     private String packageCode;
-
-    /**
-     * 套餐名称
-     */
-    @NotBlank(message = "套餐名称不能为空")
-    @Size(min = 2, max = 100, message = "套餐名称必须在2-100字符之间")
-    @Schema(description = "套餐名称", example = "企业版套餐")
-    private String packageName;
 
     /**
      * 扩展属性(JSONB，存储行业特定配置)

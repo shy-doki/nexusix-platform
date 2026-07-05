@@ -339,6 +339,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             if (entity.getIsDeleted() == null) {
                 entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
             }
+            // 审计上下文：创建租户/部门/角色暂设为 0L（无登录租户上下文场景）
+            if (entity.getCreateTenant() == null) {
+                entity.setCreateTenant(0L);
+            }
+            if (entity.getCreateDept() == null) {
+                entity.setCreateDept(0L);
+            }
+            if (entity.getCreateRole() == null) {
+                entity.setCreateRole(0L);
+            }
         } else {
             // 非超级管理员：严格禁止设置审核字段，系统自动填充默认值，忽略前端传递的审核字段参数
             entity.setCreateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
@@ -347,6 +357,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             entity.setUpdateAt(LocalDateTime.now());
             entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
             entity.setDeletedAt(null);
+            // 审计上下文：创建租户/部门/角色暂设为 0L
+            entity.setCreateTenant(0L);
+            entity.setCreateDept(0L);
+            entity.setCreateRole(0L);
         }
 
         // 根据字段权限清除不可操作的字段值 确保用户只能设置有权限的字段
@@ -607,6 +621,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 if (entity.getIsDeleted() == null) {
                     entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
                 }
+                // 审计上下文：创建租户/部门/角色暂设为 0L
+                if (entity.getCreateTenant() == null) {
+                    entity.setCreateTenant(0L);
+                }
+                if (entity.getCreateDept() == null) {
+                    entity.setCreateDept(0L);
+                }
+                if (entity.getCreateRole() == null) {
+                    entity.setCreateRole(0L);
+                }
             } else {
                 // 非超级管理员：严格禁止设置审核字段，系统自动填充默认值
                 entity.setCreateBy(Long.valueOf(StpUtil.getLoginIdAsString()));
@@ -615,6 +639,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 entity.setUpdateAt(LocalDateTime.now());
                 entity.setIsDeleted(GlobalEnum.Deleted.NOT_DELETED.getCode());
                 entity.setDeletedAt(null);
+                // 审计上下文：创建租户/部门/角色暂设为 0L
+                entity.setCreateTenant(0L);
+                entity.setCreateDept(0L);
+                entity.setCreateRole(0L);
             }
 
             // 根据字段权限清除不可操作的字段值

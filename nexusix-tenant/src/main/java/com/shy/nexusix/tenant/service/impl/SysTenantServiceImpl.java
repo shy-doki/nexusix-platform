@@ -643,6 +643,27 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 新增租户默认无子租户
         entity.setHasChildren(false);
 
+        // 计算层级深度：根租户 level=1，子租户 level=父租户level+1
+        if (parentTenant != null) {
+            entity.setLevel(parentTenant.getLevel() + 1);
+        } else {
+            entity.setLevel(1);
+        }
+
+        // 生成租户邀请码（8位字符，用户注册时凭此码加入租户）
+        entity.setInviteCode(generateTenantInviteCode());
+
+        // 审计上下文：后台新增租户时，创建租户/部门/角色暂设为 0L（无登录租户上下文场景）
+        if (entity.getCreateTenant() == null) {
+            entity.setCreateTenant(0L);
+        }
+        if (entity.getCreateDept() == null) {
+            entity.setCreateDept(0L);
+        }
+        if (entity.getCreateRole() == null) {
+            entity.setCreateRole(0L);
+        }
+
         boolean isSuperAdmin = StpUtil.hasRole(GlobalConstant.Role.SUPER_ADMIN_ROLE);
         if (isSuperAdmin) {
             // 超级管理员：若明确填写了审核字段值则以填写值为准，若未填写则自动应用默认值
@@ -674,9 +695,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 根据字段权限清除不可操作的字段值 确保用户只能设置有权限的字段
         if (!visibleFields.contains("tenantName")) entity.setTenantName(null);
         if (!visibleFields.contains("tenantType")) entity.setTenantType(null);
+        if (!visibleFields.contains("tenantAddress")) entity.setTenantAddress(null);
         if (!visibleFields.contains("tenantDesc")) entity.setTenantDesc(null);
+        if (!visibleFields.contains("tenantScale")) entity.setTenantScale(null);
+        if (!visibleFields.contains("tenantLogoUrl")) entity.setTenantLogoUrl(null);
         if (!visibleFields.contains("contactName")) entity.setContactName(null);
         if (!visibleFields.contains("contactPhone")) entity.setContactPhone(null);
+        if (!visibleFields.contains("contactEmail")) entity.setContactEmail(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
         if (!visibleFields.contains("expireTime")) entity.setExpireTime(null);
         if (!visibleFields.contains("packageId")) entity.setPackageId(null);
@@ -759,10 +784,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         // 将不可见字段设为null MyBatis-Plus更新时将跳过null字段
         if (!visibleFields.contains("tenantName")) entity.setTenantName(null);
         if (!visibleFields.contains("tenantType")) entity.setTenantType(null);
+        if (!visibleFields.contains("tenantAddress")) entity.setTenantAddress(null);
         if (!visibleFields.contains("tenantDesc")) entity.setTenantDesc(null);
+        if (!visibleFields.contains("tenantScale")) entity.setTenantScale(null);
         if (!visibleFields.contains("tenantLogoUrl")) entity.setTenantLogoUrl(null);
         if (!visibleFields.contains("contactName")) entity.setContactName(null);
         if (!visibleFields.contains("contactPhone")) entity.setContactPhone(null);
+        if (!visibleFields.contains("contactEmail")) entity.setContactEmail(null);
         if (!visibleFields.contains("status")) entity.setStatus(null);
         if (!visibleFields.contains("expireTime")) entity.setExpireTime(null);
         if (!visibleFields.contains("packageId")) entity.setPackageId(null);
@@ -839,7 +867,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 .eq(SysTenant::getId, id)
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .set(SysTenant::getStatus, status)
-                .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                 .set(SysTenant::getUpdateAt, LocalDateTime.now());
         if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(status)) {
             updateWrapper.set(SysTenant::getDisableReason, "ADMIN_DISABLE");
@@ -858,7 +886,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .ne(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
                     .set(SysTenant::getStatus, status)
                     .set(SysTenant::getDisableReason, "PARENT_CASCADE:" + id)
-                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now());
             updatedCount += this.update(childUpdateWrapper) ? 1 : 0;
         }
@@ -906,7 +934,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                 .set(SysTenant::getIsDeleted, GlobalEnum.Deleted.DELETED.getCode())
                 .set(SysTenant::getDeletedAt, LocalDateTime.now())
-                .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                 .set(SysTenant::getUpdateAt, LocalDateTime.now()));
 
         // 更新父租户的hasChildren标记 检查父租户是否还有其他子租户
@@ -984,6 +1012,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 if (entity.getPath() == null || entity.getPath().isEmpty()) {
                     entity.setPath(parentTenant.getPath() + "/" + entity.getTenantCode());
                 }
+                // 计算层级深度：子租户 level=父租户level+1
+                if (entity.getLevel() == null) {
+                    entity.setLevel(parentTenant.getLevel() + 1);
+                }
                 // 更新父租户的hasChildren标记
                 if (!Boolean.TRUE.equals(parentTenant.getHasChildren())) {
                     this.update(new LambdaUpdateWrapper<SysTenant>()
@@ -995,10 +1027,28 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                 if (entity.getPath() == null || entity.getPath().isEmpty()) {
                     entity.setPath(entity.getTenantCode());
                 }
+                // 根租户 level=1
+                if (entity.getLevel() == null) {
+                    entity.setLevel(1);
+                }
             }
 
             // 设置默认值
             entity.setHasChildren(false);
+            // 生成租户邀请码
+            if (entity.getInviteCode() == null) {
+                entity.setInviteCode(generateTenantInviteCode());
+            }
+            // 审计上下文：创建租户/部门/角色暂设为 0L
+            if (entity.getCreateTenant() == null) {
+                entity.setCreateTenant(0L);
+            }
+            if (entity.getCreateDept() == null) {
+                entity.setCreateDept(0L);
+            }
+            if (entity.getCreateRole() == null) {
+                entity.setCreateRole(0L);
+            }
 
             // 审核字段权限控制
             if (isSuperAdmin) {
@@ -1031,9 +1081,13 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             // 根据字段权限清除不可操作的字段值
             if (!visibleFields.contains("tenantName")) entity.setTenantName(null);
             if (!visibleFields.contains("tenantType")) entity.setTenantType(null);
+            if (!visibleFields.contains("tenantAddress")) entity.setTenantAddress(null);
             if (!visibleFields.contains("tenantDesc")) entity.setTenantDesc(null);
+            if (!visibleFields.contains("tenantScale")) entity.setTenantScale(null);
+            if (!visibleFields.contains("tenantLogoUrl")) entity.setTenantLogoUrl(null);
             if (!visibleFields.contains("contactName")) entity.setContactName(null);
             if (!visibleFields.contains("contactPhone")) entity.setContactPhone(null);
+            if (!visibleFields.contains("contactEmail")) entity.setContactEmail(null);
             if (!visibleFields.contains("status")) entity.setStatus(null);
             if (!visibleFields.contains("expireTime")) entity.setExpireTime(null);
             if (!visibleFields.contains("packageId")) entity.setPackageId(null);
@@ -1195,7 +1249,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .eq(SysTenant::getId, id)
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .set(SysTenant::getStatus, status)
-                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now());
             if (GlobalEnum.TenantStatus.DISABLED.getCode().equals(status)) {
                 batchUpdateWrapper.set(SysTenant::getDisableReason, "ADMIN_DISABLE");
@@ -1213,7 +1267,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                         .ne(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
                         .set(SysTenant::getStatus, status)
                         .set(SysTenant::getDisableReason, "PARENT_CASCADE:" + id)
-                        .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                        .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                         .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             }
         }
@@ -1266,7 +1320,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .eq(SysTenant::getIsDeleted, GlobalEnum.Deleted.NOT_DELETED.getCode())
                     .set(SysTenant::getIsDeleted, GlobalEnum.Deleted.DELETED.getCode())
                     .set(SysTenant::getDeletedAt, LocalDateTime.now())
-                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             totalDeleted++;
 
@@ -1351,7 +1405,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .eq(SysTenant::getId, subTenant.getId())
                     .set(SysTenant::getParentId, parentTenant.getId())
                     .set(SysTenant::getPath, newPath)
-                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             updatedCount++;
 
@@ -1365,7 +1419,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     this.update(new LambdaUpdateWrapper<SysTenant>()
                             .eq(SysTenant::getId, descendant.getId())
                             .set(SysTenant::getPath, newDescendantPath)
-                            .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                            .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                             .set(SysTenant::getUpdateAt, LocalDateTime.now()));
                 }
             }
@@ -1449,7 +1503,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .eq(SysTenant::getId, subTenant.getId())
                     .set(SysTenant::getParentId, newParent.getId())
                     .set(SysTenant::getPath, newPath)
-                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
             updatedCount++;
 
@@ -1463,7 +1517,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     this.update(new LambdaUpdateWrapper<SysTenant>()
                             .eq(SysTenant::getId, descendant.getId())
                             .set(SysTenant::getPath, newDescendantPath)
-                            .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                            .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                             .set(SysTenant::getUpdateAt, LocalDateTime.now()));
                 }
             }
@@ -1502,6 +1556,22 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
             return path.substring(0, path.length() - 1);
         }
         return path;
+    }
+
+    /**
+     * <p>生成租户邀请码（8位大写字母+数字组合）</p>
+     * <p>用于用户注册时凭此码绑定到对应租户</p>
+     *
+     * @return 8位邀请码
+     */
+    private String generateTenantInviteCode() {
+        char[] chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars[random.nextInt(chars.length)]);
+        }
+        return sb.toString();
     }
 
     /**
@@ -1551,21 +1621,35 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         entity.setTenantCode(tenantCode);
         entity.setTenantName(registerParam.getTenantName());
         entity.setTenantType(registerParam.getTenantType());
+        entity.setTenantAddress(registerParam.getTenantAddress());
+        entity.setTenantDesc(registerParam.getTenantDesc());
+        entity.setTenantScale(registerParam.getTenantScale());
+        entity.setTenantLogoUrl(registerParam.getTenantLogoUrl());
         entity.setContactName(registerParam.getContactName());
         entity.setContactPhone(registerParam.getContactPhone());
+        entity.setContactEmail(registerParam.getContactEmail());
         entity.setExtAttributes(registerParam.getExtAttributes());
 
         // 注册租户状态为PENDING（待审核）
         entity.setStatus(GlobalEnum.TenantStatus.PENDING.getCode());
 
-        // 设置父租户信息
+        // 设置父租户信息与层级
         if (parentTenant != null) {
             entity.setParentId(parentTenant.getId());
             entity.setPath(parentTenant.getPath() + "/" + tenantCode);
+            entity.setLevel(parentTenant.getLevel() + 1);
         } else {
             entity.setParentId(0L);
             entity.setPath(tenantCode);
+            entity.setLevel(1);
         }
+
+        // 生成租户邀请码（8位字符，用户注册时凭此码加入租户）
+        entity.setInviteCode(generateTenantInviteCode());
+
+        // 默认值：注册租户默认基础套餐（package_id=1）与一年有效期
+        entity.setPackageId(1L);
+        entity.setExpireTime(LocalDateTime.now().plusYears(1));
 
         // 默认值
         entity.setHasChildren(false);
@@ -1574,6 +1658,10 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
         entity.setCreateAt(LocalDateTime.now());
         entity.setUpdateBy(0L); // 注册时暂无用户ID，使用0
         entity.setUpdateAt(LocalDateTime.now());
+        // 审计上下文：注册场景无登录用户，创建租户/部门/角色设为 0L
+        entity.setCreateTenant(0L);
+        entity.setCreateDept(0L);
+        entity.setCreateRole(0L);
 
         this.save(entity);
 
@@ -1617,7 +1705,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .eq(SysTenant::getId, reviewParam.getTenantId())
                     .set(SysTenant::getStatus, GlobalEnum.TenantStatus.ENABLED.getCode())
                     .set(SysTenant::getDisableReason, null)
-                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
         } else {
             // 审核拒绝：PENDING → DISABLED
@@ -1629,7 +1717,7 @@ public class SysTenantServiceImpl extends ServiceImpl<SysTenantMapper, SysTenant
                     .eq(SysTenant::getId, reviewParam.getTenantId())
                     .set(SysTenant::getStatus, GlobalEnum.TenantStatus.DISABLED.getCode())
                     .set(SysTenant::getDisableReason, "REVIEW_REJECTED:" + reason)
-                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsString())
+                    .set(SysTenant::getUpdateBy, StpUtil.getLoginIdAsLong())
                     .set(SysTenant::getUpdateAt, LocalDateTime.now()));
         }
 
